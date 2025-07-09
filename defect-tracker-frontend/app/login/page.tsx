@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,19 +20,19 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // for cookies; remove if using JWT in localStorage
         body: JSON.stringify({ email, password }),
       });
 
       if (res.ok) {
-        // TODO: if using JWT, grab it and store it:
-        // const { token } = await res.json();
-        // localStorage.setItem('token', token);
-
-        router.push('/');
+          const data = await res.json();
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('permissions', JSON.stringify(data.permissions));
+          router.push('/main-page');
+        
       } else if (res.status === 401) {
         setError('The password or email is incorrect! Please try again.');
       } else {
@@ -45,8 +47,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white flex flex-col items-center justify-center px-4 space-y-6">
+       {/* Logo */}
+        <div className="flex justify-center">
+            <Image
+              src="/logo.png"
+              alt="Centa Logo"
+              width={200}
+              height={80}
+              className="object-contain bg-transparent"
+            />
+        </div>
+      <div className="max-w-md w-full bg-white p-10 rounded-lg shadow">
         <h1 className="text-2xl font-bold mb-6 text-center">Giriş Yap</h1>
         {error && (
           <div className="mb-4 text-red-700 bg-red-100 p-2 rounded">
@@ -67,21 +79,30 @@ export default function LoginPage() {
               className="mt-1 w-full border rounded px-3 py-2 focus:outline-none focus:ring"
             />
           </div>
-
-          <div>
+          <div className="relative">
             <label htmlFor="password" className="block text-sm font-medium">
               Şifre
             </label>
             <input
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="mt-1 w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+              className="mt-1 w-full border rounded px-3 py-2 pr-10 focus:outline-none focus:ring"
             />
+            <button
+              type="button"
+              onClick={() => {
+                setShowPassword(true);
+                setTimeout(() => setShowPassword(false), 500);
+              }}
+              className="absolute top-[38px] right-2 text-sm text-gray-500 hover:text-black"
+              aria-label="Şifreyi göster"
+            >
+              Göster
+            </button>
           </div>
-
           <button
             type="submit"
             disabled={isSubmitting}
@@ -95,11 +116,14 @@ export default function LoginPage() {
         </form>
 
         {/* Future hooks: */}
-        {/* <div className="mt-4 text-center">
-            <button className="text-sm text-blue-600 hover:underline">
+        <div className="mt-4 text-center">
+            <button 
+            className="text-xl text-blue-600 hover:underline"
+            onClick={() => router.push('http://localhost:3000/forgot-password')}
+            >
               Şifremi unuttum
             </button>
-          </div> */}
+          </div>
       </div>
     </div>
   );

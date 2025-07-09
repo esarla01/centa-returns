@@ -1,41 +1,19 @@
 // src/components/CasesTable.tsx
 import React from 'react'
 import CaseRow from './CasesRow'
-
-interface Case {
-  id: string
-  arrivalDate: string
-  company: string
-  companyRepresentative: string
-  companyContact: string
-  note: string
-  address: string
-  warrantyStatusPhotosensor: string
-  photosensorHeightCount: number
-  photosensorPowerCount: number
-  warrantyStatusOverload: string
-  overloadLC1Count: number
-  performedService: string
-  cost: number
-  paymentDetails: string
-  status: string
-  shippingCompany: string
-  shippingDate: string
-  shippingAddresses: string
-  shippingInformation: string
-}
+import { Case } from '@/types/cases'
 
 interface CasesTableProps {
   data: Case[]
-  selectedId: string | null
-  onSelect: (id: string) => void
+  selectedId: number | null
+  onSelect: (id: number) => void
 }
 
 export function CasesTable({ data, selectedId, onSelect }: CasesTableProps) {
   const headers = [
     '',
     'Geliş Tarihi',
-    'Firma',
+    'Firma İsmi',
     'Firma Yetkilisi',
     'Firma İletişim',
     'Not',
@@ -56,9 +34,9 @@ export function CasesTable({ data, selectedId, onSelect }: CasesTableProps) {
   ]
 
   return (
-    <div className="max-h-[640px] overflow-y-auto max-w-[1000px] overflow-x-auto bg-white shadow rounded-lg border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-white">
+    <div className="h-[475px] md:max-w-[1100px] sm:max-w-[100%] overflow-x-auto bg-white shadow-md rounded-2xl border border-gray-200">
+      <table className="min-w-full divide-y divide-gray-300">
+      <thead className="sticky top-0 z-10">
           <tr>
             {headers.map((h, idx) => (
               <th
@@ -73,7 +51,7 @@ export function CasesTable({ data, selectedId, onSelect }: CasesTableProps) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 bg-white">
+        <tbody className="divide-y divide-gray-200 text-sm text-gray-800">
           {data.map((caseItem) => (
             <CaseRow
               key={caseItem.id}
@@ -84,6 +62,11 @@ export function CasesTable({ data, selectedId, onSelect }: CasesTableProps) {
           ))}
         </tbody>
       </table>
+      {data.length === 0 && (
+        <div className="text-center text-gray-500 py-8 text-sm">
+          Herhangi bir kayıt bulunamadı.
+        </div>
+      )}
     </div>
   )
 }
