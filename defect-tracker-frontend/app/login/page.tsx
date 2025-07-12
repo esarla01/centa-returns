@@ -20,23 +20,19 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/auth/login', {
+      const res = await fetch('http://localhost:5000/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', 
         body: JSON.stringify({ email, password }),
       });
-
       if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          localStorage.setItem('permissions', JSON.stringify(data.permissions));
-          router.push('/main-page');
+            const data = await res.json();
+            router.push('/main-page'); // Redirect to main page after successful login
         
-      } else if (res.status === 401) {
-        setError('The password or email is incorrect! Please try again.');
       } else {
-        setError('Unexpected error. Please try again later.');
+        const data = await res.json();
+        setError(data.msg);
       }
     } catch (err) {
       console.error(err);
