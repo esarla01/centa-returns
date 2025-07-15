@@ -11,6 +11,7 @@ from endpoints.user import user_bp # blueprint for user-related endpoints''
 from endpoints.customers import customer_bp # blueprint for customer-related endpoints
 from endpoints.products import product_bp # blueprint for product-related endpoints
 from endpoints.returns import return_case_bp # blueprint for return case-related endpoints
+from endpoints.statistics import statistics_bp # blueprint for statistics-related endpoints
 
 load_dotenv()
 
@@ -61,6 +62,7 @@ def create_app():
     app.register_blueprint(customer_bp)
     app.register_blueprint(product_bp)  
     app.register_blueprint(return_case_bp)  
+    app.register_blueprint(statistics_bp)
 
     return app
 

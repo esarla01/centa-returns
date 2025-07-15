@@ -1,3 +1,20 @@
+export type ReturnCase = {
+  id: number;
+  status: string;
+  customer_name: string;
+  arrival_date: string;
+  assigned_user: string | null;
+  items: {
+    id: number;
+    is_main_product: boolean;
+    product_name: string;
+    product_type: string;
+    product_count: number;
+    attached_to_item_id: number | null;
+  }[];
+};
+
+
 
 export interface ReturnCaseItemSummary {
   product_name: string;
@@ -5,14 +22,6 @@ export interface ReturnCaseItemSummary {
   is_main_product: boolean;
 }
 
-export interface ReturnCase {
-  id: number;
-  status: string; 
-  arrival_date: string;
-  customer_name: string;
-  assigned_user: string;
-  items: ReturnCaseItemSummary[];
-}
 
 export interface FullReturnCaseItem {
     id: number;

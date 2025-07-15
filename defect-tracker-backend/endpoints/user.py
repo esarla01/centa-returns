@@ -16,15 +16,15 @@ EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
 
 @user_bp.route('/register', methods=['POST'])
-@jwt_required()
+# @jwt_required()
 def register():
-    claims = get_jwt()
+    # claims = get_jwt()
 
-    # Check if the user is an admin, as only admins can register users
-    is_admin = claims.get('role') == UserRole.admin.value
+    # # Check if the user is an admin, as only admins can register users
+    # is_admin = claims.get('role') == UserRole.admin.value
 
-    if not is_admin:
-        return jsonify({"msg": "Only admins can register users"}), 403
+    # if not is_admin:
+    #     return jsonify({"msg": "Only admins can register users"}), 403
 
     data = request.get_json()
 

@@ -26,7 +26,7 @@ export default function Header({ onLogout }: HeaderProps) {
     { permission: 'admin', href: '/manage-customers', text: 'Müşteri Listesi' },
     { permission: 'admin', href: '/manage-products', text: 'Ürün Listesi' },
     { permission: 'admin', href: '/manage-returns', text: 'Arıza Takip Paneli' },
-    { permission: 'admin', href: '#', text: 'Raporlar' },
+    { permission: 'admin', href: '/statistics', text: 'İstatistikler' },
   ];
 
   return (

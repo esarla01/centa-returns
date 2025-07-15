@@ -13,24 +13,34 @@ interface AddReturnCaseModalProps {
   onSuccess: () => void;
 }
 
-// Internal state for a single item being added
 interface NewItem {
-    id: number; // Temporary client-side ID for list keys
-    productModelId: string;
+    id: number; 
+    productType: string; 
     productCount: number;
     serialNumber: string;
     includeAttachedUnit: boolean;
     attachedUnitModelId: string;
 }
 
+type NewReturnCasePayload = {
+    customerId: number;
+    arrivalDate: string;
+    receiptMethod: string;
+    items: {
+      productType: string;
+      productCount: number;
+      serialNumber?: string | null;
+      attachControlUnit?: boolean;
+    }[];
+  };
+  
+
 export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCaseModalProps) {
 
     // Dropdown data states
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [users, setUsers] = useState<User[]>([]);
-    const [mainProducts, setMainProducts] = useState<ProductModel[]>([]);
-    const [controlUnits, setControlUnits] = useState<ProductModel[]>([]);
-    
+
     // Form state for case details
     const [caseDetails, setCaseDetails] = useState({
         customerId: '',
@@ -50,21 +60,15 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         const fetchDropdownData = async () => {
             try {
                 // Fetch all data in parallel
-                const [custRes, userRes, prodRes] = await Promise.all([
+                const [custRes, userRes] = await Promise.all([
                     fetch('http://localhost:5000/customers?limit=1000', { credentials: 'include' }),
-                    fetch('http://localhost:5000/auth/retrieve-users?limit=100', { credentials: 'include' }),
                     fetch('http://localhost:5000/products?limit=1000', { credentials: 'include' })
                 ]);
                 const custData = await custRes.json();
                 const userData = await userRes.json();
-                const prodData = await prodRes.json();
 
                 setCustomers(custData.customers || []);
                 setUsers(userData.users || []);
-
-                // Separate products into main items and control units based on your business rule
-                setMainProducts(prodData.products);
-                setControlUnits(prodData.products.filter((p: ProductModel) => p.product_type === 'Kontrol Ünitesi'));
 
             } catch (err) {
                 setError("Dropdown verileri yüklenemedi.");
@@ -73,11 +77,10 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         fetchDropdownData();
     }, []);
 
-    // --- Add/Remove Item Logic ---
     const handleAddItem = () => {
         setItems([...items, {
             id: Date.now(),
-            productModelId: '',
+            productType: '', 
             productCount: 1,
             serialNumber: '',
             includeAttachedUnit: false,
@@ -85,7 +88,6 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         }]);
     };
 
-    // Remove item by filtering out the one with matching ID
     const handleRemoveItem = (id: number) => {
         setItems(items.filter(item => item.id !== id));
     };
@@ -98,68 +100,62 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         setCaseDetails(prev => ({...prev, [field]: value}));
     };
 
-    // --- Form Submission ---
     const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setError(null);
+
+        if (!caseDetails.customerId) {
+            setError('Müşteri seçiniz.');
+            return;
+        }
+        if (!caseDetails.receiptMethod) {
+            setError('Teslim alma yöntemini seçiniz.');
+            return;
+        }
+        const validItems = items.filter(item => item.productType && item.productCount > 0);
+        if (validItems.length === 0) {
+            setError('En az bir arızalı ürün ekleyiniz.');
+            return;
+        }
+    
+
         setIsSubmitting(true);
 
-        console.log('Submitting case with details:', caseDetails);
-        console.log('With items:', items);
-
-
-
-        // e.preventDefault();
-        // setIsSubmitting(true);
-        // setError(null);
-
-        // Transform frontend state to backend-expected format
-        const finalItems = items.flatMap(item => {
-            const mainItem = {
-                product_model_id: parseInt(item.productModelId),
-                product_count: item.productCount,
-                serial_number: item.serialNumber,
-                is_main_product: true,
+        try {
+            const payload: NewReturnCasePayload = {
+                customerId: parseInt(caseDetails.customerId),
+                arrivalDate: caseDetails.arrivalDate,
+                receiptMethod: caseDetails.receiptMethod,
+                items: validItems.map(item => ({
+                    productType: item.productType,
+                    productCount: item.productCount,
+                    serialNumber: item.serialNumber || null,
+                    attachControlUnit: item.includeAttachedUnit || false
+                }))
             };
-            if (item.includeAttachedUnit && item.attachedUnitModelId) {
-                const attachedItem = {
-                    product_model_id: parseInt(item.attachedUnitModelId),
-                    product_count: 1,
-                    serial_number: '',
-                    is_main_product: false,
-                };
-                return [mainItem, attachedItem];
+    
+            const response = await fetch('http://localhost:5000/returns/', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+    
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Sunucu hatası');
             }
-            return [mainItem];
-        }).filter(item => item.product_model_id); // Filter out empty items
-
-        console.log('Final items to submit:', finalItems);
-
-        // const payload = {
-        //     ...caseDetails,
-        //     customer_id: parseInt(caseDetails.customerId),
-        //     assigned_user_id: caseDetails.assignedUserId ? parseInt(caseDetails.assignedUserId) : null,
-        //     items: finalItems
-        // };
-        
-        // try {
-        //     const res = await fetch('http://localhost:5000/api/return-cases', {
-        //         method: 'POST',
-        //         headers: { 'Content-Type': 'application/json' },
-        //         body: JSON.stringify(payload),
-        //         credentials: 'include'
-        //     });
-        //     const data = await res.json();
-        //     if(!res.ok) throw new Error(data.msg || "Vaka oluşturulamadı.");
-        //     onSuccess();
-        // } catch (err: any) {
-        //     setError(err.message);
-        // } finally {
-        //     setIsSubmitting(false);
-        // }
-        setIsSubmitting(false);
-
-
+    
+            // Success! Inform parent, reset modal.
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
-
+    
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
@@ -169,19 +165,19 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
             <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={24} /></button>
         </div>
 
-        <form id="add-case-form" onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-6 space-y-6">
+        <form id="add-case-form" onSubmit={(e) => e.preventDefault()} className="flex-grow overflow-y-auto p-6 space-y-6">
             
             {/* Case Details Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 border rounded-md">
                 <h3 className="col-span-full text-lg font-semibold text-gray-700">Vaka Detayları</h3>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Müşteri</label>
-                    <select required value={caseDetails.customerId} onChange={e => handleCaseDetailChange('customerId', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
+                    <select value={caseDetails.customerId} onChange={e => handleCaseDetailChange('customerId', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
                         <option value="" disabled>Müşteri Seçin...</option>
                         {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                 </div>
-                <div lang="tr">
+                <div>
                     <label className="block text-sm font-medium text-gray-700">Geliş Tarihi</label>
                     <div className="mt-1 w-full border border-gray-300 rounded-md p-1.5">
                         <DatePicker
@@ -195,8 +191,8 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Teslim Alma Yöntemi</label>
-                    <select required value={caseDetails.receiptMethod} onChange={e => handleCaseDetailChange('receiptMethod', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
-                        <option value="" disabled selected>Teslim Yöntemini Seçin...</option>    
+                    <select value={caseDetails.receiptMethod} onChange={e => handleCaseDetailChange('receiptMethod', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
+                    <option value="" disabled> Teslim Yöntemini Seçin... </option>
                         <option value="shipment">Kargo</option>
                         <option value="in_person">Elden Teslim</option>
                     </select>
@@ -206,15 +202,17 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
             {/* Returned Items Section */}
             <div className="p-4 border rounded-md space-y-4">
                 <h3 className="text-lg font-semibold text-gray-700">Gelen Ürünler</h3>
-                {items.map((item, index) => (
+                {items.map((item) => (
                     <div key={item.id} className="p-4 bg-gray-50 rounded-lg space-y-4 border relative">
                         <button type="button" onClick={() => handleRemoveItem(item.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"><Trash2 size={16}/></button>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Ana Ürün</label>
-                                <select required value={item.productModelId} onChange={e => handleItemChange(item.id, 'productModelId', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
-                                    <option value="" disabled>Ürün Modeli Seçin...</option>
-                                    {mainProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Ürün Tipi</label>
+                                <select required value={item.productType} onChange={e => handleItemChange(item.id, 'productType', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2">
+                                    <option value="" disabled>Ürün Tipi Seçin...</option>
+                                    <option value="overload">Aşırı Yük Sensörü</option>
+                                    <option value="door_detector">Kapı Dedektörü</option>
+                                    <option value="control_unit">Kontrol Ünitesi</option>
                                 </select>
                              </div>
                              <div>
@@ -227,7 +225,7 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
                              </div>
                         </div>
                         
-                        { mainProducts.find(p => p.id === parseInt(item.productModelId))?.product_type !== 'Kontrol Ünitesi'
+                        { item.productType !== 'control_unit' 
                         && (
                         <div className="border-t pt-4 space-y-4">
                             <div className="flex items-center">
@@ -238,12 +236,16 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
                         )}
                     </div>
                 ))}
-                { items.every(item => item.productModelId && item.productCount > 0) && (
-                <button type="button" onClick={handleAddItem} className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800">
-                    <PlusCircle size={18}/>
+                <button
+                    type="button"
+                    onClick={handleAddItem}
+                    disabled={!items.every(item => item.productType && item.productCount > 0)}
+                    className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                >
+                    <PlusCircle size={18} />
                     <span>Ürün Ekle</span>
                 </button>
-                )}
+
             </div>
              {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">{error}</div>}
         </form>
@@ -251,10 +253,15 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         <div className="p-6 border-t bg-gray-50">
             <div className="flex justify-end gap-4">
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">İptal</button>  
-                <button type="submit" form="add-case-form" disabled={isSubmitting} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300">
-                    {isSubmitting ? 'Oluşturuluyor...' : 'Vaka Oluştur'}
+                <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+                >
+                {isSubmitting ? 'Oluşturuluyor...' : 'Vaka Oluştur'}
                 </button>
-                <button type="button" onClick={handleSubmit} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Deneme</button>  
+
             </div>
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function DeleteReturnCaseModal({ returnCase, onClose, onSuccess }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/api/return-cases/${returnCase.id}`, {
+      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });

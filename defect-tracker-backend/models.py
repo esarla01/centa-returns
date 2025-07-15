@@ -106,8 +106,10 @@ class ReturnCaseItem(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     return_case_id = db.Column(db.Integer, db.ForeignKey('return_cases.id'), nullable=False)
+    product_type = db.Column(db.Enum(ProductTypeEnum), nullable=False)
     product_model_id = db.Column(db.Integer, db.ForeignKey('product_models.id'), nullable=True)
     product_count = db.Column(db.Integer, nullable=False, default=1)
+    serial_number = db.Column(db.String(100), nullable=True)
     is_main_product = db.Column(db.Boolean, default=True, nullable=False)
     attached_to_item_id = db.Column(db.Integer, db.ForeignKey('return_case_items.id'), nullable=True)
 

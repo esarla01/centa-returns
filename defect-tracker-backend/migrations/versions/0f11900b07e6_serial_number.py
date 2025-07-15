@@ -1,8 +1,8 @@
-"""Create users table
+"""serial number
 
-Revision ID: d63ce90be9fc
+Revision ID: 0f11900b07e6
 Revises: 
-Create Date: 2025-07-15 00:51:02.031078
+Create Date: 2025-07-15 16:33:28.261511
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd63ce90be9fc'
+revision = '0f11900b07e6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -71,8 +71,10 @@ def upgrade():
     op.create_table('return_case_items',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('return_case_id', sa.Integer(), nullable=False),
-    sa.Column('product_model_id', sa.Integer(), nullable=False),
+    sa.Column('product_type', sa.Enum('overload', 'door_detector', 'control_unit', name='producttypeenum'), nullable=False),
+    sa.Column('product_model_id', sa.Integer(), nullable=True),
     sa.Column('product_count', sa.Integer(), nullable=False),
+    sa.Column('serial_number', sa.String(length=100), nullable=True),
     sa.Column('is_main_product', sa.Boolean(), nullable=False),
     sa.Column('attached_to_item_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['attached_to_item_id'], ['return_case_items.id'], ),

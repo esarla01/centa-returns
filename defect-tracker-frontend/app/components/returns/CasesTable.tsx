@@ -13,7 +13,7 @@ interface CasesTableProps {
 
 const getStatusClass = (status: string) => {
     switch (status) {
-      case 'Open': return 'bg-blue-100 text-blue-800';
+      case 'Açık': return 'bg-blue-100 text-blue-800';
       case 'In Progress': return 'bg-yellow-100 text-yellow-800';
       case 'Repaired': return 'bg-green-100 text-green-800';
       case 'Shipped': return 'bg-purple-100 text-purple-800';
@@ -24,23 +24,49 @@ const getStatusClass = (status: string) => {
 
 export default function CasesTable({ cases, isLoading, onEdit, onDelete }: CasesTableProps) {
 
-    const getMainProduct = (c: ReturnCase) => {
-        const mainItem = c.items.find(item => item.is_main_product);
-        const accessoryCount = c.items.length - (mainItem ? 1 : 0);
+    const getMainProducts = (c: ReturnCase) => {
+        const mainItems = c.items.filter(item => item.is_main_product);
+        const accessoryItems = c.items.filter(item => !item.is_main_product);
+      
         return (
-            <div>
-                <span className="font-medium text-gray-900">{mainItem ? mainItem.product_name : 'N/A'}</span>
-                {accessoryCount > 0 && <span className="ml-2 text-xs text-gray-500">+{accessoryCount} parça</span>}
-            </div>
+          <div className="flex flex-col gap-1">
+            {mainItems.length > 0 ? (
+              mainItems.map((mainItem, index) => {
+                const count = mainItem.product_count;
+                const productName = mainItem.product_name;
+                
+                const hasControlUnit = accessoryItems.some(
+                  acc => acc.attached_to_item_id === mainItem.id
+                );
+      
+                const suffix = [
+                  hasControlUnit ? "kontrol ünitesi ile" : null,
+                  count >= 1 ? `x${count}` : null
+                ]
+                  .filter(Boolean)
+                  .join(', ');
+      
+                return (
+                  <div key={mainItem.id}>
+                    {index + 1} - {productName} {suffix && `(${suffix})`}
+                  </div>
+                );
+              })
+            ) : (
+              <span className="text-gray-500">N/A</span>
+            )}
+          </div>
         );
-    }
+      };
+      
+
     
     return (
         <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                     <tr>
-                        <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
                         <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
                         <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Müşteri</th>
                         <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün(ler)</th>
@@ -57,14 +83,14 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete }: Cases
                 ) : (
                     cases.map((c) => (
                         <tr key={c.id} className="hover:bg-gray-50">
-                            <td className="p-4 whitespace-nowrap text-sm font-bold text-gray-600">#{c.id}</td>
+                            <td className="p-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.id}</td>
                             <td className="p-4 whitespace-nowrap">
                                 <span className={cn('px-2 inline-flex text-xs leading-5 font-semibold rounded-full', getStatusClass(c.status))}>
                                 {c.status}
                                 </span>
                             </td>
                             <td className="p-4 whitespace-nowrap text-sm text-gray-900">{c.customer_name}</td>
-                            <td className="p-4 whitespace-nowrap text-sm">{getMainProduct(c)}</td>
+                            <td className="p-4 whitespace-nowrap text-sm">{getMainProducts(c)}</td>
                             <td className="p-4 whitespace-nowrap text-sm text-gray-500">{new Date(c.arrival_date).toLocaleDateString()}</td>
                             <td className="p-4 whitespace-nowrap text-sm text-gray-500">{c.assigned_user}</td>
                             <td className="p-4 whitespace-nowrap text-sm font-medium">
