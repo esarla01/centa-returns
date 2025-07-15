@@ -14,7 +14,7 @@ export default function AddUserModal({ onClose, onUserAdded }: AddUserModalProps
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
+  const [role, setRole] = useState('Kullanıcı');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,9 +89,8 @@ export default function AddUserModal({ onClose, onUserAdded }: AddUserModalProps
             <div>
                 <label htmlFor="role" className="block text-sm font-medium text-gray-700">Rol</label>
                 <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
-                    <option value="user">User</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
+                    <option value="Kullanıcı">Kullanıcı</option>
+                    <option value="Yönetici Yardımcısı">Yönetici Yardımcısı</option>
                 </select>
             </div>
 

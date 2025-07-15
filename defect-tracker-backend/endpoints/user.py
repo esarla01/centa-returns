@@ -87,6 +87,8 @@ def deregister():
     # Check if the user is an admin, as only admins can deregister users
     is_admin = claims.get('role') == UserRole.admin.value
 
+    print(f"Claims: {claims}")
+
     if not is_admin:
         return jsonify({"msg": "Only admins can deregister users"}), 403
     
@@ -139,7 +141,6 @@ def login():
         # Update last login time
         user.last_login = datetime.datetime.utcnow()
         db.session.commit()
-        print('hey 1')   
         print(user.email, user.first_name, user.last_name, user.role)     
 
 
@@ -279,41 +280,26 @@ def whoami():
 
     return jsonify(response), 200
 
-
 @user_bp.route('/retrieve-users', methods=['GET'])
 @jwt_required()
 def retrieve_users():
-    print("Retrieving users...")
+    """
+    Retrieve a paginated, searchable, and filterable list of users
+    using Flask-SQLAlchemy's paginate() function.
+    """
     claims = get_jwt()
 
-    # Check if the user is an admin, as only admins can retrieve users
-    is_admin = claims.get('role') == UserRole.admin.value
-
-    if not is_admin:
+    # Check if the user is an admin
+    if claims.get('role') != UserRole.admin.value:
         return jsonify({"msg": "Only admins can retrieve users"}), 403
 
-    try:
-        page = max(int(request.args.get('page', 1)), 1)
-    except ValueError:
-        page = 1
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 5, type=int)
+    search = request.args.get('search', '', type=str).strip()
+    role_filter = request.args.get('role', '', type=str) # e.g., "Admin", "User"
 
-    try:
-        limit = max(int(request.args.get('limit', 5)), 1)
-    except ValueError:
-        limit = 5
-    
-    print(f"Request args: {request.args}")
-
-
-    search = request.args.get('search', '').strip()
-    role_filter = request.args.get('role', '').lower()
-
-    offset = (page - 1) * limit
-
-    # Base query
     query = db.session.query(User)
 
-    # Apply search filter (search in first_name, last_name or email)
     if search:
         query = query.filter(
             or_(
@@ -323,36 +309,28 @@ def retrieve_users():
             )
         )
 
-
-    # Apply role filter if valid
-    if role_filter in {role.value for role in UserRole}:
-        query = query.filter(User.role == UserRole(role_filter))
-
-    # Get total after filters
-    total_users = query.count()
-
-    # Get paginated users
-    users = (
-        query
-        .order_by(User.role)
-        .offset(offset)
-        .limit(limit)
-        .all()
+    if role_filter and role_filter.lower() in UserRole._member_map_:
+        query = query.filter(User.role == UserRole[role_filter.lower()])
+    
+    paginated_users = query.order_by(User.role).paginate(
+        page=page, 
+        per_page=limit, 
+        error_out=False
     )
-
-    total_pages = ceil(total_users / limit) if total_users else 1
 
     def serialize_user(user):
         return {
             "email": user.email,
             "firstName": user.first_name,
             "lastName": user.last_name,
-            "role": user.role.value,
+            "role": user.role.value, # The user-friendly Turkish name
             "createdAt": user.created_at.strftime("%d %B %Y").replace("January", "Ocak").replace("February", "Şubat").replace("March", "Mart").replace("April", "Nisan").replace("May", "Mayıs").replace("June", "Haziran").replace("July", "Temmuz").replace("August", "Ağustos").replace("September", "Eylül").replace("October", "Ekim").replace("November", "Kasım").replace("December", "Aralık"),
             "lastLogin": user.last_login.strftime("%d %B %Y").replace("January", "Ocak").replace("February", "Şubat").replace("March", "Mart").replace("April", "Nisan").replace("May", "Mayıs").replace("June", "Haziran").replace("July", "Temmuz").replace("August", "Ağustos").replace("September", "Eylül").replace("October", "Ekim").replace("November", "Kasım").replace("December", "Aralık") if user.last_login else "Henüz giriş yapılmadı",
         }
 
     return jsonify({
-        "users": [serialize_user(u) for u in users],
-        "totalPages": total_pages,
+        "users": [serialize_user(u) for u in paginated_users.items],
+        "totalPages": paginated_users.pages,
+        "currentPage": paginated_users.page, # Optional: good to return
+        "totalUsers": paginated_users.total # Optional: good to return
     })

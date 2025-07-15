@@ -28,7 +28,7 @@ export default function LoginPage() {
       });
       if (res.ok) {
             const data = await res.json();
-            router.push('/main-page'); // Redirect to main page after successful login
+            router.push('/AdminDashboard'); // Redirect to main page after successful login
         
       } else {
         const data = await res.json();

@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 
 from models import db, bcrypt, mail # SQLALchemy and Bcrypt instances
 from endpoints.user import user_bp # blueprint for user-related endpoints''
+from endpoints.customers import customer_bp # blueprint for customer-related endpoints
+from endpoints.products import product_bp # blueprint for product-related endpoints
+from endpoints.returns import return_case_bp # blueprint for return case-related endpoints
 
 load_dotenv()
 
@@ -55,6 +58,9 @@ def create_app():
 
     # Register blueprints
     app.register_blueprint(user_bp)
+    app.register_blueprint(customer_bp)
+    app.register_blueprint(product_bp)  
+    app.register_blueprint(return_case_bp)  
 
     return app
 

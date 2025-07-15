@@ -3,30 +3,29 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Search, ListFilter, Pencil, Trash2 } from 'lucide-react';
-import { User, UserRole } from '@/lib/types';
+import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import RequireRole from '../components/RequireRole';
 import AddUserModal from '../components/adminDashboard/AddUserModal';
 import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationModel';
-import { useAuth } from '../context/AuthContext';
 
 const getRoleClass = (role: string) => {
   switch (role) {
-    case 'admin': return 'bg-purple-100 text-purple-800';
-    case 'manager': return 'bg-blue-100 text-blue-800';
-    case 'user': return 'bg-gray-100 text-gray-800';
+    case 'Yönetici': return 'bg-purple-100 text-purple-800';
+    case 'Yönetici Yardımcısı': return 'bg-blue-100 text-blue-800';
+    case 'Kullanıcı': return 'bg-gray-100 text-gray-800';
     default: return 'bg-gray-100 text-gray-800';
   }
 };
 
 export default function AdminDashboard() {
-  // State for authentication
-  // const { user, loading } = useAuth();
+  // State to track if the user is authorized
+  // const  [isAuthorized, setIsAuthorized] = useState(false);
 
   // Name and surname from localStorage
-  const [user, setUser] = useState<string | ''>('');
+  const [userName, setUserName] = useState<string | ''>('');
 
   // Using useSearchParams to handle pagination
   const searchParams = useSearchParams();
@@ -42,7 +41,12 @@ export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
+  // Loading state for the users
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Get the current user from context
   const fetchUsers = async () => {
+    setIsLoading(true);
     const params = new URLSearchParams({
       page: String(currentPage),
       limit: '5',
@@ -61,34 +65,46 @@ export default function AdminDashboard() {
       const data = await res.json();
       setUsers(data.users);
       setTotalPages(data.totalPages);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
     }
   };
 
+  // Fetch user name and surname from localStorage on initial render
   useEffect(() => {
     const name = localStorage.getItem('name') || '';
     const surname = localStorage.getItem('surname') || '';
-    setUser(`${name} ${surname}`);
+    setUserName(`${name} ${surname}`);
   }, []);
 
+
+  // Fetch users when the component mounts or when dependencies change
   useEffect(() => {
-    fetchUsers();
+    // Check if the user is authorized before fetching users
+    // if (isAuthorized) {
+      fetchUsers();
+    // }
   }, [currentPage, search, role]);
 
-
+  // Handler for when a new user is added
   const handleUserAdded = () => {
     setIsModalOpen(false);
     fetchUsers(); 
   }
+  // Handler for when a user deletion is successful
   const handleDeletionSuccess = () => {
     setUserToDelete(null); 
     fetchUsers();  
   };
 
   return (
-    <RequireRole role="admin">
+    // Display the admin dashboard only if the user is authorized
+    // <RequireRole 
+    //   role="Yönetici"
+    //   onAuthorized={(authorized) => setIsAuthorized(authorized)}
+    // >
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => alert('Logging out...')} />
       
@@ -112,13 +128,18 @@ export default function AdminDashboard() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px- sm:px-5 lg:px-6 mt-10">
           
           {/* Left Side: Greeting and Description */}
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-5">
             <h1 className="text-3xl font-bold text-gray-900">
-              Merhaba, {user}
+                Merhaba {userName},
             </h1>
-            <p className="text-md text-gray-500 md:w-[700px]">
-              Bu panel üzerinden tüm kullanıcıları görüntüleyebilir, isim, e-posta veya role göre filtreleme yapabilir, yeni kullanıcılar ekleyebilir ya da mevcut kullanıcıları düzenleyip silebilirsiniz.
-            </p>
+            <div className="flex-1 space-y-3">
+              <h1 className="text-xl font-bold text-gray-900">
+                Yönetici Sayfasına Hoşgeldin
+              </h1>
+              <p className="text-md text-gray-500 md:w-[700px]">
+                Bu panel üzerinden tüm kullanıcıları görüntüleyebilir, isim, e-posta veya role göre filtreleme yapabilir, yeni kullanıcılar ekleyebilir ya da mevcut kullanıcıları düzenleyip silebilirsiniz.
+              </p>
+            </div>
           </div>
           
           {/* Right Side: Action Button */}
@@ -136,9 +157,11 @@ export default function AdminDashboard() {
 
         <div className="mt-8 bg-white p-6 rounded-lg shadow-sm">
           <div className="flex flex-col md:flex-row justify-between mb-6 gap-6">
-            <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold text-gray-800">{(search || role) ? `Sonuç: ${users.length}` : 'Tüm Kullanıcılar'}</h2>
-            <div className="text-red-600"> {(search || role) ? 'Tüm kullanıcılar için filtreleri temizleyin.' : ''} </div>
+            <div className="flex-col items-center gap-4">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {(search || role) ? `Arama Sonuçları` : 'Tüm Kullanıcılar'}
+              </h2>
+              <div className="text-red-600"> {(search || role) ? 'Tüm kullanıcılar için filtreleri temizleyin.' : ''} </div>
             </div>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative w-full md:w-64">
@@ -169,9 +192,9 @@ export default function AdminDashboard() {
                     className="appearance-none bg-transparent w-full text-sm text-gray-700 focus:outline-none"
                   >
                     <option value="">Filter by Role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Manager">Manager</option>
-                    <option value="User">User</option>
+                    <option value="Yönetici">Yönetici</option>
+                    <option value="Yönetici Yardımcısı">Yönetici Yardımcısı</option>
+                    <option value="Kullanıcı">Kullanıcı</option>
                   </select>
                 </label>
               </div>
@@ -212,7 +235,16 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user, idx) => (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-gray-500">Yükleniyor...</td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-4 text-center text-gray-500">Kullanıcı bulunamadı.</td>
+                  </tr>
+                ) :
+                users.map((user, idx) => (
                   <tr key={user.email} className="hover:bg-gray-50">
                     <td className="p-4">
                       {/* <input type="checkbox" className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" /> */}
@@ -253,6 +285,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
-    </RequireRole>
+    // </RequireRole>
   );
 }
