@@ -1,8 +1,0 @@
-Flask-SQLAlchemy 
-psycopg2-binary 
-Flask-Migrate
-flask_bcrypt
-flask-jwt-extended
-flask-cors
-flask-mail
-
