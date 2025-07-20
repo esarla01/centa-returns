@@ -2,26 +2,72 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_bcrypt import Bcrypt 
 from datetime import datetime
-from enum import Enum
+from enum import Enum, auto
 
 db = SQLAlchemy()
 mail = Mail()
 bcrypt = Bcrypt()
 
 class UserRole(Enum):
-    admin = 'Yönetici'
-    manager = 'Yönetici Yardımcısı'
-    user = 'Kullanıcı'
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    TECHNICIAN = "TECHNICIAN"
+    SUPPORT = "SUPPORT"
+    SALES = "SALES"
+    LOGISTICS = "LOGISTICS"
+
+class AppPermissions(Enum):
+    PAGE_VIEW_ADMIN = auto()
+    PAGE_VIEW_CUSTOMER_LIST = auto()
+    PAGE_VIEW_PRODUCT_LIST = auto()
+    PAGE_VIEW_CASE_TRACKING = auto()
+    PAGE_VIEW_STATISTICS = auto()
+    # CASE_CREATE = auto()
+    # CASE_EDIT_INITIAL_INFO = auto()
+    # CASE_TRANSITION_TO_TECHNICAL_REVIEW_REPAIR = auto()
+    # CASE_EDIT_TECHNICAL_REVIEW = auto()
+    # CASE_EDIT_REPAIR_DETAILS = auto()
+    # CASE_TRANSITION_TO_DOCUMENTATION_COST_ENTRY = auto()
+    # CASE_EDIT_COST = auto()
+    # CASE_TRANSITION_TO_COST_REIMBURSEMENT_SHIPPING = auto()
+    # CASE_TRANSITION_TO_COMPLETED = auto()
+    # CASE_EDIT_SHIPPING = auto()
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Enum(UserRole), unique=True, nullable=False)
+
+class Permission(db.Model):
+    __tablename__ = 'permissions'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.Enum(AppPermissions), unique=True, nullable=False)
+
+class RolePermission(db.Model):
+    __tablename__ = 'role_permissions'
+    id = db.Column(db.Integer, primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)
+    permission_id = db.Column(db.Integer, db.ForeignKey('permissions.id'), nullable=False)
 
 class User(db.Model):
     __tablename__ = 'users'
+    # User credentials
     email = db.Column(db.String(254), primary_key=True)
     password_hash = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.Enum(UserRole, name='user_role'), nullable=False)
+
+    # Role information
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)    
+    role = db.relationship('Role')
+
+    # Personal information
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
+
+    # Login information
     last_login = db.Column(db.DateTime(timezone=True))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Password reset information
     reset_token = db.Column(db.String(128), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
 
@@ -30,6 +76,7 @@ class User(db.Model):
 
     def check_password(self, pw):
         return bcrypt.check_password_hash(self.password_hash, pw)
+
 
 class Customers(db.Model):
     __tablename__ = 'customers'

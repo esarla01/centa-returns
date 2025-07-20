@@ -1,31 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Search, ListFilter, Pencil, Trash2 } from 'lucide-react';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
-import RequireRole from '../components/RequireRole';
+import { RequirePermission } from '../components/RequirePermission';
 import AddUserModal from '../components/adminDashboard/AddUserModal';
 import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationModel';
+import { useAuth } from '../contexts/AuthContext';
 
 const getRoleClass = (role: string) => {
   switch (role) {
-    case 'Yönetici': return 'bg-purple-100 text-purple-800';
-    case 'Yönetici Yardımcısı': return 'bg-blue-100 text-blue-800';
-    case 'Kullanıcı': return 'bg-gray-100 text-gray-800';
+    case 'ADMIN': return 'bg-purple-100 text-purple-800';
+    case 'MANAGER': return 'bg-blue-100 text-blue-800';
+    case 'TECHNICIAN': return 'bg-green-100 text-green-800';
+    case 'SUPPORT': return 'bg-yellow-100 text-yellow-800';
+    case 'SALES': return 'bg-indigo-100 text-indigo-800';
+    case 'LOGISTICS': return 'bg-gray-100 text-gray-800';
     default: return 'bg-gray-100 text-gray-800';
   }
 };
 
-export default function AdminDashboard() {
-  // State to track if the user is authorized
-  // const  [isAuthorized, setIsAuthorized] = useState(false);
+const getTurkishRoleName = (role: string) => {
+  switch (role) {
+    case 'ADMIN': return 'Yönetici';
+    case 'MANAGER': return 'Yönetici Yardımcısı';
+    case 'TECHNICIAN': return 'Teknisyen';
+    case 'SUPPORT': return 'Destek';
+    case 'SALES': return 'Satış';
+    case 'LOGISTICS': return 'Lojistik';
+    default: return role;
+  }
+};
 
-  // Name and surname from localStorage
-  const [userName, setUserName] = useState<string | ''>('');
+
+export default function AdminDashboard() {
+  // Loading state for the user
+  const { loading } = useAuth();
 
   // Using useSearchParams to handle pagination
   const searchParams = useSearchParams();
@@ -38,6 +52,7 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
 
+  // State for modal open and user to delete
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
@@ -45,7 +60,9 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Get the current user from context
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
+    // console.log('Fetching users...');
+    // console.log('Role:', role);
     setIsLoading(true);
     const params = new URLSearchParams({
       page: String(currentPage),
@@ -70,23 +87,15 @@ export default function AdminDashboard() {
       console.error('Error fetching users:', error);
       setUsers([]);
     }
-  };
-
-  // Fetch user name and surname from localStorage on initial render
-  useEffect(() => {
-    const name = localStorage.getItem('name') || '';
-    const surname = localStorage.getItem('surname') || '';
-    setUserName(`${name} ${surname}`);
-  }, []);
-
+  }, [currentPage, search, role]);
 
   // Fetch users when the component mounts or when dependencies change
   useEffect(() => {
-    // Check if the user is authorized before fetching users
-    // if (isAuthorized) {
+    if (!loading) {
+      // Check if the user is authorized before fetching users
       fetchUsers();
-    // }
-  }, [currentPage, search, role]);
+    }
+  }, [currentPage, search, role, loading]);
 
   // Handler for when a new user is added
   const handleUserAdded = () => {
@@ -100,11 +109,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    // Display the admin dashboard only if the user is authorized
-    // <RequireRole 
-    //   role="Yönetici"
-    //   onAuthorized={(authorized) => setIsAuthorized(authorized)}
-    // >
+    <RequirePermission permission="PAGE_VIEW_ADMIN" >
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => alert('Logging out...')} />
       
@@ -189,9 +194,12 @@ export default function AdminDashboard() {
                     className="appearance-none bg-transparent w-full text-sm text-gray-700 focus:outline-none"
                   >
                     <option value="">Filter by Role</option>
-                    <option value="Yönetici">Yönetici</option>
-                    <option value="Yönetici Yardımcısı">Yönetici Yardımcısı</option>
-                    <option value="Kullanıcı">Kullanıcı</option>
+                    <option value="ADMIN">Yönetici</option>
+                    <option value="MANAGER">Yönetici Yardımcısı</option>
+                    <option value="TECHNICIAN">Teknisyen</option>
+                    <option value="SUPPORT">Destek</option>
+                    <option value="SALES">Satış</option>
+                    <option value="LOGISTICS">Lojistik</option>
                   </select>
                 </label>
               </div>
@@ -227,7 +235,6 @@ export default function AdminDashboard() {
                   <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROL</th>
                   <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EKLENME</th>
                   <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Son GİRİŞLER</th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İZİNLER</th>
                   <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EYLEMLER</th>
                 </tr>
               </thead>
@@ -257,12 +264,11 @@ export default function AdminDashboard() {
                     </td>
                     <td className="p-4 whitespace-nowrap">
                       <span className={cn('px-2 inline-flex text-xs leading-5 font-semibold rounded-full', getRoleClass(user.role))}>
-                        {user.role}
+                        {getTurkishRoleName(user.role)}
                       </span>
                     </td>              
                     <td className="p-4 whitespace-nowrap text-sm text-gray-500">{user.createdAt}</td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin ?? 'Never'}</td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500"> TO DO </td>
+                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin ?? 'Henüz giriş yapılmadı'}</td>
                     <td className="p-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-3">
                         {/* <button className="text-primary-light hover:text-primary" title="Edit User"><Pencil className="h-5 w-5" /></button> */}
@@ -282,6 +288,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
-    // </RequireRole>
+    </RequirePermission>
   );
 }

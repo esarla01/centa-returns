@@ -68,18 +68,13 @@ export interface Customer {
   created_at: string; 
 }
 
-export type UserRole = 'Yönetici' | 'Yönetici Yardımcısı' | 'Kullanıcı';
-
 export interface User {
   email: string; 
   firstName: string;
   lastName:string;
-  role: UserRole;
-  status: 'Active' | 'Inactive'; 
+  role: string;
   lastLogin: string | null; 
   createdAt: string;
-  avatarUrl?: string; 
-  initials: string; 
 };
 
 

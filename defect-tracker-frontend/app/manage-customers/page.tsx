@@ -9,9 +9,14 @@ import Pagination from '@/app/components/Pagination';
 import AddCustomerModal from '../components/customers/AddCustomerModal';
 import DeleteCustomerModal from '../components/customers/DeleteCustomerModal';
 import EditCustomerModal from '../components/customers/EditCustomerModal';
+import { RequirePermission } from '../components/RequirePermission';
+import { useAuth } from '../contexts/AuthContext';
 
 
 export default function CustomersPage() {
+  // Loading state for the user
+  const { loading } = useAuth();
+
   // Name and surname from localStorage for the greeting
   const [userName, setUserName] = useState<string>('');
 
@@ -59,17 +64,12 @@ export default function CustomersPage() {
     }
   };
 
-  // Fetch user name from localStorage on initial render
-  useEffect(() => {
-    const name = localStorage.getItem('name') || '';
-    const surname = localStorage.getItem('surname') || '';
-    setUserName(`${name} ${surname}`);
-  }, []);
-
   // Fetch customers when page, or search term changes
   useEffect(() => {
-    fetchCustomers();
-  }, [currentPage, search]);
+    if (!loading) {
+      fetchCustomers();
+    }
+  }, [currentPage, search, loading]);
 
   // Handlers for modal actions
   const handleCustomerAdded = () => {
@@ -88,6 +88,7 @@ export default function CustomersPage() {
   }
 
   return (
+    <RequirePermission permission="PAGE_VIEW_CUSTOMER_LIST" >
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => alert('Logging out...')} />
 
@@ -236,5 +237,6 @@ export default function CustomersPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

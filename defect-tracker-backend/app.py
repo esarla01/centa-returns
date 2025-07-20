@@ -1,16 +1,29 @@
-import datetime
 import os
-from flask import Flask
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
-from flask_cors import CORS
-from dotenv import load_dotenv
+import datetime
 
-from models import db, bcrypt, mail # SQLALchemy and Bcrypt instances
-from endpoints.user import user_bp # blueprint for user-related endpoints''
-from endpoints.customers import customer_bp # blueprint for customer-related endpoints
-from endpoints.products import product_bp # blueprint for product-related endpoints
-from endpoints.returns import return_case_bp # blueprint for return case-related endpoints
+from flask import Flask, g
+from flask_cors import CORS
+# from flask_migrate import Migrate
+
+from dotenv import load_dotenv  # Load environment variables from .env file
+
+from flask_jwt_extended import (
+    JWTManager,
+    verify_jwt_in_request,
+    get_jwt_identity
+)
+
+from models import User, db, bcrypt, mail  # SQLAlchemy and Bcrypt instances
+
+# Blueprints
+from endpoints.user import user_bp  # User-related endpoints
+from endpoints.customers import customer_bp  # Customer-related endpoints
+from endpoints.products import product_bp  # Product-related endpoints
+from endpoints.returns import return_case_bp  # Return case-related endpoints
+
+from sqlalchemy.orm import joinedload # Load user with role
+
+from seed_roles_permissions import seed_all
 
 load_dotenv()
 
@@ -45,16 +58,29 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
-    Migrate(app, db)
+    # Migrate(app, db)
     JWTManager(app)  
     mail.init_app(app)        
 
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
 
-    @app.after_request
-    def after_request(response):
-        print(response.headers)
-        return response
+    @app.before_request
+    def load_user():
+        try:
+            verify_jwt_in_request()
+            user_id = get_jwt_identity()
+            user = User.query.options(joinedload(User.role)).get(user_id)  
+            if user:
+                g.user = user
+        except Exception:
+            g.user = None
+    
+    # Create all tables
+    # with app.app_context():
+    #     db.drop_all()
+    #     db.create_all()
+    #     seed_all()
+
 
     # Register blueprints
     app.register_blueprint(user_bp)

@@ -1,12 +1,14 @@
 import datetime
 from math import ceil
+from types import NoneType
 from sqlalchemy import or_
 import secrets
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, set_access_cookies ,get_jwt_identity, jwt_required, get_jwt
 from flask_mail import Message
-from models import User, UserRole, db, mail
+from models import AppPermissions, Permission, Role, RolePermission, User, UserRole, db, mail
 import re
+from permissions import permission_required
 
 URL_BASE = 'http://localhost:5000'
 
@@ -16,16 +18,8 @@ EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
 
 @user_bp.route('/register', methods=['POST'])
-# @jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def register():
-    # claims = get_jwt()
-
-    # # Check if the user is an admin, as only admins can register users
-    # is_admin = claims.get('role') == UserRole.admin.value
-
-    # if not is_admin:
-    #     return jsonify({"msg": "Only admins can register users"}), 403
-
     data = request.get_json()
 
     if not data:
@@ -46,8 +40,15 @@ def register():
         return jsonify({"msg": "Invalid email format"}), 400
 
     # Validate role
-    if role not in [r.value for r in UserRole]:
+    try:
+        role_enum = UserRole(role)
+    except ValueError:
         return jsonify({"msg": "Invalid role"}), 400
+
+    # Look up the Role object
+    role_obj = Role.query.filter_by(name=role_enum).first()
+    if not role_obj:
+        return jsonify({"msg": "Role not found in database"}), 400
 
     # Validate password strength
     if not PASSWORD_REGEX.match(password):
@@ -63,7 +64,7 @@ def register():
             email=email,
             first_name=first_name,
             last_name=last_name,
-            role=UserRole(role)
+            role_id=role_obj.id
         )
         user.set_password(password)
         db.session.add(user)
@@ -76,23 +77,12 @@ def register():
         return jsonify({"msg": "An error occurred while registering the user", "error": str(e)}), 500
 
 @user_bp.route('/deregister', methods=['DELETE'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def deregister():
     data = request.get_json()
     if not data:
         return jsonify({"msg": "No data provided"}), 400
     
-    claims = get_jwt()
-
-    # Check if the user is an admin, as only admins can deregister users
-    is_admin = claims.get('role') == UserRole.admin.value
-
-    print(f"Claims: {claims}")
-
-    if not is_admin:
-        return jsonify({"msg": "Only admins can deregister users"}), 403
-    
-    # If the user is an admin, they can deregister other users
     target_email = data.get('email')  
 
     if not target_email:
@@ -120,36 +110,33 @@ def deregister():
 @user_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-
     if not data:
         return jsonify({"msg": "No data provided"}), 400
     
+    # Get email and password from the request body
     email = data.get('email')
     password = data.get('password')
 
     if not email or not password:
         return jsonify({"msg": "Email and password are required"}), 400
     
-    # Query user by email
+    # Query user by email and check if the password is correct
     user = User.query.filter_by(email=email).first()
-
     if not user or not user.check_password(password):
         return jsonify({"msg": "The password or email is incorrect! Please try again."}), 400
 
-    
     try:
         # Update last login time
         user.last_login = datetime.datetime.utcnow()
         db.session.commit()
-        print(user.email, user.first_name, user.last_name, user.role)     
 
-
-
+        # Create access token
         access_token = create_access_token(identity=user.email, additional_claims={
             "name": user.first_name,
             "surname": user.last_name,
-            "role": user.role.value
+            "role": user.role.name.value
         })
+
         # Set the token in the cookie
         response = jsonify({"msg": "Login successful"})
         set_access_cookies(response, access_token)
@@ -264,42 +251,69 @@ def reset_password():
 def whoami():
     """
     This endpoint returns the user's identity and claims extracted from the JWT.
-    The token is expected to be sent via HttpOnly cookie (automatically included by the browser).
+    The token is expected to be sent via HttpOnly cookie (automatically included 
+    by the browser).
     """
-    identity = get_jwt_identity()   # typically the user's email
-    claims = get_jwt()              # custom fields added with `additional_claims`
+    identity = get_jwt_identity() # typically the user's email
+    claims = get_jwt()            # custom fields added with `additional_claims`
 
+    # Get user from database
+    user = User.query.filter_by(email=identity).first()
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+    
+    # Get permission ids from database
+    role_id = user.role_id
+    permission_ids = [
+        pid for (pid,) in
+        RolePermission.query
+            .filter_by(role_id=role_id)
+            .with_entities(RolePermission.permission_id)
+            .all()
+    ]
+    permissions = (
+        Permission.query
+        .filter(Permission.id.in_(permission_ids))
+        .all()
+    )
+
+    # Get permission names from database
+    permission_names = [perm.name.name for perm in permissions] 
+
+    # Return response
     response =  {
         "email": identity,
         "firstName": claims.get("name"),
         "lastName": claims.get("surname"),
-        "role": claims.get("role")
+        "role": claims.get("role"),
+        "permissions": permission_names
     }
-
-    print(f"response: {response}")
-
+    
     return jsonify(response), 200
 
+
+
 @user_bp.route('/retrieve-users', methods=['GET'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def retrieve_users():
     """
     Retrieve a paginated, searchable, and filterable list of users
     using Flask-SQLAlchemy's paginate() function.
     """
-    claims = get_jwt()
 
-    # Check if the user is an admin
-    if claims.get('role') != UserRole.admin.value:
-        return jsonify({"msg": "Only admins can retrieve users"}), 403
-
+    # Get the page, limit, search, and role filter from the request
     page = request.args.get('page', 1, type=int)
     limit = request.args.get('limit', 5, type=int)
     search = request.args.get('search', '', type=str).strip()
-    role_filter = request.args.get('role', '', type=str) # e.g., "Admin", "User"
+    role_filter = request.args.get('role', '', type=str) # e.g., "ADMIN", "MANAGER"
+    
+    print(f"Role filter received: '{role_filter}'")
+    print(f"Available UserRole members: {list(UserRole._member_map_.keys())}")
 
-    query = db.session.query(User)
+    # Get the users and their roles
+    query = db.session.query(User).join(Role)
 
+    # If there is a search term, filter the users by first name, last name, and email
     if search:
         query = query.filter(
             or_(
@@ -309,28 +323,64 @@ def retrieve_users():
             )
         )
 
-    if role_filter and role_filter.lower() in UserRole._member_map_:
-        query = query.filter(User.role == UserRole[role_filter.lower()])
+    # If there is a role filter, filter the users by role
+    if role_filter and role_filter.upper() in UserRole._member_map_:
+        print(f"Filtering by role: {role_filter.upper()}")
+        query = query.filter(Role.name == UserRole[role_filter.upper()])
+    else:
+        print(f"Role filter not applied. role_filter: '{role_filter}', upper: '{role_filter.upper() if role_filter else ''}', in map: {role_filter.upper() in UserRole._member_map_ if role_filter else False}")
     
-    paginated_users = query.order_by(User.role).paginate(
+    # Paginate the users
+    paginated_users = query.order_by(Role.name).paginate(
         page=page, 
         per_page=limit, 
         error_out=False
     )
 
+    # Serialize the users
     def serialize_user(user):
-        return {
-            "email": user.email,
-            "firstName": user.first_name,
-            "lastName": user.last_name,
-            "role": user.role.value, # The user-friendly Turkish name
-            "createdAt": user.created_at.strftime("%d %B %Y").replace("January", "Ocak").replace("February", "Şubat").replace("March", "Mart").replace("April", "Nisan").replace("May", "Mayıs").replace("June", "Haziran").replace("July", "Temmuz").replace("August", "Ağustos").replace("September", "Eylül").replace("October", "Ekim").replace("November", "Kasım").replace("December", "Aralık"),
-            "lastLogin": user.last_login.strftime("%d %B %Y").replace("January", "Ocak").replace("February", "Şubat").replace("March", "Mart").replace("April", "Nisan").replace("May", "Mayıs").replace("June", "Haziran").replace("July", "Temmuz").replace("August", "Ağustos").replace("September", "Eylül").replace("October", "Ekim").replace("November", "Kasım").replace("December", "Aralık") if user.last_login else "Henüz giriş yapılmadı",
-        }
+       return {
+        "email": user.email,
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "role": user.role.name.value,
+        "createdAt": (
+            user.created_at.strftime("%d %B %Y")
+            .replace("January", "Ocak")
+            .replace("February", "Şubat")
+            .replace("March", "Mart")
+            .replace("April", "Nisan")
+            .replace("May", "Mayıs")
+            .replace("June", "Haziran")
+            .replace("July", "Temmuz")
+            .replace("August", "Ağustos")
+            .replace("September", "Eylül")
+            .replace("October", "Ekim")
+            .replace("November", "Kasım")
+            .replace("December", "Aralık")
+        ),
+        "lastLogin": (
+            user.last_login.strftime("%d %B %Y")
+            .replace("January", "Ocak")
+            .replace("February", "Şubat")
+            .replace("March", "Mart")
+            .replace("April", "Nisan")
+            .replace("May", "Mayıs")
+            .replace("June", "Haziran")
+            .replace("July", "Temmuz")
+            .replace("August", "Ağustos")
+            .replace("September", "Eylül")
+            .replace("October", "Ekim")
+            .replace("November", "Kasım")
+            .replace("December", "Aralık")
+            if user.last_login else None
+        ),
+       }
 
+    # Return the serialized users
     return jsonify({
         "users": [serialize_user(u) for u in paginated_users.items],
         "totalPages": paginated_users.pages,
-        "currentPage": paginated_users.page, # Optional: good to return
-        "totalUsers": paginated_users.total # Optional: good to return
+        "currentPage": paginated_users.page,
+        "totalUsers": paginated_users.total
     })

@@ -3,7 +3,8 @@
 
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react'; // Icons for the hamburger menu
-import RequireRole from './RequireRole';
+import { RequirePermission } from './RequirePermission';
+import { useAuth } from '../contexts/AuthContext';
 
 interface HeaderProps {
   onLogout: () => void;
@@ -11,6 +12,9 @@ interface HeaderProps {
 
 export default function Header({ onLogout }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
 
   const currentDate = new Date().toLocaleDateString('tr-TR', {
     weekday: 'short',
@@ -22,11 +26,11 @@ export default function Header({ onLogout }: HeaderProps) {
   
   // Reusable array of nav links to avoid repetition
   const navLinks = [
-    { permission: 'admin', href: '/admin-dashboard', text: 'Yönetici Sayfası' },
-    { permission: 'admin', href: '/manage-customers', text: 'Müşteri Listesi' },
-    { permission: 'admin', href: '/manage-products', text: 'Ürün Listesi' },
-    { permission: 'admin', href: '/manage-returns', text: 'Arıza Takip Paneli' },
-    { permission: 'admin', href: '/statistics', text: 'Raporlar' },
+    { permission: 'PAGE_VIEW_ADMIN', href: '/admin-dashboard', text: 'Yönetici Sayfası' },
+    { permission: 'PAGE_VIEW_CUSTOMER_LIST', href: '/manage-customers', text: 'Müşteri Listesi' },
+    { permission: 'PAGE_VIEW_PRODUCT_LIST', href: '/manage-products', text: 'Ürün Listesi' },
+    { permission: 'PAGE_VIEW_CASE_TRACKING', href: '/manage-returns', text: 'Arıza Takip Paneli' },
+    { permission: 'PAGE_VIEW_STATISTICS', href: '/statistics', text: 'Raporlar' },
   ];
 
   return (
@@ -44,15 +48,15 @@ export default function Header({ onLogout }: HeaderProps) {
           </div>
 
           {/* Center: Desktop Navigation (hidden on mobile) */}
-          <nav className="hidden md:flex items-center md: gap-6">
-            {navLinks.map((link, idx) => (
-                // <RequireRole key={idx} role={link.permission}> 
-                    <a key={idx} href={link.href} className="text-sm font-medium text-gray-600 hover:text-primary">
-                        {link.text}
-                    </a>
-                // </RequireRole>
-            ))}
-          </nav>
+            <nav className="hidden md:flex items-center md: gap-6">
+              {user &&  !['TECHNICIAN', 'SUPPORT'].includes(user.role) && navLinks.map((link, idx) => (
+                  <RequirePermission key={idx} permission={link.permission} component={true}>
+                      <a key={idx} href={link.href} className="text-sm font-medium text-gray-600 hover:text-primary">
+                          {link.text}
+                      </a>
+                  </RequirePermission>
+              ))}
+            </nav>
 
           {/* Right Side: Date, Logout, and Hamburger Menu Icon */}
           <div className="flex items-center gap-4">
@@ -85,14 +89,14 @@ export default function Header({ onLogout }: HeaderProps) {
       {/* Mobile Menu Dropdown Panel */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
-          <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {navLinks.map((link, idx) => (
-                // <RequireRole key={idx} role={link.permission}> 
-                    <a key={idx} href={link.href} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">
-                        {link.text}
-                    </a>
-                // </RequireRole>
-            ))}
+            <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+              {user && !['TECHNICIAN', 'SUPPORT'].includes(user.role) && navLinks.map((link, idx) => (
+                  <RequirePermission key={idx} permission={link.permission} component={true}>
+                      <a key={idx} href={link.href} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">
+                          {link.text}
+                      </a>
+                  </RequirePermission>
+              ))}
           </nav>
           {/* User info and logout button inside the mobile menu */}
           <div className="pt-4 pb-3 border-t border-gray-200">

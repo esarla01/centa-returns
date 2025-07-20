@@ -6,39 +6,55 @@ type User = {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'Admin' | 'Manager' | 'User';
+  role: string;
+  permissions: string[];
 };
 
-const AuthContext = createContext<{ user: User | null, loading: boolean }>({
+type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+  refreshUser: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-    fetch('http://localhost:5000/auth/whoami', 
-    { 
+  const refreshUser = async () => {
+    setLoading(true);
+    try {
+      // Get user from backend
+      const response = await fetch('http://localhost:5000/auth/whoami', {
         method: 'GET',
-        credentials: 'include' 
-    })
-        .then(async res => {
-            if (res.ok) {
-                const data = await res.json();
-                console.log('Fetch result:', data); 
-                localStorage.setItem('name', data.firstName || '');
-                localStorage.setItem('surname', data.lastName || '');
-                setUser(data);
-            } else {
-                console.log('Fetch error:', res.status, res.statusText); // Log error status
-            }
-        })
-        .finally(() => setLoading(false));
-}, []);
+        credentials: 'include',
+      });
+
+      // Set user if response is ok
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+      } else {
+        console.log('Fetch error:', response.status, response.statusText);
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    refreshUser();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,6 +9,8 @@ import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import AddProductModal from '../components/products/AddProductModal';
 import DeleteProductModal from '../components/products/DeleteProductModal';
+import { RequirePermission } from '../components/RequirePermission';
+import { useAuth } from '../contexts/AuthContext';
 
 // Helper to get a color style based on product type
 const getTypeClass = (type: ProductType) => {
@@ -21,6 +23,9 @@ const getTypeClass = (type: ProductType) => {
 };
 
 export default function ProductsPage() {
+  // Loading state for the user
+  const { loading } = useAuth();
+
   // Name and surname from localStorage for the greeting
   const [userName, setUserName] = useState<string>('');
 
@@ -65,15 +70,10 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    const name = localStorage.getItem('name') || '';
-    const surname = localStorage.getItem('surname') || '';
-    setUserName(`${name} ${surname}`);
-  }, []);
-  
-
-  useEffect(() => {
-    fetchProducts();
-  }, [currentPage, search, typeFilter]);
+    if (!loading) {
+      fetchProducts();
+    }
+  }, [currentPage, search, typeFilter, loading]);
 
   const handleSuccess = () => {
     setIsAddModalOpen(false);
@@ -87,6 +87,7 @@ export default function ProductsPage() {
   }
 
   return (
+    <RequirePermission permission="PAGE_VIEW_PRODUCT_LIST" >
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => {}} />
 
@@ -185,5 +186,6 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

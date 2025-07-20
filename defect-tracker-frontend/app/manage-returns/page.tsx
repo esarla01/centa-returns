@@ -11,6 +11,8 @@ import CasesTable from '../components/returns/CasesTable';
 import AddReturnCaseModal from '../components/returns/AddReturnCaseModal';
 import EditReturnCaseModal from '../components/returns/EditReturnCaseModal';
 import DeleteReturnCaseModal from '../components/returns/DeleteReturnCaseModal';
+import { RequirePermission } from '../components/RequirePermission';
+import { useAuth } from '../contexts/AuthContext';
 
 const initialFilters: Filters = {
   search: '',
@@ -23,6 +25,9 @@ const initialFilters: Filters = {
 };
 
 export default function ReturnsDashboardPage() {
+  // Loading state for the user
+  const { loading } = useAuth();
+
   // Pagination
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
@@ -88,12 +93,16 @@ export default function ReturnsDashboardPage() {
   };
 
   useEffect(() => {
-    fetchAuxData();
-  }, []);
+    if (!loading) {
+      fetchAuxData();
+    }
+  }, [loading]);
 
   useEffect(() => {
-    fetchData();
-  }, [filters, currentPage]);
+    if (!loading) {
+      fetchData();
+    }
+  }, [filters, currentPage, loading]);
 
   const handleSuccess = () => {
     setIsAddModalOpen(false);
@@ -103,6 +112,7 @@ export default function ReturnsDashboardPage() {
   };
 
   return (
+    <RequirePermission permission="PAGE_VIEW_CASE_TRACKING" >
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => {}} />
 
@@ -190,5 +200,6 @@ export default function ReturnsDashboardPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }
