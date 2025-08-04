@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react'; // Icons for the hamburger menu
-import { RequirePermission } from './RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   onLogout: () => void;
@@ -12,9 +12,50 @@ interface HeaderProps {
 
 export default function Header({ onLogout }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
+  const router = useRouter();
 
-  if (loading) return null;
+  const handleLogout = async () => {
+    try {
+      // Call the logout function from AuthContext
+      await logout();
+      
+      // Call the onLogout prop if provided
+      if (onLogout) {
+        onLogout();
+      }
+      
+      // Redirect to login page
+      router.push('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still redirect to login page even if logout fails
+      router.push('/login');
+    }
+  };
+
+  // Show loading state while user data is being fetched
+  if (loading) {
+    return (
+      <header className="w-full bg-white shadow-sm text-black border-b border-gray-200 relative">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex-shrink-0 flex items-center gap-4">
+              <img src="/logo.png" alt="Centa Logo" className="h-10 w-auto" />
+              <h1 className="hidden lg:block text-xl font-semibold text-gray-800">
+                Arıza Takip Sistemi
+              </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4 text-sm">
+                <span className="text-gray-500">Yükleniyor...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   const currentDate = new Date().toLocaleDateString('tr-TR', {
     weekday: 'short',
@@ -33,6 +74,13 @@ export default function Header({ onLogout }: HeaderProps) {
     { permission: 'PAGE_VIEW_STATISTICS', href: '/statistics', text: 'Raporlar' },
   ];
 
+  // Filter nav links based on user permissions
+  const filteredNavLinks = navLinks.filter(link => {
+    if (!user) return false;
+    if (['TECHNICIAN', 'SUPPORT'].includes(user.role)) return false;
+    return user.permissions.includes(link.permission);
+  });
+
   return (
     <header className="w-full bg-white shadow-sm text-black border-b border-gray-200 relative">
 
@@ -48,22 +96,24 @@ export default function Header({ onLogout }: HeaderProps) {
           </div>
 
           {/* Center: Desktop Navigation (hidden on mobile) */}
-            <nav className="hidden md:flex items-center md: gap-6">
-              {user &&  !['TECHNICIAN', 'SUPPORT'].includes(user.role) && navLinks.map((link, idx) => (
-                  <RequirePermission key={idx} permission={link.permission} component={true}>
-                      <a key={idx} href={link.href} className="text-sm font-medium text-gray-600 hover:text-primary">
-                          {link.text}
-                      </a>
-                  </RequirePermission>
-              ))}
-            </nav>
+          <nav className="hidden md:flex items-center gap-6">
+            {filteredNavLinks.map((link, idx) => (
+              <a 
+                key={idx} 
+                href={link.href} 
+                className="text-sm font-medium text-gray-600 hover:text-primary"
+              >
+                {link.text}
+              </a>
+            ))}
+          </nav>
 
           {/* Right Side: Date, Logout, and Hamburger Menu Icon */}
           <div className="flex items-center gap-4">
             {/* Date and Logout button (hidden on mobile) */}
             <div className="hidden md:flex items-center gap-4 text-sm">
               <span className="text-gray-500">{currentDate}</span>
-              <button onClick={onLogout} className="text-red-600 hover:underline font-medium">
+              <button onClick={handleLogout} className="text-red-600 hover:underline font-medium">
                 Çıkış Yap
               </button>
             </div>
@@ -89,20 +139,22 @@ export default function Header({ onLogout }: HeaderProps) {
       {/* Mobile Menu Dropdown Panel */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
-            <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              {user && !['TECHNICIAN', 'SUPPORT'].includes(user.role) && navLinks.map((link, idx) => (
-                  <RequirePermission key={idx} permission={link.permission} component={true}>
-                      <a key={idx} href={link.href} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50">
-                          {link.text}
-                      </a>
-                  </RequirePermission>
-              ))}
+          <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            {filteredNavLinks.map((link, idx) => (
+              <a 
+                key={idx} 
+                href={link.href} 
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
+              >
+                {link.text}
+              </a>
+            ))}
           </nav>
           {/* User info and logout button inside the mobile menu */}
           <div className="pt-4 pb-3 border-t border-gray-200">
              <div className="flex flex-col items-start px-4 space-y-3">
                <span className="text-sm text-gray-500">{currentDate}</span>
-                <button onClick={onLogout} className="text-base font-medium text-red-600 hover:underline">
+                <button onClick={handleLogout} className="text-base font-medium text-red-600 hover:underline">
                   Çıkış Yap
                 </button>
              </div>

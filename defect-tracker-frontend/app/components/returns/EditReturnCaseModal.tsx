@@ -2,99 +2,275 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { X } from 'lucide-react';
-import { FullReturnCase, ReturnCase, User, Customer, ProductModel } from '@/lib/types';
-// This modal is too complex for a simple prop; it will fetch its own data.
+import { FullReturnCase, User, Customer, ProductModel } from '@/lib/types';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { tr } from 'date-fns/locale';
 
 interface EditReturnCaseModalProps {
-  returnCaseSummary: ReturnCase; // Use summary to show a placeholder while loading
+  returnCase: FullReturnCase;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function EditReturnCaseModal({ returnCaseSummary, onClose, onSuccess }: EditReturnCaseModalProps) {
-  const [fullCase, setFullCase] = useState<FullReturnCase | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: EditReturnCaseModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  // You would also need to fetch users, customers, products for dropdowns
-  // For this example, we'll assume they are available or fetched.
-  
+  // Form data state
+  const [formData, setFormData] = useState({
+    status: returnCase.status,
+    assignedUserId: returnCase.assigned_user?.id || '',
+    notes: returnCase.notes || '',
+    performedServices: returnCase.performed_services || '',
+    cost: returnCase.cost?.toString() || '',
+    shippingInfo: returnCase.shipping_info || '',
+    paymentStatus: returnCase.payment_status || '',
+    arrivalDate: new Date(returnCase.arrival_date),
+    receiptMethod: returnCase.receipt_method,
+  });
+
+  // Dropdown data states
+  const [users, setUsers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<ProductModel[]>([]);
+
+  // Fetch dropdown data
   useEffect(() => {
-    const fetchFullCaseData = async () => {
-      setIsLoading(true);
+    const fetchDropdownData = async () => {
       try {
-        // ASSUMPTION: You have an endpoint to get a single case's full details
-        const res = await fetch(`http://localhost:5000/api/return-cases/${returnCaseSummary.id}`, { credentials: 'include' });
-        if (!res.ok) throw new Error('Failed to load case details.');
-        const data: FullReturnCase = await res.json();
-        setFullCase(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
+        const [usersRes, customersRes, productsRes] = await Promise.all([
+          fetch('http://localhost:5000/admin/', { credentials: 'include' }),
+          fetch('http://localhost:5000/customers?limit=1000', { credentials: 'include' }),
+          fetch('http://localhost:5000/products?limit=1000', { credentials: 'include' })
+        ]);
+
+        const usersData = await usersRes.json();
+        const customersData = await customersRes.json();
+        const productsData = await productsRes.json();
+
+        setUsers(usersData.users || []);
+        setCustomers(customersData.customers || []);
+        setProducts(productsData.products || []);
+      } catch (err) {
+        setError("Dropdown verileri yüklenemedi.");
       }
     };
-    fetchFullCaseData();
-  }, [returnCaseSummary.id]);
+
+    fetchDropdownData();
+  }, []);
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!fullCase) return;
-    
-    // Logic to prepare the updated data and send a PUT request
-    // This would be very similar to the Add modal's logic but starting from existing data
-    console.log("Submitting updated case:", fullCase);
-    
-    // ... PUT request logic here ...
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
 
-    // onSuccess();
+    try {
+      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: formData.status,
+          assignedUserId: formData.assignedUserId || null,
+          notes: formData.notes,
+          performedServices: formData.performedServices,
+          cost: formData.cost ? parseFloat(formData.cost) : null,
+          shippingInfo: formData.shippingInfo,
+          paymentStatus: formData.paymentStatus,
+          arrivalDate: formData.arrivalDate.toISOString().split('T')[0],
+          receiptMethod: formData.receiptMethod,
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Sunucu hatası');
+      }
+
+      setSuccess('Vaka başarıyla güncellendi!');
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (isLoading) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-             <div className="absolute inset-0 bg-gray-900 opacity-50"></div>
-             <div className="text-white text-lg">Vaka Detayları Yükleniyor...</div>
-        </div>
-    )
-  }
-
-  if (error || !fullCase) {
-     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-             <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
-             <div className="bg-white p-8 rounded-lg shadow-xl text-center">
-                <h3 className="text-xl text-red-600">Hata</h3>
-                <p className="my-4">{error || "Vaka detayları yüklenemedi."}</p>
-                <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md">Kapat</button>
-             </div>
-        </div>
-    )
-  }
-
-  // The full form would be here, pre-filled with `fullCase` data.
-  // It would manage its own state for changes, e.g., `const [status, setStatus] = useState(fullCase.status);`
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
-      <div className="relative w-full max-w-4xl h-[90vh] p-8 bg-white rounded-lg shadow-xl overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Vakayı Düzenle: #{fullCase.id}</h2>
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={24} /></button>
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 
-              This form would contain all the fields: Status, Assigned User, Fault Source,
-              and a dynamic list for editing the items, similar to the Add Modal.
-              Each field would be pre-populated from the `fullCase` state.
-            */}
-            <p className="text-center text-gray-500 my-10">
-                (Burada vaka düzenleme formu yer alacak. Vakanın mevcut durumu, atanan kişi, ürünleri vb. düzenlenebilir olacak.)
-            </p>
+      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="p-6 border-b flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-800">Vaka Düzenle: #{returnCase.id}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t">
-                <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">İptal</button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Değişiklikleri Kaydet</button>
+        <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto p-6 space-y-6">
+          {error && (
+            <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md border border-red-300">
+              {error}
             </div>
+          )}
+
+          {success && (
+            <div className="p-4 text-sm text-green-700 bg-green-100 rounded-md border border-green-300">
+              {success}
+            </div>
+          )}
+
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Durum</label>
+              <select
+                value={formData.status}
+                onChange={(e) => handleInputChange('status', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="Teknik İnceleme">Teknik İnceleme</option>
+                <option value="Dokümantasyon">Dokümantasyon</option>
+                <option value="Kargoya Verildi">Kargoya Verildi</option>
+                <option value="Tamamlandı">Tamamlandı</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Atanan Kullanıcı</label>
+              <select
+                value={formData.assignedUserId}
+                onChange={(e) => handleInputChange('assignedUserId', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">Atanan Yok</option>
+                {users.map(user => (
+                  <option key={user.email} value={user.email}>
+                    {user.firstName} {user.lastName} ({user.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Geliş Tarihi</label>
+              <DatePicker
+                selected={formData.arrivalDate}
+                onChange={(date) => handleInputChange('arrivalDate', date)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+                locale={tr}
+                dateFormat="dd.MM.yyyy"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Teslim Yöntemi</label>
+              <select
+                value={formData.receiptMethod}
+                onChange={(e) => handleInputChange('receiptMethod', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="shipment">Kargo</option>
+                <option value="in_person">Elden Teslim</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Cost and Payment */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tutar (₺)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cost}
+                onChange={(e) => handleInputChange('cost', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ödeme Durumu</label>
+              <select
+                value={formData.paymentStatus}
+                onChange={(e) => handleInputChange('paymentStatus', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">Seçiniz</option>
+                <option value="paid">Ödendi</option>
+                <option value="unpaid">Ödenmedi</option>
+                <option value="waived">Ücretsiz</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Services and Shipping */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Yapılan Servisler</label>
+              <textarea
+                value={formData.performedServices}
+                onChange={(e) => handleInputChange('performedServices', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+                rows={3}
+                placeholder="Yapılan servisleri buraya yazın..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Kargo Bilgisi</label>
+              <input
+                type="text"
+                value={formData.shippingInfo}
+                onChange={(e) => handleInputChange('shippingInfo', e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+                placeholder="Kargo takip numarası veya bilgisi..."
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notlar</label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => handleInputChange('notes', e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-blue-200"
+              rows={4}
+              placeholder="Ek notlarınızı buraya yazın..."
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4 pt-6 border-t">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              İptal
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Güncelleniyor...' : 'Güncelle'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

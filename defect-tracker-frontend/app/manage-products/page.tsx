@@ -131,7 +131,6 @@ export default function ProductsPage() {
                 <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                 <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="pl-10 pr-4 appearance-none w-full border border-gray-300 rounded-md py-2 px-3 bg-white focus:outline-none focus:ring-2">
                   <option value="">Tipe Göre Filtrele</option>
-                  <option value="overload">Tüm Ürünler</option>
                   <option value="door_detector">Kapı Dedektörü</option>
                   <option value="overload">Aşırı Yük Sensörü</option>
                   <option value="control_unit">Kontrol Ünitesi</option>

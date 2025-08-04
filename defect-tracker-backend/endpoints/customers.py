@@ -4,7 +4,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required 
 from sqlalchemy import or_
 
-from models import db, Customers
+from models import db, Customers, AppPermissions
+from permissions import permission_required
 
 
 URL_BASE = 'http://localhost:5000'
@@ -25,7 +26,7 @@ def is_valid_phone_number(phone_string):
     return 7 <= len(digits_only) <= 15
 
 @customer_bp.route('/', methods=['POST'])
-@jwt_required()
+@permission_required(AppPermissions.CUSTOMER_CREATE)
 def create_customer():
     """
     Create a new customer.
@@ -75,7 +76,7 @@ def create_customer():
 
 
 @customer_bp.route('/<int:customer_id>', methods=['DELETE'])
-@jwt_required()
+@permission_required(AppPermissions.CUSTOMER_DELETE)
 def delete_customer(customer_id):
     """
     Delete a customer by their ID.
@@ -98,7 +99,7 @@ def delete_customer(customer_id):
         return jsonify({"msg": "Failed to delete customer.", "error": str(e)}), 500
 
 @customer_bp.route('/<int:customer_id>', methods=['PUT'])
-@jwt_required()
+@permission_required(AppPermissions.CUSTOMER_UPDATE)
 def update_customer(customer_id):
     """
     Update an existing customer's details.
@@ -133,7 +134,7 @@ def update_customer(customer_id):
         return jsonify({"msg": "Failed to update customer.", "error": str(e)}), 500
     
 @customer_bp.route('/',methods=['GET'])
-@jwt_required()
+@permission_required(AppPermissions.CUSTOMER_GET)
 def get_customers():
     """
     Retrieve a paginated and searchable list of customers.

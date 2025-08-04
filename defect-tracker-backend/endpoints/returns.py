@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models import db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers
+from models import Role, User, UserRole, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 
@@ -15,7 +15,7 @@ def create_return_case():
             customer_id=data['customerId'],
             arrival_date=datetime.strptime(data['arrivalDate'], '%Y-%m-%d'),
             receipt_method=ReceiptMethodEnum[data['receiptMethod']],
-            status=CaseStatusEnum.open,
+            workflow_status=CaseStatusEnum.TECHNICAL_REVIEW,
         )
         db.session.add(case)
         db.session.flush()  # to get case.id
@@ -25,7 +25,7 @@ def create_return_case():
             count = item.get('productCount', 1)
             main_item = ReturnCaseItem(
                 return_case_id=case.id,
-                product_type = ProductTypeEnum[item['productType']],
+                product_model_id=item.get('productModelId'),
                 product_count=count,
                 serial_number=item.get('serialNumber'), 
                 is_main_product=True,
@@ -34,10 +34,10 @@ def create_return_case():
             db.session.flush()  # so we can attach sub-items
 
             # Add attached control unit if flagged
-            if item.get('attachControlUnit') and item['productType'] in ['overload', 'door_detector']:
+            if item.get('attachControlUnit') and item.get('productModelId'):
                 attached_unit = ReturnCaseItem(
                     return_case_id=case.id,
-                    product_type=ProductTypeEnum.control_unit,
+                    product_model_id=item.get('controlUnitModelId'),
                     product_count=count,
                     is_main_product=False,
                     attached_to_item_id=main_item.id
@@ -108,11 +108,11 @@ def get_return_cases():
         # Apply status filter
         if status:
             if status == 'not_closed':
-                query = query.filter(ReturnCase.status != CaseStatusEnum.closed)
+                query = query.filter(ReturnCase.workflow_status != CaseStatusEnum.COMPLETED)
             else:
                 try:
                     status_enum = CaseStatusEnum[status]
-                    query = query.filter(ReturnCase.status == status_enum)
+                    query = query.filter(ReturnCase.workflow_status == status_enum)
                 except (KeyError, ValueError):
                     pass  # Invalid status, ignore filter
 
@@ -147,8 +147,8 @@ def get_return_cases():
         if product_type:
             try:
                 product_enum = ProductTypeEnum[product_type]
-                query = query.join(ReturnCase.items).filter(
-                    ReturnCaseItem.product_type == product_enum
+                query = query.join(ReturnCase.items).join(ReturnCaseItem.product_model).filter(
+                    ProductModel.product_type == product_enum
                 )
             except (KeyError, ValueError):
                 pass  # Invalid product type, ignore filter
@@ -165,20 +165,38 @@ def get_return_cases():
         def serialize_item(item):
             return {
                 "id": item.id,
-                "attached_to_item_id": item.attached_to_item_id,
-                "is_main_product": item.is_main_product,
-                "product_type": item.product_type.value,
-                "product_name": item.product_model.name if item.product_model else item.product_type.value,
+                "product_model": {
+                    "id": item.product_model.id if item.product_model else None,
+                    "name": item.product_model.name if item.product_model else "Bilinmeyen Ürün",
+                    "product_type": item.product_model.product_type.value if item.product_model else None
+                },
                 "product_count": item.product_count,
+                "serial_number": item.serial_number,
+                "is_main_product": item.is_main_product,
+                "warranty_status": item.warranty_status.value,
+                "fault_source": item.fault_source.value,
+                "attached_to_item_id": item.attached_to_item_id
             }
 
         data = [{
             "id": c.id,
-            "status": c.status.value,
-            "customer_name": c.customer.name,
+            "status": c.workflow_status.value,
+            "customer": {
+                "id": c.customer.id,
+                "name": c.customer.name
+            },
             "arrival_date": c.arrival_date.isoformat(),
-            "assigned_user": f"{c.assigned_user.first_name} {c.assigned_user.last_name}" if c.assigned_user else "—",
+            "assigned_user": {
+                "id": c.assigned_user.email if c.assigned_user else None,
+                "firstName": c.assigned_user.first_name if c.assigned_user else None,
+                "lastName": c.assigned_user.last_name if c.assigned_user else None
+            } if c.assigned_user else None,
             "receipt_method": c.receipt_method.value,
+            "notes": c.notes,
+            "performed_services": c.performed_services,
+            "cost": float(c.cost) if c.cost else None,
+            "shipping_info": c.shipping_info,
+            "payment_status": c.payment_status.value if c.payment_status else None,
             "items": [serialize_item(i) for i in c.items]
         } for c in cases]
 
@@ -189,6 +207,97 @@ def get_return_cases():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@return_case_bp.route('/simple', methods=['POST'])
+def create_simple_return_case():
+    data = request.get_json()
+    customer_id = data.get('customerId')
+    arrival_date = data.get('arrivalDate')
+    receipt_method = data.get('receiptMethod')
+    notes = data.get('notes')
+
+    # assigned user id is all the Technicians
+    role_id = Role.query.filter_by(name=UserRole.TECHNICIAN).first().id
+    technician= User.query.filter_by(role_id=role_id).first()
+
+    if not customer_id or not arrival_date or not receipt_method:
+        return jsonify({'error': 'customerId, arrivalDate, and receiptMethod are required.'}), 400
+
+    # Look up customer by id
+    customer = Customers.query.get(customer_id)
+    if not customer:
+        return jsonify({'error': f'Customer with id {customer_id} not found.'}), 404
+
+    try:
+        case = ReturnCase(
+            customer_id=customer.id,
+            arrival_date=datetime.strptime(arrival_date, '%Y-%m-%d'),
+            receipt_method=ReceiptMethodEnum[receipt_method],
+            notes=notes,
+            assigned_user_id=technician.email,
+            # workflow_status defaults to TECHNICAL_REVIEW
+        )
+        db.session.add(case)
+        db.session.commit()
+        return jsonify({'message': 'Return case created', 'caseId': case.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@return_case_bp.route('/<int:return_case_id>', methods=['PUT'])
+def update_return_case(return_case_id):
+    return_case = ReturnCase.query.get(return_case_id)
+    if not return_case:
+        return jsonify({'error': 'Vaka bulunamadı.'}), 404
+
+    data = request.get_json()
+    
+    try:
+        # Update basic fields
+        if 'status' in data:
+            return_case.workflow_status = CaseStatusEnum[data['status'].replace(' ', '_').upper()]
+        
+        if 'assignedUserId' in data and data['assignedUserId']:
+            from models import User
+            user = User.query.filter_by(email=data['assignedUserId']).first()
+            if user:
+                return_case.assigned_user = user
+            else:
+                return jsonify({'error': 'Kullanıcı bulunamadı.'}), 400
+        elif 'assignedUserId' in data and not data['assignedUserId']:
+            return_case.assigned_user = None
+        
+        if 'notes' in data:
+            return_case.notes = data['notes']
+        
+        if 'performedServices' in data:
+            return_case.performed_services = data['performedServices']
+        
+        if 'cost' in data:
+            return_case.cost = data['cost'] if data['cost'] else None
+        
+        if 'shippingInfo' in data:
+            return_case.shipping_info = data['shippingInfo']
+        
+        if 'paymentStatus' in data:
+            if data['paymentStatus']:
+                return_case.payment_status = ReceiptMethodEnum[data['paymentStatus'].upper()]
+            else:
+                return_case.payment_status = None
+        
+        if 'arrivalDate' in data:
+            return_case.arrival_date = datetime.strptime(data['arrivalDate'], '%Y-%m-%d')
+        
+        if 'receiptMethod' in data:
+            return_case.receipt_method = ReceiptMethodEnum[data['receiptMethod'].upper()]
+        
+        db.session.commit()
+        return jsonify({'message': 'Vaka başarıyla güncellendi.'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @return_case_bp.route('/<int:return_case_id>', methods=['DELETE'])

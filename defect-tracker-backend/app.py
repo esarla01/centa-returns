@@ -20,6 +20,7 @@ from endpoints.user import user_bp  # User-related endpoints
 from endpoints.customers import customer_bp  # Customer-related endpoints
 from endpoints.products import product_bp  # Product-related endpoints
 from endpoints.returns import return_case_bp  # Return case-related endpoints
+from endpoints.admin import admin_bp  # Admin-related endpoints
 
 from sqlalchemy.orm import joinedload # Load user with role
 
@@ -75,7 +76,7 @@ def create_app():
         except Exception:
             g.user = None
     
-    # Create all tables
+   # Create all tables
     # with app.app_context():
     #     db.drop_all()
     #     db.create_all()
@@ -87,6 +88,7 @@ def create_app():
     app.register_blueprint(customer_bp)
     app.register_blueprint(product_bp)  
     app.register_blueprint(return_case_bp)  
+    app.register_blueprint(admin_bp)
 
     return app
 

@@ -20,7 +20,7 @@ export default function DeleteConfirmationModal({ user, onClose, onSuccess }: De
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/auth/deregister', { 
+      const response = await fetch('http://localhost:5000/admin/deregister', { 
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

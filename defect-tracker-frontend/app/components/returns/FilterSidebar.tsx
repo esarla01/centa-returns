@@ -42,7 +42,7 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
   };
 
   return (
-    <aside className="w-full md:w-72 lg:w-80 flex-shrink-0 bg-white p-6 rounded-lg shadow-sm">
+      <aside className="w-full md:w-68 lg:w-75 flex-shrink-0 bg-white p-6 rounded-lg shadow-sm">
       <h3 className="text-xl font-bold text-gray-800 mb-6">Filtreler</h3>
       <div className="space-y-6">
         {/* Customer Search Input */}
@@ -127,21 +127,21 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
               Tarih Aralığı {(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) && <span className="text-blue-500">●</span>}
             </label>
             <div className={`flex gap-2 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md p-1' : ''}`}>
-                <div className="flex-1">
+                <div className="w-1/2">
                     <input 
                         type="date" 
                         value={filters.startDate} 
                         onChange={(e) => handleFilterChange('startDate', e.target.value)} 
-                        className="w-full border border-gray-300 rounded-md p-1.5 text-sm bg-transparent"
+                        className="w-full border border-gray-300 rounded-md px-1 py-1.5 text-xs bg-transparent"
                         placeholder="Başlangıç"
                     />
                 </div>
-                <div className="flex-1">
+                <div className="w-1/2">
                     <input 
                         type="date" 
                         value={filters.endDate} 
                         onChange={(e) => handleFilterChange('endDate', e.target.value)} 
-                        className="w-full border border-gray-300 rounded-md p-1.5 text-sm bg-transparent"
+                        className="w-full border border-gray-300 rounded-md px-1 py-1.5 text-xs bg-transparent"
                         placeholder="Bitiş"
                     />
                 </div>

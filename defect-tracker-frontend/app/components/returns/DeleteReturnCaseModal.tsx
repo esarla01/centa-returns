@@ -45,7 +45,7 @@ export default function DeleteReturnCaseModal({ returnCase, onClose, onSuccess }
           <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
             <h3 className="text-lg leading-6 font-medium text-gray-900">Vakayı Sil</h3>
             <p className="mt-2 text-sm text-gray-500">
-              <strong className="text-gray-900">#{returnCase.id}</strong> nolu vakayı ({returnCase.customer_name}) kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              <strong className="text-gray-900">#{returnCase.id}</strong> nolu vakayı ({returnCase.customer.name}) kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
             </p>
           </div>
         </div>

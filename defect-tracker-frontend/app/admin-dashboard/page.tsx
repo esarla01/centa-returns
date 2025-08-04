@@ -72,7 +72,7 @@ export default function AdminDashboard() {
     });
 
     try {
-      const res = await fetch(`http://localhost:5000/auth/retrieve-users?${params.toString()}`, {
+      const res = await fetch(`http://localhost:5000/admin?${params.toString()}`, {
         method: 'GET',
         credentials: 'include', 
       }

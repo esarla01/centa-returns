@@ -1,5 +1,5 @@
 // app/components/RequirePermission.tsx
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
@@ -9,20 +9,34 @@ interface RequirePermissionProps {
   children: ReactNode;
 }
 
-export function RequirePermission({ component=false, permission, children }: RequirePermissionProps) {
+export function RequirePermission({ permission, children }: RequirePermissionProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
+    // Don't start countdown if still loading
+    if (loading) return;
+    console.log('RequirePermission');
     console.log('user', user);
     console.log('permission', permission);
     console.log('user.permissions', user?.permissions);
+    console.log('user.role', user?.role);
+    console.log('user.email', user?.email);
+    console.log('user.firstName', user?.firstName);
+    console.log('user.lastName', user?.lastName);
+
+    // Only start countdown if user is null or doesn't have permission
     if (!user || !user.permissions.includes(permission)) {
       const timer = setInterval(() => {
         setCountdown((prev) => {
-          if (prev <= 1) {
-            router.push('/login');
+          if (prev <= 1 && !hasNavigated.current) {
+            hasNavigated.current = true;
+            // Use setTimeout to ensure navigation happens outside of render cycle
+            setTimeout(() => {
+              router.push('/login');
+            }, 0);
             return 0;
           }
           return prev - 1;
@@ -31,14 +45,25 @@ export function RequirePermission({ component=false, permission, children }: Req
 
       return () => clearInterval(timer);
     }
-  }, [user, permission, router]);
+  }, [user, permission, router, loading]);
 
-  if (loading) return null; // or a spinner
+  // Show loading state while user data is being fetched
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 to-blue-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center max-w-md">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Yükleniyor...</h2>
+          <p className="text-gray-600 text-center">
+            Kullanıcı bilgileri yükleniyor...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
+  // Check permissions only after loading is complete
   if (!user || !user.permissions.includes(permission)) {
-    if (component) {
-      return null;
-    }
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 to-blue-100">
         <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center max-w-md">
@@ -69,6 +94,7 @@ export function RequirePermission({ component=false, permission, children }: Req
       </div>
     );
   }
+
   return <>{children}</>;
 }
 

@@ -25,7 +25,7 @@ export default function AddUserModal({ onClose, onUserAdded }: AddUserModalProps
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/auth/register', { 
+      const response = await fetch('http://localhost:5000/admin/register', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

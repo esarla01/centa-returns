@@ -1,21 +1,37 @@
 export type ReturnCase = {
   id: number;
   status: string;
-  customer_name: string;
+  customer: {
+    id: number;
+    name: string;
+  };
   arrival_date: string;
-  assigned_user: string | null;
+  assigned_user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  } | null;
   receipt_method: string;
+  notes: string | null;
+  performed_services: string | null;
+  cost: number | null;
+  shipping_info: string | null;
+  payment_status: string | null;
   items: {
     id: number;
-    is_main_product: boolean;
-    product_name: string;
-    product_type: string;
+    product_model: {
+      id: number;
+      name: string;
+      product_type: string;
+    };
     product_count: number;
+    serial_number: string | null;
+    is_main_product: boolean;
+    warranty_status: string;
+    fault_source: string;
     attached_to_item_id: number | null;
   }[];
 };
-
-
 
 export interface ReturnCaseItemSummary {
   product_name: string;
@@ -23,14 +39,19 @@ export interface ReturnCaseItemSummary {
   is_main_product: boolean;
 }
 
-
 export interface FullReturnCaseItem {
     id: number;
-    product_model: { id: number; name: string; };
+    product_model: { 
+      id: number; 
+      name: string; 
+      product_type: string;
+    };
     product_count: number;
     serial_number: string | null;
     is_main_product: boolean;
-    fault_description?: string;
+    warranty_status: string;
+    fault_source: string;
+    attached_to_item_id: number | null;
 }
 
 export interface FullReturnCase {
@@ -38,17 +59,15 @@ export interface FullReturnCase {
     status: string;
     arrival_date: string;
     receipt_method: string;
-    fault_source: string;
-    warranty_status: string;
-
     customer: { id: number; name: string; };
-    assigned_user: { id: number; firstName: string; lastName: string; } | null;
+    assigned_user: { id: string; firstName: string; lastName: string; } | null;
     items: FullReturnCaseItem[];
     
+    notes: string | null;
+    performed_services: string | null;
     cost: number | null;
     payment_status: string | null;
     shipping_info: string | null;
-    notes: string | null;
 }
 
 export type ProductType = 'Aşırı Yük Sensörü' | 'Kapı Dedektörü' | 'Kontrol Ünitesi';

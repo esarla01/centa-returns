@@ -4,9 +4,11 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +30,8 @@ export default function LoginPage() {
       });
       if (res.ok) {
             const data = await res.json();
+            // Refresh user state after successful login
+            await refreshUser();
             router.push('/manage-returns'); // Redirect to manage-returns page after successful login
         
       } else {

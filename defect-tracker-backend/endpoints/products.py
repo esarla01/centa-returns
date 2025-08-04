@@ -1,13 +1,14 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
+from permissions import permission_required
 
 # Import your db instance and models
-from models import db, ProductModel, ProductTypeEnum
+from models import AppPermissions, db, ProductModel, ProductTypeEnum
 
 product_bp = Blueprint("product", __name__, url_prefix="/products")
 
 @product_bp.route('/', methods=['GET'])
-# @jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
 def get_products():
     """
     Retrieve a paginated and searchable list of product models.
@@ -49,7 +50,7 @@ def get_products():
     }), 200
 
 @product_bp.route('/', methods=['POST'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
 def create_product():
     """ Create a new product model. """
     data = request.get_json()
@@ -74,7 +75,7 @@ def create_product():
     return jsonify({ "msg": "Product model created successfully" }), 201
 
 @product_bp.route('/<int:product_id>', methods=['PUT'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
 def update_product(product_id):
     """ Update an existing product model. """
     product = ProductModel.query.get_or_404(product_id)
@@ -100,7 +101,7 @@ def update_product(product_id):
     return jsonify({ "msg": "Product model updated successfully" }), 200
 
 @product_bp.route('/<int:product_id>', methods=['DELETE'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
 def delete_product(product_id):
     """ Delete a product model. """
     product = ProductModel.query.get_or_404(product_id)
