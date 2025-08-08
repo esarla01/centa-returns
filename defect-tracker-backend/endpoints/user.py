@@ -23,19 +23,19 @@ PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Z
 def login():
     data = request.get_json()
     if not data:
-        return jsonify({"msg": "No data provided"}), 400
+        return jsonify({"msg": "Veri sağlanmadı"}), 400
     
     # Get email and password from the request body
     email = data.get('email')
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"msg": "Email and password are required"}), 400
+        return jsonify({"msg": "E-posta ve şifre gereklidir"}), 400
     
     # Query user by email and check if the password is correct
     user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
-        return jsonify({"msg": "The password or email is incorrect! Please try again."}), 400
+        return jsonify({"msg": "E-posta veya şifre yanlış! Lütfen tekrar deneyin."}), 400
 
     try:
         # Update last login time
@@ -56,7 +56,7 @@ def login():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "An error occurred during login", "error": str(e)}), 500
+        return jsonify({"msg": "Giriş sırasında bir hata oluştu", "error": str(e)}), 500
 
 @user_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
@@ -64,13 +64,13 @@ def forgot_password():
     email = data.get('email')
 
     if not email:
-        return jsonify({"msg": "Email is required"}), 400
+        return jsonify({"msg": "E-posta gereklidir"}), 400
     
     user = User.query.filter_by(email=email).first()
 
     # Do not reveal if the user exists for security reasons
     if not user:
-        return jsonify(msg="If this email exists, a reset link has been sent."), 200
+        return jsonify(msg="Bu e-posta adresi mevcutsa, sıfırlama bağlantısı gönderildi."), 200
     
     # Generate a secure token and set expiry
     token = secrets.token_urlsafe(32)
@@ -102,9 +102,9 @@ def forgot_password():
     except Exception as e:
         # Log the error and return a generic message
         print(f"Error sending email: {e}")
-        return jsonify({"msg": "An error occurred while sending the email."}), 500
+        return jsonify({"msg": "E-posta gönderilirken bir hata oluştu."}), 500
 
-    return jsonify(msg="If this email exists, a reset link has been sent."), 200
+    return jsonify(msg="Bu e-posta adresi mevcutsa, sıfırlama bağlantısı gönderildi."), 200
     
 @user_bp.route('/reset-password', methods=['POST'])
 def reset_password():
@@ -114,21 +114,21 @@ def reset_password():
 
     # Validate input
     if not token or not new_password:
-        return jsonify(msg="Token and new password are required"), 400
+        return jsonify(msg="Token ve yeni şifre gereklidir"), 400
 
     # Validate password strength
     if not PASSWORD_REGEX.match(new_password):
-        return jsonify(msg="Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character."), 400
+        return jsonify(msg="Şifre en az 8 karakter uzunluğunda olmalı, bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir."), 400
 
     # Find user by reset token
     user = User.query.filter_by(reset_token=token).first()
 
     if not user:
-        return jsonify(msg="Invalid token"), 400
+        return jsonify(msg="Geçersiz token"), 400
 
     # Check if the token has expired
     if user.reset_token_expiry < datetime.datetime.utcnow():
-        return jsonify(msg="Expired token"), 400
+        return jsonify(msg="Token süresi dolmuş"), 400
 
     # Update user's password and clear the reset token
     user.set_password(new_password)
@@ -153,9 +153,9 @@ def reset_password():
     except Exception as e:
         # Log the error and return a generic message
         print(f"Error sending email: {e}")
-        return jsonify(msg="Password reset successfully, but failed to send confirmation email."), 200
+        return jsonify(msg="Şifre başarıyla sıfırlandı, ancak onay e-postası gönderilemedi."), 200
 
-    return jsonify(msg="Password reset successfully"), 200
+    return jsonify(msg="Şifre başarıyla sıfırlandı"), 200
 
 
 @user_bp.route('/whoami', methods=['GET'])
@@ -172,7 +172,7 @@ def whoami():
     # Get user from database
     user = User.query.filter_by(email=identity).first()
     if not user:
-        return jsonify({"msg": "User not found"}), 404
+        return jsonify({"msg": "Kullanıcı bulunamadı"}), 404
     
     # Get permission ids from database
     role_id = user.role_id
@@ -222,7 +222,7 @@ def logout():
             db.session.commit()
         
         # Create response with success message
-        response = jsonify({"msg": "Logout successful"})
+        response = jsonify({"msg": "Çıkış başarılı"})
         
         # Clear the JWT cookies
         unset_jwt_cookies(response)
@@ -231,4 +231,4 @@ def logout():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "An error occurred during logout", "error": str(e)}), 500
+        return jsonify({"msg": "Çıkış sırasında bir hata oluştu", "error": str(e)}), 500

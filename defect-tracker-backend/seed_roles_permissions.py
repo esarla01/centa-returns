@@ -10,41 +10,68 @@ ROLE_PERMISSIONS = {
         AppPermissions.PAGE_VIEW_STATISTICS,
     ],
     UserRole.MANAGER: [
+        # Page Permissions
         AppPermissions.PAGE_VIEW_PRODUCT_LIST,
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
         AppPermissions.PAGE_VIEW_STATISTICS,
+
+        # CasesTable Permissions
+        AppPermissions.CASE_EDIT,
+        AppPermissions.CASE_COMPLETE_COMPLETED,
     ],
     UserRole.SUPPORT: [
+        # Page Permissions
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
+
+        # CasesTable Permissions
         AppPermissions.CASE_CREATE,
-        AppPermissions.CUSTOMER_GET, # To display the customers in the case creation dropdown
-        # AppPermissions.CASE_EDIT_INITIAL_INFO,
-        # AppPermissions.CASE_TRANSITION_TO_TECHNICAL_REVIEW_REPAIR,
+        AppPermissions.CASE_EDIT,
+        AppPermissions.CUSTOMER_GET,
+
+        AppPermissions.CASE_EDIT_DELIVERED,
+        AppPermissions.CASE_EDIT_DOCUMENTATION,
+        AppPermissions.CASE_COMPLETE_DELIVERED,
+        AppPermissions.CASE_COMPLETE_DOCUMENTATION,
     ],
     UserRole.TECHNICIAN: [
+        # Page Permissions
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
+
+        # CasesTable Permissions
         AppPermissions.CASE_EDIT,
-        # AppPermissions.CASE_EDIT_TECHNICAL_REVIEW,
-        # AppPermissions.CASE_TRANSITION_TO_DOCUMENTATION_COST_ENTRY,
+        AppPermissions.CASE_EDIT_TECHNICAL_REVIEW,
+        AppPermissions.CASE_COMPLETE_TECHNICAL_REVIEW,
     ],
     UserRole.SALES: [
+        # Page Permissions
         AppPermissions.PAGE_VIEW_CUSTOMER_LIST,
+        AppPermissions.PAGE_VIEW_CASE_TRACKING,
+
+        # Customer Page Specific Permissions
         AppPermissions.CUSTOMER_CREATE,
         AppPermissions.CUSTOMER_EDIT,
         AppPermissions.CUSTOMER_DELETE,
         AppPermissions.CUSTOMER_UPDATE,
         AppPermissions.CUSTOMER_GET,
 
-        AppPermissions.PAGE_VIEW_CASE_TRACKING,
+        # CasesTable Permissions
         AppPermissions.CASE_EDIT,
-        # AppPermissions.CASE_EDIT_COST,
-        # AppPermissions.CASE_TRANSITION_TO_COST_REIMBURSEMENT_SHIPPING,
+
+   
     ],
     UserRole.LOGISTICS: [
+        # Page Permissions
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
-        AppPermissions.CUSTOMER_GET,
 
-        AppPermissions.CASE_EDIT,
+        # CasesTable Permissions
+        AppPermissions.CASE_EDIT_SHIPPING,
+        AppPermissions.CASE_COMPLETE_SHIPPING,
+
+        # # Customer Page Specific Permissions
+        # AppPermissions.CUSTOMER_GET,
+
+        # # CasesTable Permissions
+        # AppPermissions.CASE_EDIT,
         # AppPermissions.CASE_EDIT_SHIPPING,
         # AppPermissions.CASE_TRANSITION_TO_COMPLETED,
     ],

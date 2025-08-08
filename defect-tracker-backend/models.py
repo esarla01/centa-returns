@@ -37,6 +37,20 @@ class AppPermissions(Enum):
     CASE_DELETE = auto()
     CASE_GET = auto()
 
+    # CASE_EDIT_STAGES
+    CASE_EDIT_DELIVERED = auto() # Support
+    CASE_EDIT_TECHNICAL_REVIEW = auto() # Technician
+    CASE_EDIT_DOCUMENTATION = auto() # Support
+    CASE_EDIT_SHIPPING = auto() # Logistics
+
+
+    # CASE_COMPLETE_STAGES
+    CASE_COMPLETE_DELIVERED = auto() # Support
+    CASE_COMPLETE_TECHNICAL_REVIEW = auto() # Technician
+    CASE_COMPLETE_DOCUMENTATION = auto() # Support
+    CASE_COMPLETE_SHIPPING = auto() # Logistics
+    CASE_COMPLETE_COMPLETED = auto() # Manager
+
    
     # CASE_EDIT_INITIAL_INFO = auto()
     # CASE_TRANSITION_TO_TECHNICAL_REVIEW_REPAIR = auto()
@@ -115,9 +129,10 @@ class ProductModel(db.Model):
     name = db.Column(db.String(100), nullable=False)
 
 class CaseStatusEnum(Enum):
+    DELIVERED = 'Teslim Alındı'
     TECHNICAL_REVIEW = 'Teknik İnceleme'
     DOCUMENTATION = 'Dokümantasyon'
-    SHIPPING = 'Kargoya Verildi'
+    SHIPPING = 'Kargoya Veriliyor'
     COMPLETED = 'Tamamlandı'
 
 class ReceiptMethodEnum(Enum):
@@ -134,10 +149,21 @@ class PaymentStatusEnum(Enum):
     unpaid = 'Ödenmedi'
     waived = 'Ücretsiz'
 
-class FaultSourceEnum(Enum):
-    our_firm = 'Firmamız'
-    customer = 'Müşteri'
+class FaultResponsibilityEnum(Enum):
+    user_error = 'Kullanıcı Hatası'
+    technical_issue = 'Teknik Sorun'
+    mixed = 'Karışık'
     unknown = 'Bilinmiyor'
+
+class ResolutionMethodEnum(Enum):
+    repair = 'Tamir'
+    replacement = 'Değişim'
+    unknown = 'Bilinmiyor'
+
+class ServiceTypeEnum(Enum):
+    maintenance = 'Bakım'
+    repair = 'Onarım'
+    calibration = 'Kalibrasyon'
 
 class ReturnCase(db.Model):
     __tablename__ = 'return_cases'
@@ -150,30 +176,26 @@ class ReturnCase(db.Model):
     receipt_method = db.Column(db.Enum(ReceiptMethodEnum), nullable=False, default=ReceiptMethodEnum.shipment)
     notes = db.Column(db.Text, nullable=True)
 
-    # TECHNICIAN will fill out the items (product_type, product_model_id, product_count, serial_number, warranty_status, fault_source)
+    # TECHNICIAN will fill out the items (product_type, product_model_id, product_count, serial_number, warranty_status, fault_responsibility)
     items = db.relationship('ReturnCaseItem', back_populates='return_case', cascade='all, delete-orphan')
 
-    # SUPPORT will fill out the performed services and cost
-    performed_services = db.Column(db.Text, nullable=True)
-    cost = db.Column(db.Numeric(10, 2), nullable=True)
 
-    # LOGISTICS will fill out the shipping_info
+
+    # LOGISTICS will fill out the shipping information
     shipping_info = db.Column(db.String(255), nullable=True)
+    tracking_number = db.Column(db.String(100), nullable=True)
+    shipping_date = db.Column(db.Date, nullable=True)
 
     # SALES will fill out the payment_status
     payment_status = db.Column(db.Enum(PaymentStatusEnum), nullable=True)
 
     # Current workflow status of the return case - automatically filled out by the system
-    workflow_status = db.Column(db.Enum(CaseStatusEnum), nullable=False, default=CaseStatusEnum.TECHNICAL_REVIEW, index=True)
-    assigned_user_id = db.Column(db.String(254), db.ForeignKey('users.email'), nullable=True, index=True)
+    workflow_status = db.Column(db.Enum(CaseStatusEnum), nullable=False, default=CaseStatusEnum.DELIVERED, index=True)
 
     # The following line creates a relationship attribute 'customer' on the ReturnCase model,
     # allowing access to the related Customers object for each return case.
     # It also adds a 'return_cases' attribute to the Customers model for accessing all related return cases.
     customer = db.relationship('Customers', backref=db.backref('return_cases', lazy=True))
-
-    # Relationship to the assigned user
-    assigned_user = db.relationship('User', foreign_keys=[assigned_user_id])
 
     # The following line creates a relationship attribute 'items' on the ReturnCase model,
     # allowing access to all related ReturnCaseItem objects for each return case.
@@ -192,19 +214,31 @@ class ReturnCaseItem(db.Model):
     return_case_id = db.Column(db.Integer, db.ForeignKey('return_cases.id'), nullable=False)
 
     # Information about the product
-    product_model_id = db.Column(db.Integer, db.ForeignKey('product_models.id'), nullable=True)
+    product_model_id = db.Column(db.Integer, db.ForeignKey('product_models.id'), nullable=False)
     product_count = db.Column(db.Integer, nullable=False, default=1)
-    serial_number = db.Column(db.String(100), nullable=True)
+    serial_number = db.Column(db.String(100), nullable=False)
 
     # Warranty status of the product
-    warranty_status = db.Column(db.Enum(WarrantyStatusEnum), nullable=False, default=WarrantyStatusEnum.unknown)
+    warranty_status = db.Column(db.Enum(WarrantyStatusEnum), nullable=True)
 
-    # Fault source of the defect
-    fault_source = db.Column(db.Enum(FaultSourceEnum), nullable=False, default=FaultSourceEnum.unknown)
+    # Fault responsibility - who is responsible for the issue
+    fault_responsibility = db.Column(db.Enum(FaultResponsibilityEnum), nullable=True)
 
-    # Indicates whether this item is a main product (e.g., overload or door detector or an individual control unit) or an accessory (a control unit attached to a main product).
-    is_main_product = db.Column(db.Boolean, default=True, nullable=False)
-    attached_to_item_id = db.Column(db.Integer, db.ForeignKey('return_case_items.id'), nullable=True)
+    # Resolution method - how the issue will be resolved
+    resolution_method = db.Column(db.Enum(ResolutionMethodEnum), nullable=True)
+
+    # Indicates whether this product has an attached control unit
+    has_control_unit = db.Column(db.Boolean, default=False, nullable=True)
+
+    # TECHNICIAN will fill out the performed services and cost for each item
+    performed_services = db.Column(db.Text, nullable=True)
+    cost = db.Column(db.Numeric(10, 2), nullable=True)
+    
+    # New fields for Teknik İnceleme stage
+    service_type = db.Column(db.Enum(ServiceTypeEnum), nullable=True)
+    cable_check = db.Column(db.Boolean, default=False, nullable=False)
+    profile_check = db.Column(db.Boolean, default=False, nullable=False)
+    packaging = db.Column(db.Boolean, default=False, nullable=False)
 
     
     # Relationship to the parent ReturnCase. This allows each ReturnCaseItem to access its associated ReturnCase object.
@@ -215,15 +249,6 @@ class ReturnCaseItem(db.Model):
     # Relationship to the ProductModel. This allows each ReturnCaseItem to access its associated ProductModel object.
     # This is useful for retrieving detailed information about the specific product model for this item.
     product_model = db.relationship('ProductModel')
-
-    # Self-referential relationship to represent accessories or sub-items attached to a main product.
-    # 'accessories' provides access to all ReturnCaseItems that are attached to this item (i.e., its accessories).
-    # The 'backref' creates a 'parent_item' attribute on each accessory, pointing back to its main product.
-    # 'remote_side=[id]' is required for self-referential relationships to clarify which side is the parent.
-    accessories = db.relationship(
-        'ReturnCaseItem',
-        backref=db.backref('parent_item', remote_side=[id])
-    )
 
     def __repr__(self):
         return f'<ReturnCaseItem id={self.id} product_model_id={self.product_model_id} case_id={self.return_case_id}>'

@@ -11,18 +11,19 @@ import CasesTable from '../components/returns/CasesTable';
 import AddReturnCaseModal from '../components/returns/AddReturnCaseModal';
 import EditReturnCaseModal from '../components/returns/EditReturnCaseModal';
 import DeleteReturnCaseModal from '../components/returns/DeleteReturnCaseModal';
+
 import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
 import { useAuth } from '../contexts/AuthContext';
 
 const initialFilters: Filters = {
   search: '',
-  status: 'not_closed',
+  status: 'not_completed',
   startDate: '',
   endDate: '',
-  userId: '',
   receiptMethod: '',
   productType: '',
+  productModel: '',
 };
 
 export default function ReturnsDashboardPage() {
@@ -36,7 +37,6 @@ export default function ReturnsDashboardPage() {
 
   // Data
   const [cases, setCases] = useState<FullReturnCase[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
 
   // Control
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -50,6 +50,7 @@ export default function ReturnsDashboardPage() {
 
   // Fetch return cases
   const fetchData = async () => {
+    console.log('manage-returns: fetchData called');
     setIsLoading(true);
 
     const params = new URLSearchParams({
@@ -71,6 +72,7 @@ export default function ReturnsDashboardPage() {
       });
       if (!res.ok) throw new Error('Failed to fetch return cases');
       const data = await res.json();
+      console.log('manage-returns: Received data from API:', data.cases?.length, 'cases');
       setCases(data.cases);
       setTotalPages(data.totalPages || 1);
     } catch (err) {
@@ -81,25 +83,7 @@ export default function ReturnsDashboardPage() {
     }
   };
 
-  // Fetch users for filters
-  const fetchAuxData = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/admin/?limit=100', {
-        method: 'GET',
-        credentials: 'include',
-      });
-      const data = await res.json();
-      setUsers(data.users || []);
-    } catch (err) {
-      console.error('Failed to fetch auxiliary data', err);
-    }
-  };
 
-  useEffect(() => {
-    if (!loading) {
-      fetchAuxData();
-    }
-  }, [loading]);
 
   useEffect(() => {
     if (!loading) {
@@ -119,12 +103,12 @@ export default function ReturnsDashboardPage() {
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
       <Header onLogout={() => {}} />
 
-        {isAddModalOpen && (
-          <AddReturnCaseModal
-            onClose={() => setIsAddModalOpen(false)}
-            onSuccess={handleSuccess}
-          />
-        )}
+      {isAddModalOpen && (
+        <AddReturnCaseModal
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={handleSuccess}
+        />
+      )}
 
       {caseToEdit && (
         <EditReturnCaseModal
@@ -155,22 +139,22 @@ export default function ReturnsDashboardPage() {
             </div>
           </div>
           <PermissionGate permission="CASE_CREATE">
-            <div className="hidden sm:flex-shrink-0 lg:flex">
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Yeni Vaka Oluştur</span>
-              </button>
-            </div>
+          <div className="hidden sm:flex-shrink-0 lg:flex">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Yeni Vaka Oluştur</span>
+            </button>
+          </div>
           </PermissionGate>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 mt-8">
           {/* Left Sidebar Filters */}
           <div className="lg:w-80 flex-shrink-0">
-            <FilterSidebar filters={filters} setFilters={setFilters} users={users} />
+          <FilterSidebar filters={filters} setFilters={setFilters} />
           </div>
 
           {/* Main content */}
@@ -180,9 +164,9 @@ export default function ReturnsDashboardPage() {
                 <div className="flex-1">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                     <h2 className="text-xl lg:text-2xl font-bold text-gray-800">
-                      {Object.values(filters).some(value => value && value !== 'not_closed') ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
-                    </h2>
-                    {!Object.values(filters).some(value => value && value !== 'not_closed') && (
+                    {Object.values(filters).some(value => value && value !== 'not_completed') ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
+                  </h2>
+                    {!Object.values(filters).some(value => value && value !== 'not_completed') && (
                       <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
                         <span className="text-gray-600 font-medium">İş Akışı:</span>
                         <div className="flex items-center gap-1 lg:gap-2">
@@ -213,29 +197,30 @@ export default function ReturnsDashboardPage() {
                     )}
                   </div>
                   <div className="text-red-600 mt-2">
-                    {Object.values(filters).some(value => value && value !== 'not_closed') ? 'Tüm vakalar için filtreleri temizleyin.' : ''}
+                    {Object.values(filters).some(value => value && value !== 'not_completed') ? 'Tüm vakalar için filtreleri temizleyin.' : ''}
                   </div>
                 </div>
                   <PermissionGate permission="CASE_CREATE">
                     <div>
-                      <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="flex lg:hidden items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-                      >
-                        <Plus className="h-5 w-5" />
-                        <span>Yeni Vaka Oluştur</span>
-                      </button>
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex lg:hidden items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Yeni Vaka Oluştur</span>
+                </button>
                     </div>
                   </PermissionGate>
               </div>
 
               <div className="overflow-hidden">
-                <CasesTable
-                  cases={cases}
-                  isLoading={isLoading}
-                  onEdit={setCaseToEdit}
-                  onDelete={setCaseToDelete}
-                />
+              <CasesTable
+                cases={cases}
+                isLoading={isLoading}
+                onEdit={setCaseToEdit}
+                onDelete={setCaseToDelete}
+                onRefresh={fetchData}
+              />
               </div>
 
               <Pagination currentPage={currentPage} totalPages={totalPages} />

@@ -26,7 +26,7 @@ def is_valid_phone_number(phone_string):
     return 7 <= len(digits_only) <= 15
 
 @customer_bp.route('/', methods=['POST'])
-@permission_required(AppPermissions.CUSTOMER_CREATE)
+@permission_required(AppPermissions.PAGE_VIEW_CUSTOMER_LIST)
 def create_customer():
     """
     Create a new customer.
@@ -36,7 +36,7 @@ def create_customer():
 
     # Basic validation: ensure 'name' is provided
     if not data or 'name' not in data or not data['name'].strip():
-        return jsonify({"msg": "Company name is required."}), 400
+        return jsonify({"msg": "Şirket adı gereklidir."}), 400
 
     name = data.get('name').strip()
     contact_info = data.get('contact_info', '').strip()
@@ -44,16 +44,16 @@ def create_customer():
     address = data.get('address', '').strip()
 
     if not name or (not contact_info and not representative): 
-        return jsonify({"msg": "Company name is required, and either contact information or representative is required."}), 400
+        return jsonify({"msg": "Şirket adı zorunludur ve iletişim bilgisi veya yetkili kişi alanlarından en az biri gereklidir."}), 400
     
     if contact_info:
         # Check if contact_info is a valid email OR a valid phone number
         if not (is_valid_email(contact_info) or is_valid_phone_number(contact_info)):
-            return jsonify({"msg": "Contact info must be a valid email or phone number."}), 400
+            return jsonify({"msg": "İletişim bilgisi geçerli bir e-posta veya telefon numarası olmalıdır."}), 400
 
     # Check if a customer with the same name already exists
     if Customers.query.filter_by(name=data['name'].strip()).first():
-        return jsonify({"msg": "A customer with this name already exists."}), 409 # 409 Conflict
+        return jsonify({"msg": "Bu isimle bir müşteri zaten mevcut."}), 409 # 409 Conflict
 
     # Create a new Customer instance
     new_customer = Customers(
@@ -68,15 +68,15 @@ def create_customer():
         db.session.commit()
         # Return the newly created customer's data
         return jsonify({
-            "msg": "Customer created successfully",
+            "msg": "Müşteri başarıyla oluşturuldu",
         }), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Failed to create customer.", "error": str(e)}), 500
+        return jsonify({"msg": "Müşteri oluşturulamadı.", "error": str(e)}), 500
 
 
 @customer_bp.route('/<int:customer_id>', methods=['DELETE'])
-@permission_required(AppPermissions.CUSTOMER_DELETE)
+@permission_required(AppPermissions.PAGE_VIEW_CUSTOMER_LIST)
 def delete_customer(customer_id):
     """
     Delete a customer by their ID.
@@ -88,18 +88,18 @@ def delete_customer(customer_id):
 
     # If customer doesn't exist, return a 404 Not Found error
     if not customer:
-        return jsonify({"msg": "Customer not found."}), 404
+        return jsonify({"msg": "Müşteri bulunamadı."}), 404
 
     try:
         db.session.delete(customer)
         db.session.commit()
-        return jsonify({"msg": "Customer deleted successfully."}), 200
+        return jsonify({"msg": "Müşteri başarıyla silindi."}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Failed to delete customer.", "error": str(e)}), 500
+        return jsonify({"msg": "Müşteri silinemedi.", "error": str(e)}), 500
 
 @customer_bp.route('/<int:customer_id>', methods=['PUT'])
-@permission_required(AppPermissions.CUSTOMER_UPDATE)
+@permission_required(AppPermissions.PAGE_VIEW_CUSTOMER_LIST)
 def update_customer(customer_id):
     """
     Update an existing customer's details.
@@ -108,7 +108,7 @@ def update_customer(customer_id):
     # Find the customer to update
     customer = Customers.query.get(customer_id)
     if not customer:
-        return jsonify({"msg": "Customer not found."}), 404
+        return jsonify({"msg": "Müşteri bulunamadı."}), 404
 
     data = request.get_json()
     
@@ -116,10 +116,10 @@ def update_customer(customer_id):
     
     # Validate contact_info if it's being provided
     if not contact_info:
-        return jsonify({"msg": "Contact info (email or phone number) cannot be empty."}), 400
+        return jsonify({"msg": "İletişim bilgisi (e-posta veya telefon numarası) boş olamaz."}), 400
 
     if not (is_valid_email(contact_info) or is_valid_phone_number(contact_info)):
-        return jsonify({"msg": "Contact info must be a valid email or phone number."}), 400
+        return jsonify({"msg": "İletişim bilgisi geçerli bir e-posta veya telefon numarası olmalıdır."}), 400
 
     customer.representative = data.get('representative', '').strip()
     customer.contact_info = contact_info
@@ -127,14 +127,14 @@ def update_customer(customer_id):
     
     try:
         db.session.commit()
-        return jsonify({ "msg": "Customer updated successfully." }), 200
+        return jsonify({ "msg": "Müşteri başarıyla güncellendi." }), 200
     
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Failed to update customer.", "error": str(e)}), 500
+        return jsonify({"msg": "Müşteri güncellenemedi.", "error": str(e)}), 500
     
 @customer_bp.route('/',methods=['GET'])
-@permission_required(AppPermissions.CUSTOMER_GET)
+@jwt_required()
 def get_customers():
     """
     Retrieve a paginated and searchable list of customers.

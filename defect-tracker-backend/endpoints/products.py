@@ -8,7 +8,7 @@ from models import AppPermissions, db, ProductModel, ProductTypeEnum
 product_bp = Blueprint("product", __name__, url_prefix="/products")
 
 @product_bp.route('/', methods=['GET'])
-@permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
+@jwt_required()
 def get_products():
     """
     Retrieve a paginated and searchable list of product models.
@@ -58,12 +58,12 @@ def create_product():
     product_type_key = data.get('product_type')
 
     if not name:
-        return jsonify({"msg": "Product name is required."}), 400
+        return jsonify({"msg": "Ürün adı gereklidir."}), 400
     if not product_type_key or product_type_key not in ProductTypeEnum._member_map_:
-        return jsonify({"msg": "A valid product type is required."}), 400
+        return jsonify({"msg": "Geçerli bir ürün tipi gereklidir."}), 400
     
     if ProductModel.query.filter_by(name=name).first():
-        return jsonify({"msg": "A product model with this name already exists."}), 409
+        return jsonify({"msg": "Bu isimle bir ürün modeli zaten mevcut."}), 409
 
     new_product = ProductModel(
         name=name,
@@ -72,7 +72,7 @@ def create_product():
     db.session.add(new_product)
     db.session.commit()
 
-    return jsonify({ "msg": "Product model created successfully" }), 201
+    return jsonify({ "msg": "Ürün modeli başarıyla oluşturuldu" }), 201
 
 @product_bp.route('/<int:product_id>', methods=['PUT'])
 @permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
@@ -85,20 +85,20 @@ def update_product(product_id):
     product_type_key = data.get('product_type')
 
     if not name:
-        return jsonify({"msg": "Product name is required."}), 400
+        return jsonify({"msg": "Ürün adı gereklidir."}), 400
     if not product_type_key or product_type_key not in ProductTypeEnum._member_map_:
-        return jsonify({"msg": "A valid product type is required."}), 400
+        return jsonify({"msg": "Geçerli bir ürün tipi gereklidir."}), 400
         
     # Check if another product with the new name already exists
     existing_product = ProductModel.query.filter(ProductModel.name == name, ProductModel.id != product_id).first()
     if existing_product:
-        return jsonify({"msg": "Another product model with this name already exists."}), 409
+        return jsonify({"msg": "Bu isimle başka bir ürün modeli zaten mevcut."}), 409
 
     product.name = name
     product.product_type = ProductTypeEnum[product_type_key]
     
     db.session.commit()
-    return jsonify({ "msg": "Product model updated successfully" }), 200
+    return jsonify({ "msg": "Ürün modeli başarıyla güncellendi" }), 200
 
 @product_bp.route('/<int:product_id>', methods=['DELETE'])
 @permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
@@ -107,4 +107,4 @@ def delete_product(product_id):
     product = ProductModel.query.get_or_404(product_id)
     db.session.delete(product)
     db.session.commit()
-    return jsonify({"msg": "Product model deleted successfully."}), 200
+    return jsonify({"msg": "Ürün modeli başarıyla silindi."}), 200

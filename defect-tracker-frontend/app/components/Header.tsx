@@ -103,10 +103,10 @@ export default function Header({ onLogout }: HeaderProps) {
                 href={link.href} 
                 className="text-sm font-medium text-gray-600 hover:text-primary"
               >
-                {link.text}
-              </a>
-            ))}
-          </nav>
+                          {link.text}
+                      </a>
+              ))}
+            </nav>
 
           {/* Right Side: Date, Logout, and Hamburger Menu Icon */}
           <div className="flex items-center gap-4">
@@ -139,16 +139,16 @@ export default function Header({ onLogout }: HeaderProps) {
       {/* Mobile Menu Dropdown Panel */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-200">
-          <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <nav className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {filteredNavLinks.map((link, idx) => (
               <a 
                 key={idx} 
                 href={link.href} 
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50"
               >
-                {link.text}
-              </a>
-            ))}
+                          {link.text}
+                      </a>
+              ))}
           </nav>
           {/* User info and logout button inside the mobile menu */}
           <div className="pt-4 pb-3 border-t border-gray-200">

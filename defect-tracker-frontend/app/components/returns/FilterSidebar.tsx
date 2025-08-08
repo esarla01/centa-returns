@@ -2,6 +2,7 @@
 
 import { User } from '@/lib/types';
 import { Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 // Define the shape of the filters state object
 export interface Filters {
@@ -9,28 +10,51 @@ export interface Filters {
   status: string;
   startDate: string;
   endDate: string;
-  userId: string;
   receiptMethod: string;
   productType: string;
+  productModel: string;
 }
 
 interface FilterSidebarProps {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
-  users: User[]; // For the 'Assigned To' dropdown
+}
+
+interface ProductModel {
+  id: number;
+  name: string;
+  product_type: string;
 }
 
 const initialFilters: Filters = {
     search: '',
-    status: 'not_closed',
+    status: 'not_completed',
     startDate: '',
     endDate: '',
-    userId: '',
     receiptMethod: '',
     productType: '',
+    productModel: '',
 }
 
-export default function FilterSidebar({ filters, setFilters, users }: FilterSidebarProps) {
+export default function FilterSidebar({ filters, setFilters }: FilterSidebarProps) {
+  const [productModels, setProductModels] = useState<ProductModel[]>([]);
+  
+  // Fetch product models for the filter
+  useEffect(() => {
+    const fetchProductModels = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/products?limit=1000', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        const data = await response.json();
+        setProductModels(data.products || []);
+      } catch (err) {
+        console.error('Failed to fetch product models:', err);
+      }
+    };
+    fetchProductModels();
+  }, []);
   
   const handleFilterChange = (field: keyof Filters, value: string) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -38,8 +62,20 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
 
   // Helper function to check if a filter is active (has a value)
   const isFilterActive = (value: string) => {
-    return value && value !== 'not_closed';
+    return value && value !== 'not_completed';
   };
+
+  // Filter product models based on selected product type
+  const filteredProductModels = filters.productType 
+    ? productModels.filter(model => {
+        const productTypeMap = {
+          'overload': 'Aşırı Yük Sensörü',
+          'door_detector': 'Kapı Dedektörü',
+          'control_unit': 'Kontrol Ünitesi'
+        };
+        return model.product_type === productTypeMap[filters.productType as keyof typeof productTypeMap];
+      })
+    : productModels;
 
   return (
       <aside className="w-full md:w-68 lg:w-75 flex-shrink-0 bg-white p-6 rounded-lg shadow-sm">
@@ -55,6 +91,28 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
               onChange={(e) => handleFilterChange('search', e.target.value)}
               className="pl-10 w-full border border-gray-300 rounded-md py-1 px-3 focus:outline-none focus:ring-2 bg-transparent"
             />
+        </div>
+
+        {/* Status Filter */}
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.status) ? 'text-blue-700' : 'text-gray-700'}`}>
+            Durum {isFilterActive(filters.status) && <span className="text-blue-500">●</span>}
+          </label>
+          <div className={isFilterActive(filters.status) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
+            >
+              <option value="not_completed">Tamamlanmamış Vakalar</option>
+              <option value="">Tümü</option>
+              <option value="Teslim Alındı">Teslim Alındı</option>
+              <option value="Teknik İnceleme">Teknik İnceleme</option>
+              <option value="Dokümantasyon">Dokümantasyon</option>
+              <option value="Kargoya Veriliyor">Kargoya Veriliyor</option>
+              <option value="Tamamlandı">Tamamlandı</option>
+            </select>
+          </div>
         </div>
 
         {/* Product Type and Receipt Method Filters */}
@@ -75,7 +133,13 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
             <div className={`flex-1 ${isFilterActive(filters.productType) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}`}>
               <select
                 value={filters.productType || ''}
-                onChange={(e) => handleFilterChange('productType', e.target.value)}
+                onChange={(e) => {
+                  handleFilterChange('productType', e.target.value);
+                  // Clear product model when product type changes
+                  if (e.target.value !== filters.productType) {
+                    handleFilterChange('productModel', '');
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent text-sm"
               >
                 <option value="">Tüm Ürün Tipleri</option>
@@ -98,30 +162,32 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
           </div>
         </div>
 
-        {/* Status Filter */}
+        {/* Product Model Filter */}
         <div>
-          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.status) ? 'text-blue-700' : 'text-gray-700'}`}>
-            Durum {isFilterActive(filters.status) && <span className="text-blue-500">●</span>}
+          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.productModel) ? 'text-blue-700' : 'text-gray-700'}`}>
+            Ürün Modeli {isFilterActive(filters.productModel) && <span className="text-blue-500">●</span>}
           </label>
-          <div className={isFilterActive(filters.status) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
+          <div className={isFilterActive(filters.productModel) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
             <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              value={filters.productModel}
+              onChange={(e) => handleFilterChange('productModel', e.target.value)}
               className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
+              disabled={!filters.productType}
             >
-              <option value="not_closed">Kapanmamış Vakalar</option>
-              <option value="">Tümü</option>
-              <option value="open">Açık</option>
-              <option value="in_progress">Devam Ediyor</option>
-              <option value="awaiting_parts">Parça Bekleniyor</option>
-              <option value="repaired">Tamir Edildi</option>
-              <option value="shipped">Gönderildi</option>
-              <option value="closed">Kapalı</option>
+              <option value="">Tüm Modeller</option>
+              {filteredProductModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                </option>
+              ))}
             </select>
           </div>
+          {!filters.productType && (
+            <p className="text-xs text-gray-500 mt-1">Önce ürün tipi seçin</p>
+          )}
         </div>
 
-        {/* Date Range Filter - At the bottom */}
+        {/* Date Range Filter */}
         <div>
             <label className={`block text-sm font-medium mb-1 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'text-blue-700' : 'text-gray-700'}`}>
               Tarih Aralığı {(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) && <span className="text-blue-500">●</span>}
@@ -146,25 +212,6 @@ export default function FilterSidebar({ filters, setFilters, users }: FilterSide
                     />
                 </div>
             </div>
-        </div>
-
-        {/* Assigned User Filter */}
-        <div>
-          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.userId) ? 'text-blue-700' : 'text-gray-700'}`}>
-            Atanan Kullanıcı {isFilterActive(filters.userId) && <span className="text-blue-500">●</span>}
-          </label>
-          <div className={isFilterActive(filters.userId) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
-            <select
-              value={filters.userId}
-              onChange={(e) => handleFilterChange('userId', e.target.value)}
-              className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
-            >
-              <option value="">Tüm Kullanıcılar</option>
-              {users.map(user => (
-                <option key={user.email} value={user.email}>{user.firstName} {user.lastName}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         {/* Clear Filters Button */}

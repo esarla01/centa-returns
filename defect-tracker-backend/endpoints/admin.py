@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import get_jwt
+from flask_jwt_extended import get_jwt, jwt_required
 from models import AppPermissions, Permission, Role, RolePermission, User, UserRole, db
 from permissions import permission_required
 import re
@@ -18,7 +18,7 @@ def register():
     data = request.get_json()
 
     if not data:
-        return jsonify({"msg": "No data provided"}), 400
+        return jsonify({"msg": "Veri sağlanmadı"}), 400
 
     email = data.get('email')
     password = data.get('password')
@@ -28,30 +28,30 @@ def register():
 
     # Validate required fields
     if not email or not password or not first_name or not last_name or not role:
-        return jsonify({"msg": "All fields are required"}), 400
+        return jsonify({"msg": "Tüm alanlar gereklidir"}), 400
 
     # Validate email format
     if not EMAIL_REGEX.match(email):
-        return jsonify({"msg": "Invalid email format"}), 400
+        return jsonify({"msg": "Geçersiz e-posta formatı"}), 400
 
     # Validate role
     try:
         role_enum = UserRole(role)
     except ValueError:
-        return jsonify({"msg": "Invalid role"}), 400
+        return jsonify({"msg": "Geçersiz rol"}), 400
 
     # Look up the Role object
     role_obj = Role.query.filter_by(name=role_enum).first()
     if not role_obj:
-        return jsonify({"msg": "Role not found in database"}), 400
+        return jsonify({"msg": "Rol veritabanında bulunamadı"}), 400
 
     # Validate password strength
     if not PASSWORD_REGEX.match(password):
-        return jsonify({"msg": "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character"}), 400
+        return jsonify({"msg": "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir"}), 400
 
     # Check if the user already exists
     if User.query.filter_by(email=email).first():
-        return jsonify({"msg": "A user with that email already exists"}), 400
+        return jsonify({"msg": "Bu e-posta adresi ile bir kullanıcı zaten mevcut"}), 400
 
     try:
         # Create a new user
@@ -65,45 +65,45 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        return jsonify({"msg": "User registered successfully"}), 201
+        return jsonify({"msg": "Kullanıcı başarıyla kaydedildi"}), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "An error occurred while registering the user", "error": str(e)}), 500
+        return jsonify({"msg": "Kullanıcı kaydedilirken bir hata oluştu", "error": str(e)}), 500
 
 @admin_bp.route('/', methods=['DELETE'])
 @permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def deregister():
     data = request.get_json()
     if not data:
-        return jsonify({"msg": "No data provided"}), 400
+        return jsonify({"msg": "Veri sağlanmadı"}), 400
     
     target_email = data.get('email')  
 
     if not target_email:
-        return jsonify({"msg": "Email of the user to deregister is required"}), 400
+        return jsonify({"msg": "Kayıt silinecek kullanıcının e-posta adresi gereklidir"}), 400
     
     # Prevent deletion of a specific user
     if target_email == "erinsarlak003@gmail.com":
-        return jsonify({"msg": "This user cannot be deregistered"}), 403
+        return jsonify({"msg": "Bu kullanıcı kayıt silinemez"}), 403
     
     # Query user by email
     user_to_delete = User.query.filter_by(email=target_email).first()
 
     if not user_to_delete:
-        return jsonify({"msg": f'User with email {target_email} not found'}), 404
+        return jsonify({"msg": f'{target_email} e-posta adresine sahip kullanıcı bulunamadı'}), 404
     
     try:
         db.session.delete(user_to_delete)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "An error occurred while deregistering the user", "error": str(e)}), 500
+        return jsonify({"msg": "Kullanıcı kayıt silinirken bir hata oluştu", "error": str(e)}), 500
 
-    return jsonify({"msg": f'User {user_to_delete.first_name} {user_to_delete.last_name} deregistered successfully'}), 200
+    return jsonify({"msg": f'{user_to_delete.first_name} {user_to_delete.last_name} kullanıcısının kaydı başarıyla silindi'}), 200
 
 @admin_bp.route('/', methods=['GET'])
-# @permission_required(AppPermissions.PAGE_VIEW_ADMIN)
+@jwt_required()
 def retrieve_users():
     """
     Retrieve a paginated, searchable, and filterable list of users

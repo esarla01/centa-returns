@@ -77,11 +77,11 @@ def create_app():
             g.user = None
     
    # Create all tables
-    # with app.app_context():
-    #     db.drop_all()
-    #     db.create_all()
-    #     seed_all()
-
+    with app.app_context():
+        # db.drop_all()
+        # db.create_all()
+        # seed_all()
+        pass  # Add pass statement to fix indentation
 
     # Register blueprints
     app.register_blueprint(user_bp)

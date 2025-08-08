@@ -6,16 +6,13 @@ export type ReturnCase = {
     name: string;
   };
   arrival_date: string;
-  assigned_user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  } | null;
   receipt_method: string;
   notes: string | null;
   performed_services: string | null;
   cost: number | null;
   shipping_info: string | null;
+  tracking_number: string | null;
+  shipping_date: string | null;
   payment_status: string | null;
   items: {
     id: number;
@@ -28,7 +25,8 @@ export type ReturnCase = {
     serial_number: string | null;
     is_main_product: boolean;
     warranty_status: string;
-    fault_source: string;
+    fault_responsibility: string;
+    resolution_method: string;
     attached_to_item_id: number | null;
   }[];
 };
@@ -48,10 +46,16 @@ export interface FullReturnCaseItem {
     };
     product_count: number;
     serial_number: string | null;
-    is_main_product: boolean;
+    has_control_unit: boolean;
     warranty_status: string;
-    fault_source: string;
-    attached_to_item_id: number | null;
+    fault_responsibility: string;
+    resolution_method: string;
+    performed_services: string | null;
+    cost: number | null;
+    service_type: string | null;
+    cable_check: boolean;
+    profile_check: boolean;
+    packaging: boolean;
 }
 
 export interface FullReturnCase {
@@ -60,14 +64,13 @@ export interface FullReturnCase {
     arrival_date: string;
     receipt_method: string;
     customer: { id: number; name: string; };
-    assigned_user: { id: string; firstName: string; lastName: string; } | null;
     items: FullReturnCaseItem[];
     
     notes: string | null;
-    performed_services: string | null;
-    cost: number | null;
     payment_status: string | null;
     shipping_info: string | null;
+    tracking_number: string | null;
+    shipping_date: string | null;
 }
 
 export type ProductType = 'Aşırı Yük Sensörü' | 'Kapı Dedektörü' | 'Kontrol Ünitesi';
