@@ -129,162 +129,184 @@ export default function AdminDashboard() {
       )}
 
 
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-4 sm:px-5 lg:px-6 mt-10">
-          
-          {/* Left Side: Greeting and Description */}
-          <div className="flex-1 space-y-5">
-            <div className="flex-1 space-y-3">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Yönetici Sayfasına Hoşgeldin
-              </h1>
-              <p className="text-md text-gray-500 md:w-[700px]">
-                Bu panel üzerinden tüm kullanıcıları görüntüleyebilir, isim, e-posta veya role göre filtreleme yapabilir, yeni kullanıcılar ekleyebilir ya da mevcut kullanıcıları düzenleyip silebilirsiniz.
-              </p>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-7">
+          <div className="flex-1 space-y-3">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Yönetici Paneli
+            </h1>
+            <p className="text-md text-gray-500 max-w-2xl">
+              Bu panel üzerinden tüm kullanıcıları görüntüleyebilir, isim, e-posta veya role göre filtreleme yapabilir, yeni kullanıcılar ekleyebilir ya da mevcut kullanıcıları düzenleyip silebilirsiniz.
+            </p>
           </div>
-          
-          {/* Right Side: Action Button */}
-          <div className="hidden sm:flex-shrink-0 lg:flex">
+          <div className="flex-shrink-0">
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="flex w-full items-center justify-center sm:justify-end sm:w-5 gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 md:w-auto"
+              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
             >
               <Plus className="h-5 w-5" />
               <span>Kullanıcı Ekle</span>
             </button>
           </div>
-
         </div>
 
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-sm">
-          <div className="flex flex-col md:flex-row justify-between mb-6 gap-6">
-            <div className="flex-col items-center gap-4">
-              <h2 className="text-2xl font-bold text-gray-800">
-                {(search || role) ? `Arama Sonuçları` : 'Tüm Kullanıcılar'}
-              </h2>
-              <div className="text-red-600"> {(search || role) ? 'Tüm kullanıcılar için filtreleri temizleyin.' : ''} </div>
-            </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="İsme veya emaile göre arama yapın..."
-                  className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary-light"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+        {/* Main Content */}
+        <div className="mt-8 bg-white rounded-lg shadow-sm">
+          {/* Filters and Actions Bar */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex-1">
+                <h2 className="text-xl lg:text-2xl font-bold text-gray-800 mb-2">
+                  {(search || role) ? 'Arama Sonuçları' : 'Tüm Kullanıcılar'}
+                </h2>
+                {(search || role) && (
+                  <div className="text-red-600 text-sm">
+                    Tüm kullanıcılar için filtreleri temizleyin.
+                  </div>
+                )}
               </div>
               
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1 sm:flex-none sm:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="İsme veya emaile göre arama..."
+                    className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
 
-             {/* The container div */}
-              <div className="relative flex items-center bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                {/* The clickable label that covers the whole area */}
-                <label 
-                  htmlFor="role-filter" 
-                  className="flex items-center gap-2 w-full cursor-pointer px-4 py-2"
-                >
-                  <ListFilter className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  
-                  <select
-                    id="role-filter"
-                    value={role} 
-                    onChange={(e) => setRole(e.target.value)}
-                    className="appearance-none bg-transparent w-full text-sm text-gray-700 focus:outline-none"
+                {/* Role Filter */}
+                <div className="relative flex items-center bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                  <label 
+                    htmlFor="role-filter" 
+                    className="flex items-center gap-2 w-full cursor-pointer px-4 py-2"
                   >
-                    <option value="">Filter by Role</option>
-                    <option value="ADMIN">Yönetici</option>
-                    <option value="MANAGER">Yönetici Yardımcısı</option>
-                    <option value="TECHNICIAN">Teknisyen</option>
-                    <option value="SUPPORT">Destek</option>
-                    <option value="SALES">Satış</option>
-                    <option value="LOGISTICS">Lojistik</option>
-                  </select>
-                </label>
-              </div>
-              {(search || role) && (
-                <button
-                  onClick={() => {
-                    setSearch('');
-                    setRole('');
-                  }}
-                  className="ml-2 text-blue-600 hover:underline"
-                >
-                  Filtreleri temizle
-                </button>
-              )}
-              {/* Right Side: Action Button */}
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className=" flex lg:hidden items-center gap-2 px-4 py-2 text-black bg-primary rounded-md hover:bg-primary-light"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Kullanıcı Ekle</span>
-              </button>
+                    <ListFilter className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                    <select
+                      id="role-filter"
+                      value={role} 
+                      onChange={(e) => setRole(e.target.value)}
+                      className="appearance-none bg-transparent w-full text-sm text-gray-700 focus:outline-none"
+                    >
+                      <option value="">Tüm Roller</option>
+                      <option value="ADMIN">Yönetici</option>
+                      <option value="MANAGER">Yönetici Yardımcısı</option>
+                      <option value="TECHNICIAN">Teknisyen</option>
+                      <option value="SUPPORT">Destek</option>
+                      <option value="SALES">Satış</option>
+                      <option value="LOGISTICS">Lojistik</option>
+                    </select>
+                  </label>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(search || role) && (
+                  <button
+                    onClick={() => {
+                      setSearch('');
+                      setRole('');
+                    }}
+                    className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    Filtreleri Temizle
+                  </button>
+                )}
+
+                
               </div>
             </div>
+          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KULLANICI</th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROL</th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EKLENME</th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Son GİRİŞLER</th>
-                  <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EYLEMLER</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {isLoading ? (
+          {/* Table Section */}
+          <div className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">Yükleniyor...</td>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KULLANICI</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROL</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EKLENME TARİHİ</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SON GİRİŞ</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EYLEMLER</th>
                   </tr>
-                ) : users.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">Kullanıcı bulunamadı.</td>
-                  </tr>
-                ) :
-                users.map((user, idx) => (
-                  <tr key={user.email} className="hover:bg-gray-50">
-                    <td className="p-4">
-                      {/* <input type="checkbox" className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded" /> */}
-                      <span className="text-gray-400"> {idx + 1}</span>
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-2"></div>
+                          Yükleniyor...
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className={cn('px-2 inline-flex text-xs leading-5 font-semibold rounded-full', getRoleClass(user.role))}>
-                        {getTurkishRoleName(user.role)}
-                      </span>
-                    </td>              
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">{user.createdAt}</td>
-                    <td className="p-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin ?? 'Henüz giriş yapılmadı'}</td>
-                    <td className="p-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-3">
-                        {/* <button className="text-primary-light hover:text-primary" title="Edit User"><Pencil className="h-5 w-5" /></button> */}
-                        <button 
-                          onClick={() => setUserToDelete(user)}
-                          className="text-red-500 hover:text-red-700" title="Delete User"><Trash2 className="h-5 w-5" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  ) : users.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        {search || role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((user, idx) => (
+                      <tr key={user.email} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {((currentPage - 1) * 5) + idx + 1}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {user.firstName} {user.lastName}
+                              </div>
+                              <div className="text-sm text-gray-500">{user.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={cn('px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full', getRoleClass(user.role))}>
+                            {getTurkishRoleName(user.role)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.createdAt}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.lastLogin ?? '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button 
+                            onClick={() => setUserToDelete(user)}
+                            className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50" 
+                            title="Kullanıcıyı Sil"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Pagination */}
-          <Pagination currentPage={currentPage} totalPages={totalPages} />
+          <div className="px-6 py-4 border-t border-gray-200">
+            <Pagination currentPage={currentPage} totalPages={totalPages} />
+          </div>
         </div>
       </div>
     </div>

@@ -464,7 +464,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           <li key={item.id} className="border-b last:border-b-0 pb-1">
                             <div className="text-xs">
                               {item.warranty_status === 'Garanti Dahilinde' ? 'Var' :
-                               item.warranty_status === 'Garanti Dışı' ? ' Yok' : "—"}
+                               item.warranty_status === 'Garanti Dışı' ? 'Yok' : "—"}
                             </div>
                           </li>
                         ))}
@@ -932,7 +932,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                             : "Bu aşama henüz aktif değil"
                         }
                       >
-                                                  {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
+                        {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
                           <CheckCircle className="h-4 w-4" />
                         ) : (
                           <X className="h-4 w-4" />

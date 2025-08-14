@@ -28,7 +28,7 @@ interface ProductModel {
 
 const initialFilters: Filters = {
     search: '',
-    status: 'not_completed',
+    status: '',
     startDate: '',
     endDate: '',
     receiptMethod: '',
@@ -79,7 +79,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
     : productModels;
 
   return (
-      <aside className="w-full md:w-68 lg:w-75 flex-shrink-0 bg-white p-6 rounded-lg shadow-sm">
+      <aside className="w-full h-full p-6">
       <h3 className="text-xl font-bold text-gray-800 mb-6">Filtreler</h3>
       <div className="space-y-6">
         {/* Customer Search Input */}
@@ -116,48 +116,44 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
           </div>
         </div>
 
-        {/* Product Type and Receipt Method Filters */}
+        {/* Product Type Filter */}
         <div>
-          <div className="flex gap-2 mb-1">
-            <div className="flex-1">
-              <label className={`block text-sm font-medium ${isFilterActive(filters.productType) ? 'text-blue-700' : 'text-gray-700'}`}>
-                Ürün Tipi {isFilterActive(filters.productType) && <span className="text-blue-500">●</span>}
-              </label>
-            </div>
-            <div className="flex-1">
-              <label className={`block text-sm font-medium ${isFilterActive(filters.receiptMethod) ? 'text-blue-700' : 'text-gray-700'}`}>
-                Teslim Yöntemi {isFilterActive(filters.receiptMethod) && <span className="text-blue-500">●</span>}
-              </label>
-            </div>
+          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.productType) ? 'text-blue-700' : 'text-gray-700'}`}>
+            Ürün Tipi {isFilterActive(filters.productType) && <span className="text-blue-500">●</span>}
+          </label>
+          <div className={isFilterActive(filters.productType) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
+            <select
+              value={filters.productType || ''}
+              onChange={(e) => {
+                handleFilterChange('productType', e.target.value);
+                // Clear product model when product type changes
+                handleFilterChange('productModel', '');
+              }}
+              className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
+            >
+              <option value="">Tüm Ürün Tipleri</option>
+              <option value="overload">Aşırı Yük Sensörü</option>
+              <option value="door_detector">Kapı Dedektörü</option>
+              <option value="control_unit">Kontrol Ünitesi</option>
+            </select>
           </div>
-          <div className="flex gap-2">
-            <div className={`flex-1 ${isFilterActive(filters.productType) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}`}>
-              <select
-                value={filters.productType || ''}
-                onChange={(e) => {
-                  handleFilterChange('productType', e.target.value);
-                  // Clear product model when product type changes
-                  handleFilterChange('productModel', '');
-                }}
-                className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent text-sm"
-              >
-                <option value="">Tüm Ürün Tipleri</option>
-                <option value="overload">Aşırı Yük Sensörü</option>
-                <option value="door_detector">Kapı Dedektörü</option>
-                <option value="control_unit">Kontrol Ünitesi</option>
-              </select>
-            </div>
-            <div className={`flex-1 ${isFilterActive(filters.receiptMethod) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}`}>
-              <select
-                value={filters.receiptMethod}
-                onChange={(e) => handleFilterChange('receiptMethod', e.target.value)}
-                className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent text-sm"
-              >
-                <option value="">Tüm Yöntemler</option>
-                <option value="shipment">Kargo</option>
-                <option value="in_person">Elden Teslim</option>
-              </select>
-            </div>
+        </div>
+
+        {/* Receipt Method Filter */}
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.receiptMethod) ? 'text-blue-700' : 'text-gray-700'}`}>
+            Teslim Yöntemi {isFilterActive(filters.receiptMethod) && <span className="text-blue-500">●</span>}
+          </label>
+          <div className={isFilterActive(filters.receiptMethod) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
+            <select
+              value={filters.receiptMethod}
+              onChange={(e) => handleFilterChange('receiptMethod', e.target.value)}
+              className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
+            >
+              <option value="">Tüm Yöntemler</option>
+              <option value="shipment">Kargo</option>
+              <option value="in_person">Elden Teslim</option>
+            </select>
           </div>
         </div>
 
@@ -190,13 +186,13 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
             <label className={`block text-sm font-medium mb-1 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'text-blue-700' : 'text-gray-700'}`}>
               Tarih Aralığı {(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) && <span className="text-blue-500">●</span>}
             </label>
-            <div className={`flex gap-2 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md p-1' : ''}`}>
+            <div className={`flex gap-2 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}`}>
                 <div className="w-1/2">
                     <input 
                         type="date" 
                         value={filters.startDate} 
                         onChange={(e) => handleFilterChange('startDate', e.target.value)} 
-                        className="w-full border border-gray-300 rounded-md px-1 py-1.5 text-xs bg-transparent"
+                        className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-transparent"
                         placeholder="Başlangıç"
                     />
                 </div>
@@ -205,7 +201,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
                         type="date" 
                         value={filters.endDate} 
                         onChange={(e) => handleFilterChange('endDate', e.target.value)} 
-                        className="w-full border border-gray-300 rounded-md px-1 py-1.5 text-xs bg-transparent"
+                        className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-transparent"
                         placeholder="Bitiş"
                     />
                 </div>

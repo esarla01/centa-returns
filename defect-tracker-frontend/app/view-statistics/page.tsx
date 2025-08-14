@@ -21,7 +21,7 @@ export default function StatisticsPage() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_STATISTICS">
-      <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
         <Header onLogout={() => {}} />
         <div className="max-w-7xl mx-auto p-6 space-y-6">
           <h1 className="text-2xl font-bold text-gray-800">Raporlar</h1>
@@ -29,7 +29,7 @@ export default function StatisticsPage() {
         {/* Filters */}
         <div className="flex items-end gap-3 bg-white rounded shadow p-4">
           <div>
-            <label className="block text-sm text-gray-600">Başlangıç</label>
+            <label className="block text-sm text-gray-600">Başlangıç Tarihi</label>
             <input
               type="date"
               value={startDate ? startDate.toISOString().split('T')[0] : ''}
@@ -41,6 +41,7 @@ export default function StatisticsPage() {
           </div>
           <div>
             <label className="block text-sm text-gray-600">Bitiş</label>
+
             <input
               type="date"
               value={endDate ? endDate.toISOString().split('T')[0] : ''}
@@ -57,8 +58,7 @@ export default function StatisticsPage() {
             Uygula
           </button>
         </div>
-
-                {/* Charts */}
+        {/* Charts */}
         <div className="space-y-6">
           {/* First row: Three charts side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
