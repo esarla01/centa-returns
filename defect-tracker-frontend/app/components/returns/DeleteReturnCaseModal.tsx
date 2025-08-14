@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { ReturnCase } from '@/lib/types'; // Using the summary type is fine for display
+import { FullReturnCase } from '@/lib/types'; // Using the full type for consistency
 
 interface DeleteReturnCaseModalProps {
-  returnCase: ReturnCase;
+  returnCase: FullReturnCase;
   onClose: () => void;
   onSuccess: () => void;
 }

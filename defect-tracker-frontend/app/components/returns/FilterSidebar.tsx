@@ -57,6 +57,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
   }, []);
   
   const handleFilterChange = (field: keyof Filters, value: string) => {
+    console.log(`Filter changed: ${field} = ${value}`);
     setFilters(prev => ({ ...prev, [field]: value }));
   };
 

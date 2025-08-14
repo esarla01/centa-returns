@@ -10,6 +10,7 @@ import FaultResponsibilityChart from '../components/statistics/FaultResponsibili
 import ServiceTypeChart from '../components/statistics/ServiceTypeChart';
 import ResolutionMethodChart from '../components/statistics/ResolutionMethodChart';
 import ProductTypeChart from '../components/statistics/ProductTypeChart';
+import { RequirePermission } from '../components/RequirePermission';
 
 export default function StatisticsPage() {
   const [startDate, setStartDate] = useState<Date | null>(
@@ -19,10 +20,11 @@ export default function StatisticsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
-      <Header onLogout={() => {}} />
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-800">Raporlar</h1>
+    <RequirePermission permission="PAGE_VIEW_STATISTICS">
+      <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
+        <Header onLogout={() => {}} />
+        <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <h1 className="text-2xl font-bold text-gray-800">Raporlar</h1>
 
         {/* Filters */}
         <div className="flex items-end gap-3 bg-white rounded shadow p-4">
@@ -141,7 +143,8 @@ export default function StatisticsPage() {
           </div>
         </div>
 
+        </div>
       </div>
-    </div>
+    </RequirePermission>
   );
 }

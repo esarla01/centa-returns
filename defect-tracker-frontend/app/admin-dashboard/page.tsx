@@ -110,7 +110,7 @@ export default function AdminDashboard() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_ADMIN" >
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header onLogout={() => alert('Logging out...')} />
       
       {isModalOpen && (

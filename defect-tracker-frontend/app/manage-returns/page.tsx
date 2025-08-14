@@ -103,7 +103,7 @@ export default function ReturnsDashboardPage() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_CASE_TRACKING" >
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-100">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header onLogout={() => {}} />
 
       {isAddModalOpen && (
