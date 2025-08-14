@@ -8,9 +8,12 @@ export type ReturnCase = {
   arrival_date: string;
   receipt_method: string;
   notes: string | null;
-  performed_services: string | null;
-  cost: number | null;
-  shipping_info: string | null;
+      performed_services: string | null;
+    yedek_parca: number;
+    bakim: number;
+    iscilik: number;
+    cost: number;
+    shipping_info: string | null;
   tracking_number: string | null;
   shipping_date: string | null;
   payment_status: string | null;
@@ -22,7 +25,7 @@ export type ReturnCase = {
       product_type: string;
     };
     product_count: number;
-    serial_number: string | null;
+    production_date: string | null;
     is_main_product: boolean;
     warranty_status: string;
     fault_responsibility: string;
@@ -45,17 +48,16 @@ export interface FullReturnCaseItem {
       product_type: string;
     };
     product_count: number;
-    serial_number: string | null;
+    production_date: string | null;
     has_control_unit: boolean;
     warranty_status: string;
     fault_responsibility: string;
     resolution_method: string;
-    performed_services: string | null;
-    cost: number | null;
     service_type: string | null;
     cable_check: boolean;
     profile_check: boolean;
     packaging: boolean;
+    yapilan_islemler: string | null;
 }
 
 export interface FullReturnCase {
@@ -68,6 +70,11 @@ export interface FullReturnCase {
     
     notes: string | null;
     payment_status: string | null;
+    performed_services: string | null;
+    yedek_parca: number;
+    bakim: number;
+    iscilik: number;
+    cost: number;
     shipping_info: string | null;
     tracking_number: string | null;
     shipping_date: string | null;

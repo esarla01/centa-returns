@@ -40,14 +40,14 @@ class AppPermissions(Enum):
     # CASE_EDIT_STAGES
     CASE_EDIT_DELIVERED = auto() # Support
     CASE_EDIT_TECHNICAL_REVIEW = auto() # Technician
-    CASE_EDIT_DOCUMENTATION = auto() # Support
+    CASE_EDIT_PAYMENT_COLLECTION = auto() # Support
     CASE_EDIT_SHIPPING = auto() # Logistics
 
 
     # CASE_COMPLETE_STAGES
     CASE_COMPLETE_DELIVERED = auto() # Support
     CASE_COMPLETE_TECHNICAL_REVIEW = auto() # Technician
-    CASE_COMPLETE_DOCUMENTATION = auto() # Support
+    CASE_COMPLETE_PAYMENT_COLLECTION = auto() # Support
     CASE_COMPLETE_SHIPPING = auto() # Logistics
     CASE_COMPLETE_COMPLETED = auto() # Manager
 
@@ -131,7 +131,7 @@ class ProductModel(db.Model):
 class CaseStatusEnum(Enum):
     DELIVERED = 'Teslim Alındı'
     TECHNICAL_REVIEW = 'Teknik İnceleme'
-    DOCUMENTATION = 'Dokümantasyon'
+    PAYMENT_COLLECTION = 'Ödeme Tahsilatı'
     SHIPPING = 'Kargoya Veriliyor'
     COMPLETED = 'Tamamlandı'
 
@@ -179,8 +179,6 @@ class ReturnCase(db.Model):
     # TECHNICIAN will fill out the items (product_type, product_model_id, product_count, serial_number, warranty_status, fault_responsibility)
     items = db.relationship('ReturnCaseItem', back_populates='return_case', cascade='all, delete-orphan')
 
-
-
     # LOGISTICS will fill out the shipping information
     shipping_info = db.Column(db.String(255), nullable=True)
     tracking_number = db.Column(db.String(100), nullable=True)
@@ -188,6 +186,15 @@ class ReturnCase(db.Model):
 
     # SALES will fill out the payment_status
     payment_status = db.Column(db.Enum(PaymentStatusEnum), nullable=True)
+
+    # Cost fields for the return case
+    yedek_parca = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    bakim = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    iscilik = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    cost = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    
+    # Teknik Servis Notu - moved from ReturnCaseItem to ReturnCase level
+    performed_services = db.Column(db.Text, nullable=True)
 
     # Current workflow status of the return case - automatically filled out by the system
     workflow_status = db.Column(db.Enum(CaseStatusEnum), nullable=False, default=CaseStatusEnum.DELIVERED, index=True)
@@ -216,7 +223,10 @@ class ReturnCaseItem(db.Model):
     # Information about the product
     product_model_id = db.Column(db.Integer, db.ForeignKey('product_models.id'), nullable=False)
     product_count = db.Column(db.Integer, nullable=False, default=1)
-    serial_number = db.Column(db.String(100), nullable=False)
+    
+    # Changed from String to Date for production date (month-year format)
+    production_date = db.Column(db.String(7), nullable=False)  # MM-YYYY format for production date
+
 
     # Warranty status of the product
     warranty_status = db.Column(db.Enum(WarrantyStatusEnum), nullable=True)
@@ -230,15 +240,14 @@ class ReturnCaseItem(db.Model):
     # Indicates whether this product has an attached control unit
     has_control_unit = db.Column(db.Boolean, default=False, nullable=True)
 
-    # TECHNICIAN will fill out the performed services and cost for each item
-    performed_services = db.Column(db.Text, nullable=True)
-    cost = db.Column(db.Numeric(10, 2), nullable=True)
+
     
     # New fields for Teknik İnceleme stage
     service_type = db.Column(db.Enum(ServiceTypeEnum), nullable=True)
     cable_check = db.Column(db.Boolean, default=False, nullable=False)
     profile_check = db.Column(db.Boolean, default=False, nullable=False)
     packaging = db.Column(db.Boolean, default=False, nullable=False)
+    yapilan_islemler = db.Column(db.Text, nullable=True)  # Yapılan İşlemler field
 
     
     # Relationship to the parent ReturnCase. This allows each ReturnCaseItem to access its associated ReturnCase object.

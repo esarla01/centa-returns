@@ -66,6 +66,8 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate?.getTime(), endDate?.getTime(), refreshKey]);
 
+  const isEmpty = !loading && (!data || data.length === 0) && !showPlaceholder;
+
   // Format month labels for better display
   const formatMonthLabel = (month: string) => {
     try {
@@ -80,124 +82,50 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
     }
   };
 
-  // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold text-gray-800 mb-2">{`Üretim Tarihi: ${formatMonthLabel(label)}`}</p>
-          <p className="text-sm text-gray-600">
-            <span style={{ color: '#3B82F6' }}>●</span> Hata Sayısı: {payload[0].value} adet
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (showPlaceholder) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="text-gray-400 mb-2">
-              <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <p className="text-sm text-gray-500">
-              Seçilen tarih aralığı bir aydan az olduğu için bu grafik gösterilmiyor.
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              Lütfen en az bir aylık bir tarih aralığı seçin.
-            </p>
-          </div>
+      <div className="flex flex-col gap-3">
+        <div className="text-sm text-gray-500 text-center py-8">
+          Seçilen tarih aralığı bir aydan az olduğu için bu grafik gösterilmiyor.
+          <br />
+          Lütfen en az bir aylık bir tarih aralığı seçin.
         </div>
       </div>
     );
   }
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Yükleniyor...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-red-500">{error}</div>
-        </div>
-      </div>
-    );
-  }
-
-  const isEmpty = !loading && (!data || data.length === 0) && !showPlaceholder;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-      <div className="relative">
+    <div className="flex flex-col gap-3">
+      {loading && <div className="text-sm text-gray-500">Yükleniyor...</div>}
+      {error && <div className="text-sm text-red-600">{error}</div>}
+      <div style={{ width: "100%", height: "300px" }} className="relative">
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center">
-              <div className="text-gray-400 mb-2">
-                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <span className="text-gray-500">Veri bulunamadı</span>
-            </div>
+            <span className="text-gray-500">Veri bulunamadı</span>
           </div>
         )}
-        
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart 
-            data={data}
-            margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-          >
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="#E5E7EB" 
-              vertical={false}
-            />
+        <ResponsiveContainer>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="month" 
               tickFormatter={formatMonthLabel}
               angle={-45}
               textAnchor="end"
               height={80}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
-              tickMargin={10}
             />
             <YAxis 
               domain={[0, (dataMax: number) => Math.max(dataMax + 1, 5)]}
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: '#6B7280' }}
-              tickMargin={10}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="defect_count" 
-              fill="#3B82F6" 
-              name="Hata Sayısı"
-              radius={[2, 2, 0, 0]}
-            >
+            <Tooltip 
+              formatter={(value: any, name: any) => [`${value} hata`, 'Hata Sayısı']}
+              labelFormatter={(label: string) => `Üretim Tarihi: ${formatMonthLabel(label)}`}
+            />
+            <Bar dataKey="defect_count" fill="#8884d8" name="Hata Sayısı">
               <LabelList 
                 dataKey="defect_count" 
                 position="top" 
-                style={{ 
-                  fontSize: '12px', 
-                  fontWeight: '600',
-                  fill: '#374151'
-                }}
+                style={{ fontSize: '12px', fontWeight: 'bold' }}
                 formatter={(value: any) => value > 0 ? value : ''}
               />
             </Bar>

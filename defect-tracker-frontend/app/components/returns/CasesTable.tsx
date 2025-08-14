@@ -7,9 +7,10 @@ import { Pencil, Trash2, X, CheckCircle } from 'lucide-react';
 import StageCompletionModal from './StageCompletionModal';
 import TeslimAlindiModal from './TeslimAlindiModal';
 import TeknikIncelemeModal from './TeknikIncelemeModal';
-import DokumantasyonModal from './DokumantasyonModal';
+import OdemeTahsilatiModal from './OdemeTahsilatiModal';
 import KargoyaVerildiModal from './KargoyaVerildiModal';
 import TamamlandiModal from './TamamlandiModal';
+import ViewReturnCaseModal from './ViewReturnCaseModal';
 
 
 interface CasesTableProps {
@@ -27,7 +28,7 @@ const getStatusTextColor = (status: string) => {
       return 'text-orange-700';
     case 'Teknik İnceleme':
       return 'text-blue-800';
-    case 'Dokümantasyon':
+    case 'Ödeme Tahsilatı':
       return 'text-yellow-800';
     case 'Kargoya Veriliyor':
       return 'text-purple-800';
@@ -44,7 +45,7 @@ const getStatusStyle = (status: string) => {
       return 'bg-orange-50 hover:bg-orange-100';
     case 'Teknik İnceleme':
       return 'bg-blue-50 hover:bg-blue-100';
-    case 'Dokümantasyon':
+    case 'Ödeme Tahsilatı':
       return 'bg-yellow-50 hover:bg-yellow-100';
     case 'Kargoya Veriliyor':
       return 'bg-purple-50 hover:bg-purple-100';
@@ -57,7 +58,7 @@ const getStatusStyle = (status: string) => {
 
 // Helper function to check if a stage is completed (current status is beyond this stage)
 const isStageCompleted = (currentStatus: string, stage: string): boolean => {
-  const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Dokümantasyon', 'Kargoya Veriliyor', 'Tamamlandı'];
+  const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
   const currentIndex = stageOrder.indexOf(currentStatus);
   const stageIndex = stageOrder.indexOf(stage);
   
@@ -71,10 +72,10 @@ const canUserCompleteStage = (userRole: string, caseStatus: string): boolean => 
       return userRole === 'SUPPORT';
     case 'Teknik İnceleme':
       return userRole === 'TECHNICIAN';
-    case 'Dokümantasyon':
-      return userRole === 'SUPPORT';
+    case 'Ödeme Tahsilatı':
+      return userRole === 'SALES';
     case 'Kargoya Veriliyor':
-      return userRole === 'SHIPPING';
+      return userRole === 'LOGISTICS';
     case 'Tamamlandı':
       return userRole === 'MANAGER';
     default:
@@ -88,7 +89,7 @@ const isCurrentStage = (currentStatus: string, stage: string): boolean => {
   const stageMapping = {
     'teslim_alindi': 'Teslim Alındı',
     'teknik_inceleme': 'Teknik İnceleme',
-    'dokumantasyon': 'Dokümantasyon',
+    'odeme_tahsilati': 'Ödeme Tahsilatı',
     'kargoya_verildi': 'Kargoya Veriliyor',
     'tamamlandi': 'Tamamlandı'
   };
@@ -123,6 +124,16 @@ const formatTurkishDate = (dateString: string) => {
   return `${day} ${months[month]} ${year}`;
 };
 
+const formatCurrency = (amount: number | null | undefined): string => {
+  if (amount === null || amount === undefined) return "—";
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+};
+
 export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefresh }: CasesTableProps) {
   const { user } = useAuth();
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
@@ -153,7 +164,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
     case: null
   });
 
-  const [dokumantasyonModal, setDokumantasyonModal] = useState<{
+  const [odemeTahsilatiModal, setOdemeTahsilatiModal] = useState<{
     isOpen: boolean;
     case: FullReturnCase | null;
   }>({
@@ -177,6 +188,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
     case: null
   });
 
+  const [viewModal, setViewModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+
   const handleCaseSelection = (caseId: number) => {
     setSelectedCaseId(selectedCaseId === caseId ? null : caseId);
   };
@@ -194,8 +207,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
       case 'teknik_inceleme':
         setTeknikIncelemeModal({ isOpen: true, case: caseItem });
         break;
-      case 'dokumantasyon':
-        setDokumantasyonModal({ isOpen: true, case: caseItem });
+      case 'odeme_tahsilati':
+        setOdemeTahsilatiModal({ isOpen: true, case: caseItem });
         break;
       case 'kargoya_verildi':
         setKargoyaVerildiModal({ isOpen: true, case: caseItem });
@@ -214,7 +227,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
     const stageMapping = {
       'teslim_alindi': 'Teslim Alındı',
       'teknik_inceleme': 'Teknik İnceleme',
-      'dokumantasyon': 'Dokümantasyon',
+      'odeme_tahsilati': 'Ödeme Tahsilatı',
       'kargoya_verildi': 'Kargoya Veriliyor',
       'tamamlandi': 'Tamamlandı'
     };
@@ -223,8 +236,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
     const stageEditPermissions: { [key: string]: string[] } = {
       'teslim_alindi': ['SUPPORT'],
       'teknik_inceleme': ['TECHNICIAN'],
-      'dokumantasyon': ['SUPPORT'],
-      'kargoya_verildi': ['SHIPPING'],
+      'odeme_tahsilati': ['SALES'],
+      'kargoya_verildi': ['LOGISTICS'],
       'tamamlandi': ['MANAGER']
     };
 
@@ -233,7 +246,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
     if (!mappedStage) return false;
 
     // Only allow editing if the current status is at or beyond this stage
-    const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Dokümantasyon', 'Kargoya Veriliyor', 'Tamamlandı'];
+    const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
     const currentIndex = stageOrder.indexOf(currentStatus);
     const stageIndex = stageOrder.indexOf(mappedStage);
 
@@ -303,16 +316,12 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               <th className="p-4 text-blue-800">Hata Sorumluluğu</th>
               <th className="p-4 text-blue-800">Çözüm Yöntemi</th>
               <th className="p-4 text-blue-800">Hizmet</th>
-              <th className="p-4 text-blue-800">Kablo Kontrol</th>
-              <th className="p-4 text-blue-800">Profil Kontrol</th>
-              <th className="p-4 text-blue-800">Paketleme</th>
-              <th className="p-4 text-blue-800">Teknik Servis Notu</th>
-              <th className="p-4 text-blue-800">Tutar</th>
+              <th className="p-4 text-blue-800">Yapılan İşlemler</th>
               <th className="p-4 text-blue-800">Teknik İnceleme Eylemler</th>
               
-              {/* Dokümantasyon Stage - Yellow */}
-              <th className="p-4 text-yellow-800">Dokümantasyon</th>
-              <th className="p-4 text-yellow-800">Dokümantasyon Eylemler</th>
+              {/* Ödeme Tahsilatı Stage - Yellow */}
+              <th className="p-4 text-yellow-800">Ödeme Durumu</th>
+              <th className="p-4 text-yellow-800">Ödeme Tahsilatı Eylemler</th>
               
               {/* Kargoya Verildi Stage - Purple */}
               <th className="p-4 text-purple-800">Kargo Bilgisi</th>
@@ -320,23 +329,28 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               <th className="p-4 text-purple-800">Kargoya Verilme Tarihi</th>
               <th className="p-4 text-purple-800">Kargoya Verildi Eylemler</th>
               
-              {/* Tamamlandı Stage */}
-              <th className="p-4">Ödeme Durumu</th>
-              <th className="p-4">Tamamlandı Eylemler</th>
+
               
               <th className="p-4">Genel Eylemler</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200 text-sm text-center">
             {isLoading ? (
-              <tr><td colSpan={28} className="p-4 text-center">Yükleniyor...</td></tr>
+              <tr>
+                <td colSpan={10} className="p-4 text-start pl-125">Yükleniyor...</td>
+                <td colSpan={13} className="p-4 text-start pl-150">Yükleniyor...</td>
+              </tr>
             ) : cases.length === 0 ? (
-              <tr><td colSpan={28} className="p-4 text-center">Vaka bulunamadı.</td></tr>
+              <tr>
+                <td colSpan={10} className="p-4 text-start pl-125">Vaka bulunamadı.</td>
+                <td colSpan={13} className="p-4 text-start pl-150">Vaka bulunamadı.</td>
+                </tr>
             ) : (
               cases.map((c) => {
                 const isSelected = selectedCaseId === c.id;
                 const canDelete = canUserDeleteCase(user?.role || '', c.status);
                 const isDeleteButtonActive = isSelected && canDelete;
+                const isViewButtonActive = isSelected;
 
                 return (
                   <tr key={c.id} className={getStatusStyle(c.status)}>
@@ -438,7 +452,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                         {c.items.map(item => (
                           <li key={item.id} className="border-b last:border-b-0 pb-1">
                             <div className="text-xs">
-                              {item.serial_number || "—"}
+                              {item.production_date || "—"}
                             </div>
                           </li>
                         ))}
@@ -493,65 +507,20 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                         ))}
                       </ul>
                     </td>
-                    {/* Kablo Kontrol */}
+
+                    {/* Teknik İnceleme Stage - Yapılan İşlemler */}
                     <td className="p-4">
                       <ul className="space-y-1">
                         {c.items.map(item => (
                           <li key={item.id} className="border-b last:border-b-0 pb-1">
                             <div className="text-xs">
-                              {item.cable_check ? "✓" : "✗"}
+                              {item.yapilan_islemler || "—"}
                             </div>
                           </li>
                         ))}
                       </ul>
                     </td>
-                    {/* Profil Kontrol */}
-                    <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.profile_check ? "✓" : "✗"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    {/* Paketleme */}
-                    <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.packaging ? "✓" : "✗"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    {/* Teknik İnceleme Stage - Teknik Servis Notu */}
-                    <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.performed_services || "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.cost !== null && item.cost !== undefined ? `₺${item.cost}` : "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
+
                     {/* Teknik İnceleme Eylemler */}
                     <td className="p-4">
                       <div className="flex items-center justify-center space-x-2">
@@ -602,49 +571,49 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                       </div>
                     </td>
                     
-                    {/* Dokümantasyon Stage */}
-                    <td className="p-4">—</td>
+                    {/* Ödeme Tahsilatı Stage */}
+                    <td className="p-4">{c.payment_status ?? "—"}</td>
                     <td className="p-4">
                       <div className="flex items-center justify-center space-x-2">
                         <button
-                          onClick={() => handleStageEdit(c, 'dokumantasyon')}
-                          disabled={!canEditStage(c.status, 'dokumantasyon') || !isSelected}
+                          onClick={() => handleStageEdit(c, 'odeme_tahsilati')}
+                          disabled={!canEditStage(c.status, 'odeme_tahsilati') || !isSelected}
                           className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'dokumantasyon') && isSelected
+                            canEditStage(c.status, 'odeme_tahsilati') && isSelected
                               ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50'
                               : 'text-gray-400 cursor-not-allowed'
                           }`}
                           title={
                             !isSelected
                               ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'dokumantasyon')
-                              ? "Dokümantasyon aşamasını düzenle"
+                              : canEditStage(c.status, 'odeme_tahsilati')
+                              ? "Ödeme Tahsilatı aşamasını düzenle"
                               : "Bu aşama henüz aktif değil"
                           }
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleStageComplete(c, 'dokumantasyon')}
+                          onClick={() => handleStageComplete(c, 'odeme_tahsilati')}
                           className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Dokümantasyon')
+                            isStageCompleted(c.status, 'Ödeme Tahsilatı')
                               ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'dokumantasyon') && canUserCompleteStage(user?.role || '', c.status) && isSelected
+                              : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status) && isSelected
                               ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
                               : 'text-gray-400 cursor-not-allowed'
                           }`}
-                          disabled={!isCurrentStage(c.status, 'dokumantasyon') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
+                          disabled={!isCurrentStage(c.status, 'odeme_tahsilati') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
                           title={
                             !isSelected
                               ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Dokümantasyon') 
-                              ? "Dokümantasyon tamamlandı" 
-                              : isCurrentStage(c.status, 'dokumantasyon') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Dokümantasyon aşamasını tamamla"
+                              : isStageCompleted(c.status, 'Ödeme Tahsilatı') 
+                              ? "Ödeme Tahsilatı tamamlandı" 
+                              : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status)
+                              ? "Ödeme Tahsilatı aşamasını tamamla"
                               : "Bu aşama henüz aktif değil"
                           }
                         >
-                          {isStageCompleted(c.status, 'Dokümantasyon') ? (
+                          {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
                             <CheckCircle className="h-4 w-4" />
                           ) : (
                             <X className="h-4 w-4" />
@@ -706,59 +675,24 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                       </div>
                             </td>
                     
-                    {/* Tamamlandı Stage */}
-                    <td className="p-4">{c.payment_status ?? "—"}</td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleStageEdit(c, 'tamamlandi')}
-                          disabled={!canEditStage(c.status, 'tamamlandi') || !isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'tamamlandi') && isSelected
-                              ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'tamamlandi')
-                              ? "Tamamlandı aşamasını düzenle"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleStageComplete(c, 'tamamlandi')}
-                          className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Tamamlandı')
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'tamamlandi') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isCurrentStage(c.status, 'tamamlandi') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Tamamlandı') 
-                              ? "Tamamlandı" 
-                              : isCurrentStage(c.status, 'tamamlandi') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Tamamlandı aşamasını tamamla"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          {isStageCompleted(c.status, 'Tamamlandı') ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </button>
-                                </div>
-                            </td>
+
                     
                     {/* Actions */}
                     <td className="p-4">                     
+                      <button 
+                        onClick={() => setViewModal({ isOpen: true, case: c })}
+                        disabled={!isViewButtonActive}
+                        className={`transition-all duration-200 ${
+                          isViewButtonActive
+                            ? 'text-blue-600 hover:text-blue-800 cursor-pointer opacity-100'
+                            : 'text-gray-300 cursor-not-allowed opacity-50'
+                        }`}
+                        title="Görüntüle"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                          <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 105.197 11.16l3.646 3.647a.75.75 0 101.06-1.061l-3.646-3.646A6.75 6.75 0 0010.5 3.75zm-5.25 6.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
                       <button 
                         onClick={() => handleDeleteClick(c)}
                         disabled={!isDeleteButtonActive}
@@ -791,6 +725,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
             const isSelected = selectedCaseId === c.id;
             const canDelete = canUserDeleteCase(user?.role || '', c.status);
             const isDeleteButtonActive = isSelected && canDelete;
+            const isViewButtonActive = isSelected;
 
             return (
               <div key={c.id} className={`bg-white rounded-lg shadow border p-4 space-y-3 ${getStatusStyle(c.status)}`}>
@@ -809,6 +744,20 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     </div>
                   </div>
                   <div className="flex space-x-2">                   
+                    <button 
+                      onClick={() => setViewModal({ isOpen: true, case: c })}
+                      disabled={!isViewButtonActive}
+                      className={`p-1 transition-all duration-200 ${
+                        isViewButtonActive
+                          ? 'text-blue-600 hover:text-blue-800 opacity-100'
+                          : 'text-gray-300 opacity-50'
+                      }`}
+                      title="Görüntüle"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                        <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 105.197 11.16l3.646 3.647a.75.75 0 101.06-1.061l-3.646-3.646A6.75 6.75 0 0010.5 3.75zm-5.25 6.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0z" clipRule="evenodd" />
+                      </svg>
+                    </button>
                     <button 
                       onClick={() => handleDeleteClick(c)}
                       disabled={!isDeleteButtonActive}
@@ -941,49 +890,49 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                   
                   <div className="flex items-center justify-between p-2 bg-yellow-50 rounded">
                     <div className="flex items-center space-x-1">
-                      <span className="text-yellow-800 font-semibold">Dokümantasyon:</span>
-                      <span>{isStageCompleted(c.status, 'Dokümantasyon') ? "✅" : isCurrentStage(c.status, 'dokumantasyon') ? "🔄" : "❌"}</span>
+                                      <span className="text-yellow-800 font-semibold">Ödeme Tahsilatı:</span>
+                <span>{isStageCompleted(c.status, 'Ödeme Tahsilatı') ? "✅" : isCurrentStage(c.status, 'odeme_tahsilati') ? "🔄" : "❌"}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <button
-                        onClick={() => handleStageEdit(c, 'dokumantasyon')}
-                        disabled={!canEditStage(c.status, 'dokumantasyon') || !isSelected}
+                        onClick={() => handleStageEdit(c, 'odeme_tahsilati')}
+                        disabled={!canEditStage(c.status, 'odeme_tahsilati') || !isSelected}
                         className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'dokumantasyon') && isSelected
+                          canEditStage(c.status, 'odeme_tahsilati') && isSelected
                             ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-100'
                             : 'text-gray-400 cursor-not-allowed'
                         }`}
                         title={
                           !isSelected
                             ? "Önce vakayı seçin"
-                            : canEditStage(c.status, 'dokumantasyon')
-                            ? "Dokümantasyon aşamasını düzenle"
+                                                      : canEditStage(c.status, 'odeme_tahsilati')
+                          ? "Ödeme Tahsilatı aşamasını düzenle"
                             : "Bu aşama henüz aktif değil"
                           }
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
                       <button
-                        onClick={() => handleStageComplete(c, 'dokumantasyon')}
-                        disabled={!isCurrentStage(c.status, 'dokumantasyon') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
+                        onClick={() => handleStageComplete(c, 'odeme_tahsilati')}
+                        disabled={!isCurrentStage(c.status, 'odeme_tahsilati') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
                         className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Dokümantasyon')
+                          isStageCompleted(c.status, 'Ödeme Tahsilatı')
                             ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'dokumantasyon') && canUserCompleteStage(user?.role || '', c.status) && isSelected
+                            : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status) && isSelected
                             ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
                             : 'text-gray-400 cursor-not-allowed'
                         }`}
                         title={
                           !isSelected
                             ? "Önce vakayı seçin"
-                            : isStageCompleted(c.status, 'Dokümantasyon') 
-                            ? "Dokümantasyon tamamlandı" 
-                            : isCurrentStage(c.status, 'dokumantasyon') && canUserCompleteStage(user?.role || '', c.status)
-                            ? "Dokümantasyon aşamasını tamamla"
+                                                        : isStageCompleted(c.status, 'Ödeme Tahsilatı')
+                            ? "Ödeme Tahsilatı tamamlandı" 
+                            : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status)
+                            ? "Ödeme Tahsilatı aşamasını tamamla"
                             : "Bu aşama henüz aktif değil"
                         }
                       >
-                        {isStageCompleted(c.status, 'Dokümantasyon') ? (
+                                                  {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
                           <CheckCircle className="h-4 w-4" />
                         ) : (
                           <X className="h-4 w-4" />
@@ -1110,8 +1059,20 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     <p>{c.receipt_method}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Tutar:</span>
-                                            <p>{c.items.length > 0 ? c.items.map(item => item.cost !== null && item.cost !== undefined ? `₺${item.cost}` : "—").join(", ") : "—"}</p>
+                    <span className="text-gray-500">Yedek Parça:</span>
+                    <p>{formatCurrency(c.yedek_parca)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Bakım:</span>
+                    <p>{formatCurrency(c.bakim)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">İşçilik:</span>
+                    <p>{formatCurrency(c.iscilik)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Toplam Tutar:</span>
+                    <p className="font-semibold text-blue-600">{formatCurrency(c.cost)}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Ödeme Durumu:</span>
@@ -1141,7 +1102,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                         <span className="text-gray-500"> ({item.product_count} adet)</span>
                         <div className="text-gray-400 mt-1">
                           <span className="mr-2">
-                            <strong>Seri No:</strong> {item.serial_number || "—"}
+                            <strong>Üretim Tarihi:</strong> {item.production_date || "—"}
                           </span>
                           <span className="mr-2">
                             {item.warranty_status === 'Garanti Dahilinde' ? '✅ Garanti Dahilinde' :
@@ -1166,10 +1127,10 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                 </div>
 
                 {/* Performed Services */}
-                {c.items.some(item => item.performed_services) && (
+                {c.performed_services && (
                   <div>
-                                            <span className="text-gray-500 text-sm">Teknik Servis Notu:</span>
-                    <p className="text-sm mt-1">{c.items.filter(item => item.performed_services).map(item => item.performed_services).join(", ")}</p>
+                    <span className="text-gray-500 text-sm">Teknik Servis Notu:</span>
+                    <p className="text-sm mt-1">{c.performed_services.length > 50 ? `${c.performed_services.substring(0, 50)}...` : c.performed_services}</p>
                   </div>
                 )}
 
@@ -1210,10 +1171,10 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
         />
       )}
 
-      {dokumantasyonModal.isOpen && dokumantasyonModal.case && (
-        <DokumantasyonModal
-          returnCase={dokumantasyonModal.case}
-          onClose={() => setDokumantasyonModal({ isOpen: false, case: null })}
+      {odemeTahsilatiModal.isOpen && odemeTahsilatiModal.case && (
+        <OdemeTahsilatiModal
+          returnCase={odemeTahsilatiModal.case}
+          onClose={() => setOdemeTahsilatiModal({ isOpen: false, case: null })}
           onSuccess={handleStageCompleteSuccess}
         />
       )}
@@ -1231,6 +1192,13 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
           returnCase={tamamlandiModal.case}
           onClose={() => setTamamlandiModal({ isOpen: false, case: null })}
           onSuccess={handleStageCompleteSuccess}
+        />
+      )}
+
+      {viewModal.isOpen && viewModal.case && (
+        <ViewReturnCaseModal
+          returnCase={viewModal.case}
+          onClose={() => setViewModal({ isOpen: false, case: null })}
         />
       )}
         </div>

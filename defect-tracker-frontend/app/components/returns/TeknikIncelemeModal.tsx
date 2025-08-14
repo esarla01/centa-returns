@@ -14,17 +14,16 @@ type EditableProduct = {
   id: number;
   product_model: { id: number; name: string; product_type: string };
   product_count: number;
-  serial_number: string;
+  production_date: string;
   warranty_status: string;
   fault_responsibility: string;
   resolution_method: string;
   has_control_unit: boolean;
-  performed_services: string;
-  cost: number | null;
   service_type: string;
   cable_check: boolean;
   profile_check: boolean;
   packaging: boolean;
+  yapilan_islemler: string;
   isNew?: boolean;
 };
 
@@ -78,21 +77,30 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
         product_type: item.product_model?.product_type || '' 
       },
       product_count: item.product_count || 1,
-      serial_number: item.serial_number || '',
+      production_date: item.production_date || '',
       warranty_status: item.warranty_status ? convertToEnumKey(item.warranty_status, warrantyMap) : '',
       fault_responsibility: item.fault_responsibility ? convertToEnumKey(item.fault_responsibility, faultResponsibilityMap) : '',
       resolution_method: item.resolution_method ? convertToEnumKey(item.resolution_method, resolutionMethodMap) : '',
       has_control_unit: item.has_control_unit,
-      performed_services: item.performed_services || '',
-      cost: item.cost !== null && item.cost !== undefined ? item.cost : null,
       service_type: item.service_type ? convertToEnumKey(item.service_type, serviceTypeMap) : '',
       cable_check: item.cable_check || false,
       profile_check: item.profile_check || false,
       packaging: item.packaging || false,
+      yapilan_islemler: item.yapilan_islemler || '',
     }))
   );
 
   const [nextProductId, setNextProductId] = useState(1000);
+
+  // Cost state management
+  const [caseCosts, setCaseCosts] = useState({
+    yedek_parca: returnCase.yedek_parca || 0,
+    bakim: returnCase.bakim || 0,
+    iscilik: returnCase.iscilik || 0
+  });
+
+  // Case level performed_services state
+  const [performedServices, setPerformedServices] = useState(returnCase.performed_services || '');
 
   // Fetch product models for dropdown
   useEffect(() => {
@@ -116,10 +124,11 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     const incompleteProducts = products.filter(p => 
       !p.product_model.name.trim() || 
       p.product_count <= 0 || 
-      !p.serial_number.trim()
+      !p.production_date.trim() 
+    
     );
     if (incompleteProducts.length > 0) {
-      setError('Lütfen önce mevcut ürünlerin ürün modeli, adet ve seri numarası bilgilerini doldurun.');
+      setError('Lütfen önce mevcut ürünlerin ürün modeli, adet ve üretim tarihi bilgilerini doldurun.');
       return;
     }
 
@@ -127,17 +136,16 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       id: nextProductId,
       product_model: { id: 0, name: '', product_type: '' },
       product_count: 1,
-      serial_number: '',
+      production_date: '',
       warranty_status: '',
       fault_responsibility: '',
       resolution_method: '',
       has_control_unit: false,
-      performed_services: '',
-      cost: null,
       service_type: '',
       cable_check: false,
       profile_check: false,
       packaging: false,
+      yapilan_islemler: '',
       isNew: true,
     };
     setProducts(prev => [...prev, newProduct]);
@@ -164,36 +172,42 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     setError(null);
     setSuccess(null);
 
-    // Validate that all products have the required fields: product model, count, and serial number
+    // Validate that all products have the required fields: product model, count, production date, and yapilan_islemler
     const productsWithMissingRequiredFields = products.filter(p => 
       !p.product_model.name.trim() || 
       p.product_count <= 0 || 
-      !p.serial_number.trim()
+      !p.production_date.trim()
     );
     
     if (productsWithMissingRequiredFields.length > 0) {
-      setError('Lütfen tüm ürünler için ürün modeli, adet ve seri numarası bilgilerini doldurun.');
+      setError('Lütfen tüm ürünler için ürün modeli, adet ve üretim tarihi bilgilerini doldurun.');
       setIsLoading(false);
       return;
     }
 
+
+
     try {
       const requestBody = {
+        yedek_parca: caseCosts.yedek_parca || 0,
+        bakim: caseCosts.bakim || 0,
+        iscilik: caseCosts.iscilik || 0,
+        performed_services: performedServices,
         items: products.filter(p => p.product_model.name && p.product_count > 0).map(p => ({
           id: p.isNew ? undefined : p.id,
           product_model_id: p.product_model.id,
           product_count: p.product_count,
-          serial_number: p.serial_number,
+          production_date: p.production_date,
           warranty_status: p.warranty_status,
           fault_responsibility: p.fault_responsibility,
           resolution_method: p.resolution_method,
           has_control_unit: p.has_control_unit,
-          performed_services: p.performed_services,
-          cost: p.cost,
+
           service_type: p.service_type,
           cable_check: p.cable_check,
           profile_check: p.profile_check,
           packaging: p.packaging,
+          yapilan_islemler: p.yapilan_islemler,
         }))
       };
       
@@ -268,7 +282,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                 <button
                   type="button"
                   onClick={handleAddProduct}
-                  disabled={products.some(p => !p.product_model.name.trim() || p.product_count <= 0 || !p.serial_number.trim())}
+                  disabled={products.some(p => !p.product_model.name.trim() || p.product_count <= 0 || !p.production_date.trim())}
                   className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
                 >
                   <PlusCircle size={16} />
@@ -277,7 +291,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
               </div>
 
               {products.map((product, index) => (
-                <div key={product.id} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                <div key={product.id} className="border border-gray-200 rounded-lg p-6 space-y-6 bg-white shadow-sm">
                   <div className="flex items-center justify-between">
                     <h4 className="text-md font-medium text-gray-700">Ürün {index + 1}</h4>
                     <button
@@ -289,8 +303,8 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                     </button>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* First row: Product Model, Product Count, Attached Control Unit */}
+                  <div className="space-y-6 pt-2">
+                    {/* First row: Product Model, Product Count */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Product Model */}
                       <div className="space-y-2">
@@ -336,197 +350,274 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                     </div>
 
 
-                      {/* Has Control Unit Checkbox - Only show for door detector or overload sensor */}
-                      {(product.product_model.product_type === 'Kapı Dedektörü' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
+                      {/* Control Unit and Serial Number - Same Row */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                        {/* Has Control Unit Checkbox - Only show for door detector or overload sensor */}
+                        {(product.product_model.product_type === 'Kapı Dedektörü' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`has-control-unit-${product.id}`}
+                                checked={product.has_control_unit}
+                                onChange={(e) => {
+                                  handleProductChange(product.id, 'has_control_unit', e.target.checked);
+                                }}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label htmlFor={`has-control-unit-${product.id}`} className="text-sm font-medium text-gray-700">
+                                Kontrol Ünitesi Var
+                              </label>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Bu ürünün ekli bir kontrol ünitesi varsa işaretleyin.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Production Date (Month Picker) */}
                         <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`has-control-unit-${product.id}`}
-                              checked={product.has_control_unit}
-                              onChange={(e) => {
-                                handleProductChange(product.id, 'has_control_unit', e.target.checked);
-                              }}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor={`has-control-unit-${product.id}`} className="text-sm font-medium text-gray-700">
-                              Kontrol Ünitesi Var
-                            </label>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            Bu ürünün ekli bir kontrol ünitesi varsa işaretleyin.
-                          </p>
-                        </div>
-                      )}
-
-                    {/* Second row: Serial Number, Warranty Status, Fault Responsibility, Resolution Method */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Serial Number */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Seri Numarası *
-                        </label>
-                        <input
-                          type="text"
-                          value={product.serial_number}
-                          onChange={(e) => handleProductChange(product.id, 'serial_number', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Seri numarası..."
-                          required
-                        />
-                      </div>
-
-                      {/* Warranty Status */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Garanti Durumu
-                        </label>
-                        <select
-                          value={product.warranty_status}
-                          onChange={(e) => handleProductChange(product.id, 'warranty_status', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Seçiniz</option>
-                          <option value="in_warranty">Garanti Dahilinde</option>
-                          <option value="out_of_warranty">Garanti Dışı</option>
-                        </select>
-                      </div>
-
-                      {/* Fault Responsibility */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Hata Sorumluluğu
-                        </label>
-                        <select
-                          value={product.fault_responsibility}
-                          onChange={(e) => handleProductChange(product.id, 'fault_responsibility', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Seçiniz</option>
-                          <option value="user_error">Kullanıcı Hatası</option>
-                          <option value="technical_issue">Teknik Sorun</option>
-                          <option value="mixed">Karışık</option>
-                        </select>
-                      </div>
-
-                      {/* Resolution Method */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Çözüm Yöntemi
-                        </label>
-                        <select
-                          value={product.resolution_method}
-                          onChange={(e) => handleProductChange(product.id, 'resolution_method', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Seçiniz</option> 
-                          <option value="repair">Tamir</option>
-                          <option value="replacement">Değişim</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* New row: Service Type and Checkboxes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Service Type */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Hizmet
-                        </label>
-                        <select
-                          value={product.service_type}
-                          onChange={(e) => handleProductChange(product.id, 'service_type', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="">Seçiniz</option>
-                          <option value="maintenance">Bakım</option>
-                          <option value="repair">Onarım</option>
-                          <option value="calibration">Kalibrasyon</option>
-                        </select>
-                      </div>
-
-                      {/* Checkboxes */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Kontroller
-                        </label>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`cable-check-${product.id}`}
-                              checked={product.cable_check}
-                              onChange={(e) => handleProductChange(product.id, 'cable_check', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor={`cable-check-${product.id}`} className="text-sm text-gray-700">
-                              Kablo Kontrol
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`profile-check-${product.id}`}
-                              checked={product.profile_check}
-                              onChange={(e) => handleProductChange(product.id, 'profile_check', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor={`profile-check-${product.id}`} className="text-sm text-gray-700">
-                              Profil Kontrol
-                            </label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`packaging-${product.id}`}
-                              checked={product.packaging}
-                              onChange={(e) => handleProductChange(product.id, 'packaging', e.target.checked)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label htmlFor={`packaging-${product.id}`} className="text-sm text-gray-700">
-                              Paketleme
-                            </label>
-                          </div>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Üretim Tarihi *
+                          </label>
+                          <input
+                            type="month"
+                            value={product.production_date}
+                            onChange={(e) => handleProductChange(product.id, 'production_date', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="YYYY-MM"
+                            required
+                          />
                         </div>
                       </div>
-                    </div>
 
-                    {/* Third row: Performed Services and Cost */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Performed Services */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Teknik Servis Notu *
-                        </label>
-                        <textarea
-                          value={product.performed_services}
-                          onChange={(e) => handleProductChange(product.id, 'performed_services', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Teknik servis notu..."
-                          rows={3}
-                        />
-                      </div>
+                                         {/* Third row: Two equal-height columns */}
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       {/* Left Column: Status Fields */}
+                       <div className="space-y-4">
+                         {/* Warranty Status */}
+                         <div className="space-y-2">
+                           <label className="block text-sm font-medium text-gray-700">
+                             Garanti Durumu
+                           </label>
+                           <select
+                             value={product.warranty_status}
+                             onChange={(e) => handleProductChange(product.id, 'warranty_status', e.target.value)}
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="">Seçiniz</option>
+                             <option value="in_warranty">Garanti Dahilinde</option>
+                             <option value="out_of_warranty">Garanti Dışı</option>
+                           </select>
+                         </div>
 
-                      {/* Cost */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Tutar (₺) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={product.cost ?? ''}
-                          onChange={(e) => handleProductChange(product.id, 'cost', e.target.value ? parseFloat(e.target.value) : null)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="0.00"
-                        />
+                         {/* Fault Responsibility */}
+                         <div className="space-y-2">
+                           <label className="block text-sm font-medium text-gray-700">
+                             Hata Sorumluluğu
+                           </label>
+                           <select
+                             value={product.fault_responsibility}
+                             onChange={(e) => handleProductChange(product.id, 'fault_responsibility', e.target.value)}
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="">Seçiniz</option>
+                             <option value="user_error">Kullanıcı Hatası</option>
+                             <option value="technical_issue">Teknik Sorun</option>
+                             <option value="mixed">Karışık</option>
+                           </select>
+                         </div>
+
+                         {/* Resolution Method */}
+                         <div className="space-y-2">
+                           <label className="block text-sm font-medium text-gray-700">
+                             Çözüm Yöntemi
+                           </label>
+                           <select
+                             value={product.resolution_method}
+                             onChange={(e) => handleProductChange(product.id, 'resolution_method', e.target.value)}
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="">Seçiniz</option> 
+                             <option value="repair">Tamir</option>
+                             <option value="replacement">Değişim</option>
+                           </select>
+                         </div>
+                       </div>
+
+                       {/* Right Column: Service and Actions */}
+                       <div className="space-y-4">
+                         {/* Service Type */}
+                         <div className="space-y-2">
+                           <label className="block text-sm font-medium text-gray-700">
+                             Hizmet
+                           </label>
+                           <select
+                             value={product.service_type}
+                             onChange={(e) => handleProductChange(product.id, 'service_type', e.target.value)}
+                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                           >
+                             <option value="">Seçiniz</option>
+                             <option value="maintenance">Bakım</option>
+                             <option value="repair">Onarım</option>
+                             <option value="calibration">Kalibrasyon</option>
+                           </select>
+                         </div>
+
+                         {/* Yapılan İşlemler */}
+                         <div className="space-y-2">
+                           <label className="block text-sm font-medium text-gray-700">
+                             Yapılan İşlemler
+                           </label>
+                           <textarea
+                             value={product.yapilan_islemler}
+                             onChange={(e) => handleProductChange(product.id, 'yapilan_islemler', e.target.value)}
+                             className="w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                             placeholder="Yapılan işlemleri detaylı olarak açıklayın..."
+                             rows={4}
+                           />
+                         </div>
+                       </div>
+                     </div>
+
+                    
+                    {/* Fifth row: Kontroller - Compact Horizontal Layout */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Kontroller
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`cable-check-${product.id}`}
+                            checked={product.cable_check}
+                            onChange={(e) => handleProductChange(product.id, 'cable_check', e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`cable-check-${product.id}`} className="text-sm text-gray-700 font-medium">
+                            Kablo Kontrol
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`profile-check-${product.id}`}
+                            checked={product.profile_check}
+                            onChange={(e) => handleProductChange(product.id, 'profile_check', e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`profile-check-${product.id}`} className="text-sm text-gray-700 font-medium">
+                            Profil Kontrol
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`packaging-${product.id}`}
+                            checked={product.packaging}
+                            onChange={(e) => handleProductChange(product.id, 'packaging', e.target.checked)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor={`packaging-${product.id}`} className="text-sm text-gray-700 font-medium">
+                            Paketleme
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Teknik Servis Notu - Case Level */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Teknik Servis Notu
+              </label>
+              <textarea
+                value={performedServices}
+                onChange={(e) => setPerformedServices(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Teknik servis notu..."
+                rows={3}
+              />
+            </div>
+
+            {/* Cost Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Yedek Parça (₺)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={caseCosts.yedek_parca || ''}
+                  onChange={(e) => {
+                    const yedek_parca = e.target.value ? parseFloat(e.target.value) : 0;
+                    setCaseCosts(prev => ({
+                      ...prev,
+                      yedek_parca
+                    }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Bakım (₺)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={caseCosts.bakim || ''}
+                  onChange={(e) => {
+                    const bakim = e.target.value ? parseFloat(e.target.value) : 0;
+                    setCaseCosts(prev => ({
+                      ...prev,
+                      bakim
+                    }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  İşçilik (₺)
+                </label>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={caseCosts.iscilik || ''}
+                  onChange={(e) => {
+                    const iscilik = e.target.value ? parseFloat(e.target.value) : 0;
+                    setCaseCosts(prev => ({
+                      ...prev,
+                      iscilik
+                    }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Total Cost Display */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Toplam Tutar (₺)
+              </label>
+              <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700 font-medium">
+                {(caseCosts.yedek_parca || 0) + (caseCosts.bakim || 0) + (caseCosts.iscilik || 0)} ₺
+              </div>
+            </div>
+
 
             {/* Submit Button */}
             <div className="flex justify-end space-x-3 pt-4">
@@ -551,3 +642,5 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     </div>
   );
 } 
+
+

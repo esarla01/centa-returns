@@ -25,7 +25,7 @@ type EditableProduct = {
   id: number;
   product_model: { name: string };
   product_count: number;
-  serial_number: string;
+  production_date: string;
   warranty_status: string;
   fault_responsibility: string;
   resolution_method: string;
@@ -80,7 +80,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
       id: item.id,
       product_model: { name: item.product_model?.name || '' },
       product_count: item.product_count || 1,
-      serial_number: item.serial_number || '',
+      production_date: item.production_date || '',
       warranty_status: item.warranty_status || 'unknown',
       fault_responsibility: item.fault_responsibility || 'unknown',
       resolution_method: item.resolution_method || 'unknown',
@@ -104,7 +104,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
       id: nextProductId,
       product_model: { name: '' },
       product_count: 1,
-      serial_number: '',
+      production_date: '',
       warranty_status: 'unknown',
       fault_responsibility: 'unknown',
       resolution_method: 'unknown',
@@ -189,7 +189,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
           items: products.filter(p => p.product_model.name && p.product_count > 0).map(p => ({
             product_model_name: p.product_model.name,
             product_count: p.product_count,
-            serial_number: p.serial_number,
+            production_date: p.production_date,
             warranty_status: p.warranty_status,
             fault_responsibility: p.fault_responsibility,
             resolution_method: p.resolution_method,
@@ -423,20 +423,20 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                             )}
                           </div>
                           <div>
-                            <label className="block text-xs font-medium text-blue-700 mb-1">Seri Numarası</label>
+                            <label className="block text-xs font-medium text-blue-700 mb-1">Üretim Tarihi</label>
                             {canEditStage('Teknik İnceleme') && item.isNew ? (
                               <input
                                 type="text"
-                                value={item.serial_number}
-                                onChange={(e) => handleProductChange(item.id, 'serial_number', e.target.value)}
+                                value={item.production_date}
+                                onChange={(e) => handleProductChange(item.id, 'production_date', e.target.value)}
                                 className="w-full border border-blue-300 rounded p-2 bg-white text-blue-800 text-sm"
-                                placeholder="Seri numarası..."
+                                placeholder="MM-YYYY (örn: 03-2024)"
                                 required
                               />
                             ) : (
                               <input
                                 type="text"
-                                value={item.serial_number || 'Yok'}
+                                value={item.production_date || 'Yok'}
                                 disabled
                                 className="w-full border border-blue-300 rounded p-2 bg-blue-50 text-blue-800 font-semibold cursor-not-allowed text-sm"
                               />

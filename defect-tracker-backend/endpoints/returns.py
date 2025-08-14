@@ -40,7 +40,7 @@ def create_return_case():
                 return_case_id=case.id,
                 product_model_id=item.get('productModelId'),
                 product_count=count,
-                serial_number=item.get('serialNumber'), 
+                production_date=item.get('productionDate'), 
                 has_control_unit=item.get('attachControlUnit', False),
             )
             db.session.add(main_item)
@@ -51,26 +51,6 @@ def create_return_case():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-
-@return_case_bp.route('/clear', methods=['DELETE'])
-def clear_return_cases():
-    try:
-        # Delete all records from ReturnCaseItem
-        db.session.query(ReturnCaseItem).delete()
-
-        # Delete all records from ReturnCase
-        db.session.query(ReturnCase).delete()
-
-        # Commit the changes
-        db.session.commit()
-
-        return jsonify({"message": "Tüm iade vakaları ve öğeleri temizlendi."}), 200
-
-    except Exception as e:
-        # Rollback in case of an error
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
 
 @return_case_bp.route('/', methods=['GET'])
 def get_return_cases():
@@ -185,17 +165,17 @@ def get_return_cases():
                     "product_type": item.product_model.product_type.value if item.product_model else None
                 },
                 "product_count": item.product_count,
-                "serial_number": item.serial_number,
+                "production_date": item.production_date,
                 "has_control_unit": item.has_control_unit,
                 "warranty_status": item.warranty_status.value if item.warranty_status else None,
                 "fault_responsibility": item.fault_responsibility.value if item.fault_responsibility else None,
                 "resolution_method": item.resolution_method.value if item.resolution_method else None,
-                "performed_services": item.performed_services,
-                "cost": float(item.cost) if item.cost is not None else None,
+
                 "service_type": item.service_type.value if item.service_type else None,
                 "cable_check": item.cable_check,
                 "profile_check": item.profile_check,
-                "packaging": item.packaging
+                "packaging": item.packaging,
+                "yapilan_islemler": item.yapilan_islemler
             }
 
         data = [{
@@ -212,6 +192,11 @@ def get_return_cases():
             "tracking_number": c.tracking_number,
             "shipping_date": c.shipping_date.isoformat() if c.shipping_date else None,
             "payment_status": c.payment_status.value if c.payment_status else None,
+            "yedek_parca": float(c.yedek_parca) if c.yedek_parca is not None else 0,
+            "bakim": float(c.bakim) if c.bakim is not None else 0,
+            "iscilik": float(c.iscilik) if c.iscilik is not None else 0,
+            "cost": float(c.cost) if c.cost is not None else 0,
+            "performed_services": c.performed_services,
             "items": [serialize_item(i) for i in c.items]
         } for c in cases]
 
@@ -240,7 +225,7 @@ def create_simple_return_case():
         return jsonify({'error': 'customerId, arrivalDate ve receiptMethod gereklidir.'}), 400
 
     # Look up customer by id
-    customer = Customers.query.get(customer_id)
+    customer = db.session.get(Customers, customer_id)
     if not customer:
         return jsonify({'error': f'{customer_id} ID\'li müşteri bulunamadı.'}), 404
 
@@ -268,7 +253,7 @@ def create_simple_return_case():
 def update_teslim_alindi(return_case_id):
     """Update Teslim Alındı stage information"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -276,7 +261,7 @@ def update_teslim_alindi(return_case_id):
         
         # Update customer if provided
         if 'customerId' in data:
-            customer = Customers.query.get(data['customerId'])
+            customer = db.session.get(Customers, data['customerId'])
             if not customer:
                 return jsonify({"error": "Müşteri bulunamadı"}), 404
             return_case.customer_id = data['customerId']
@@ -307,7 +292,7 @@ def update_teslim_alindi(return_case_id):
 def complete_teslim_alindi(return_case_id):
     """Complete Teslim Alındı stage and move to Technical Review"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -343,10 +328,28 @@ def update_teknik_inceleme(return_case_id):
         print(f"Updating teknik inceleme for case {return_case_id}")
         data = request.get_json()
         print(f"Received data: {data}")
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
+        
+        # Update cost fields if provided
+        if 'yedek_parca' in data:
+            return_case.yedek_parca = data['yedek_parca'] or 0
+        if 'bakim' in data:
+            return_case.bakim = data['bakim'] or 0
+        if 'iscilik' in data:
+            return_case.iscilik = data['iscilik'] or 0
+        
+        # Calculate total cost
+        yedek_parca = return_case.yedek_parca or 0
+        bakim = return_case.bakim or 0
+        iscilik = return_case.iscilik or 0
+        return_case.cost = yedek_parca + bakim + iscilik
+        
+        # Update performed_services at case level
+        if 'performed_services' in data:
+            return_case.performed_services = data['performed_services']
         
         if 'items' in data:
             # Clear existing items
@@ -387,17 +390,16 @@ def update_teknik_inceleme(return_case_id):
                     return_case_id=return_case_id,
                     product_model_id=item_data['product_model_id'],
                     product_count=item_data['product_count'],
-                    serial_number=item_data.get('serial_number'),
+                    production_date=item_data.get('production_date'),
                     warranty_status=warranty_status,
                     fault_responsibility=fault_responsibility,
                     resolution_method=resolution_method,
                     has_control_unit=item_data.get('has_control_unit', False),
-                    performed_services=item_data.get('performed_services'),
-                    cost=item_data.get('cost'),
                     service_type=service_type,
                     cable_check=item_data.get('cable_check', False),
                     profile_check=item_data.get('profile_check', False),
-                    packaging=item_data.get('packaging', False)
+                    packaging=item_data.get('packaging', False),
+                    yapilan_islemler=item_data.get('yapilan_islemler')
                 )
                 db.session.add(new_item)
         
@@ -414,7 +416,7 @@ def update_teknik_inceleme(return_case_id):
 def complete_teknik_inceleme(return_case_id):
     """Complete Teknik İnceleme stage and move to Documentation"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -433,8 +435,17 @@ def complete_teknik_inceleme(return_case_id):
             if not item.product_count or item.product_count <= 0:
                 return jsonify({"error": "Ürün adeti eksik. Lütfen tüm ürünler için adet belirtin."}), 400
             
-            if not item.serial_number:
-                return jsonify({"error": "Seri numarası eksik. Lütfen tüm ürünler için seri numarasını belirtin."}), 400
+            if not item.production_date:
+                return jsonify({"error": "Üretim tarihi eksik. Lütfen tüm ürünler için üretim tarihini belirtin."}), 400
+            try:
+                # Format: YYYY-MM
+                dt = datetime.strptime(item.production_date, "%Y-%m")
+                now = datetime.now()
+                # Compare year and month only
+                if (dt.year > now.year) or (dt.year == now.year and dt.month > now.month):
+                    return jsonify({"error": "Üretim tarihi gelecekte olamaz. Lütfen geçerli bir tarih girin."}), 400
+            except Exception:
+                return jsonify({"error": "Üretim tarihi formatı geçersiz. Lütfen YYYY-MM formatında girin."}), 400
             
             if not item.warranty_status:
                 return jsonify({"error": "Garanti durumu eksik. Lütfen tüm ürünler için garanti durumunu belirtin."}), 400
@@ -448,11 +459,7 @@ def complete_teknik_inceleme(return_case_id):
             if not item.service_type:
                 return jsonify({"error": "Hizmet türü eksik. Lütfen tüm ürünler için hizmet türünü belirtin."}), 400
             
-            if not item.performed_services or not item.performed_services.strip():
-                return jsonify({"error": "Teknik servis notu eksik. Lütfen tüm ürünler için teknik servis notunu belirtin."}), 400
-            
-            if item.cost is None:
-                return jsonify({"error": "Tutar eksik. Lütfen tüm ürünler için tutarı belirtin."}), 400
+
             
             if not item.cable_check:
                 return jsonify({"error": "Kablo kontrol eksik. Lütfen tüm ürünler için kablo kontrolünü tamamlayın."}), 400
@@ -462,67 +469,83 @@ def complete_teknik_inceleme(return_case_id):
             
             if not item.packaging:
                 return jsonify({"error": "Paketleme eksik. Lütfen tüm ürünler için paketlemeyi tamamlayın."}), 400
+            
+            if not item.yapilan_islemler or not item.yapilan_islemler.strip():
+                return jsonify({"error": "Yapılan İşlemler eksik. Lütfen tüm ürünler için yapılan işlemleri belirtin."}), 400
 
-        return_case.workflow_status = CaseStatusEnum.DOCUMENTATION
+        # Validate cost fields for Teknik İnceleme completion
+        if return_case.yedek_parca is None or return_case.yedek_parca < 0:
+            return jsonify({"error": "Yedek Parça tutarı eksik. Lütfen yedek parça tutarını belirtin."}), 400
+        
+        if return_case.bakim is None or return_case.bakim < 0:
+            return jsonify({"error": "Bakım tutarı eksik. Lütfen bakım tutarını belirtin."}), 400
+        
+        if return_case.iscilik is None or return_case.iscilik < 0:
+            return jsonify({"error": "İşçilik tutarı eksik. Lütfen işçilik tutarını belirtin."}), 400
+
+        # Validate performed_services at case level
+        if not return_case.performed_services or not return_case.performed_services.strip():
+            return jsonify({"error": "Teknik servis notu eksik. Lütfen teknik servis notunu belirtin."}), 400
+
+        return_case.workflow_status = CaseStatusEnum.PAYMENT_COLLECTION
         db.session.commit()
-        return jsonify({"message": "Teknik İnceleme aşaması tamamlandı, durum Dokümantasyon olarak güncellendi"}), 200
+        return jsonify({"message": "Teknik İnceleme aşaması tamamlandı, durum Ödeme Tahsilatı olarak güncellendi"}), 200
 
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500
 
-# Dokumantasyon Stage ----------------------------------------------------------
+# Ödeme Tahsilatı Stage ----------------------------------------------------------
 
 # Edit Button used by Support
-@return_case_bp.route('/<int:return_case_id>/dokumantasyon', methods=['PUT'])
-@permission_required(AppPermissions.CASE_EDIT_DOCUMENTATION)
-def update_dokumantasyon(return_case_id):
-    """Update Dokümantasyon stage information"""
+@return_case_bp.route('/<int:return_case_id>/odeme-tahsilati', methods=['PUT'])
+@permission_required(AppPermissions.CASE_EDIT_PAYMENT_COLLECTION)
+def update_odeme_tahsilati(return_case_id):
+    """Update Ödeme Tahsilatı stage information"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
         data = request.get_json()
         
-        # Update items fault responsibility if provided
-        if 'items' in data:
-            for item_data in data['items']:
-                item = ReturnCaseItem.query.get(item_data['id'])
-                if item and item.return_case_id == return_case_id:
-                    fault_resp_key = convert_turkish_to_enum(item_data['fault_responsibility'], FaultResponsibilityEnum)
-                    item.fault_responsibility = FaultResponsibilityEnum[fault_resp_key]
+        # Update payment status if provided
+        if 'payment_status' in data:
+            payment_status_key = convert_turkish_to_enum(data['payment_status'], PaymentStatusEnum)
+            if payment_status_key:
+                return_case.payment_status = PaymentStatusEnum[payment_status_key]
 
         db.session.commit()
-        return jsonify({"message": "Dokümantasyon bilgileri güncellendi"}), 200
+        return jsonify({"message": "Ödeme tahsilatı bilgileri güncellendi"}), 200
 
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500
 
 # Complete Button used by Support
-@return_case_bp.route('/<int:return_case_id>/complete-dokumantasyon', methods=['POST'])
-@permission_required(AppPermissions.CASE_COMPLETE_DOCUMENTATION)
-def complete_dokumantasyon(return_case_id):
-    """Complete Dokümantasyon stage and move to Shipping"""
+@return_case_bp.route('/<int:return_case_id>/complete-odeme-tahsilati', methods=['POST'])
+@permission_required(AppPermissions.CASE_COMPLETE_PAYMENT_COLLECTION)
+def complete_odeme_tahsilati(return_case_id):
+    """Complete Ödeme Tahsilatı stage and move to Shipping"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
-        if return_case.workflow_status != CaseStatusEnum.DOCUMENTATION:
+        if return_case.workflow_status != CaseStatusEnum.PAYMENT_COLLECTION:
             return jsonify({"error": f"Bu aşama şu anda tamamlanamaz. Mevcut durum: {return_case.workflow_status.value}"}), 400
 
-        # Validate required fields for Dokümantasyon stage
-        if not return_case.performed_services:
-            return jsonify({"error": "Yapılan hizmetler eksik. Lütfen yapılan hizmetleri belirtin."}), 400
+        # Validate required fields for Ödeme Tahsilatı stage
+        if not return_case.payment_status:
+            return jsonify({"error": "Ödeme durumu eksik. Lütfen ödeme durumunu belirtin."}), 400
         
-        if return_case.cost is None:
-            return jsonify({"error": "Maliyet bilgisi eksik. Lütfen maliyet bilgisini belirtin."}), 400
+        # Check if payment status is either 'Ücretsiz' or 'Ödendi'
+        if return_case.payment_status not in [PaymentStatusEnum.waived, PaymentStatusEnum.paid]:
+            return jsonify({"error": "Ödeme tahsilatı aşaması tamamlanamaz. Ödeme durumu 'Ücretsiz' veya 'Ödendi' olmalıdır."}), 400
 
         return_case.workflow_status = CaseStatusEnum.SHIPPING
         db.session.commit()
-        return jsonify({"message": "Dokümantasyon aşaması tamamlandı, durum Kargoya Veriliyor olarak güncellendi"}), 200
+        return jsonify({"message": "Ödeme tahsilatı aşaması tamamlandı, durum Kargoya Veriliyor olarak güncellendi"}), 200
 
     except Exception as e:
         db.session.rollback()
@@ -537,7 +560,7 @@ def complete_dokumantasyon(return_case_id):
 def update_kargoya_verildi(return_case_id):
     """Update Kargoya Verildi stage information"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -568,7 +591,7 @@ def update_kargoya_verildi(return_case_id):
 def complete_kargoya_verildi(return_case_id):
     """Complete Kargoya Verildi stage and move to Completed"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -601,7 +624,7 @@ def complete_kargoya_verildi(return_case_id):
 def update_tamamlandi(return_case_id):
     """Update Tamamlandı stage information"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
@@ -625,11 +648,11 @@ def update_tamamlandi(return_case_id):
 def complete_tamamlandi(return_case_id):
     """Complete Tamamlandı stage (final stage)"""
     try:
-        return_case = ReturnCase.query.get(return_case_id)
+        return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
-        if return_case.workflow_status != CaseStatusEnum.SHIPPING:
+        if return_case.workflow_status != CaseStatusEnum.COMPLETED:
             return jsonify({"error": f"Bu aşama şu anda tamamlanamaz. Mevcut durum: {return_case.workflow_status.value}"}), 400
 
         # Validate required fields for Tamamlandı stage
@@ -654,7 +677,7 @@ def delete_return_case(return_case_id):
     claims = get_jwt()
     user_role = claims.get("role")
     
-    return_case = ReturnCase.query.get(return_case_id)
+    return_case = db.session.get(ReturnCase, return_case_id)
     if not return_case:
         return jsonify({'msg': 'Vaka bulunamadı.'}), 404
 

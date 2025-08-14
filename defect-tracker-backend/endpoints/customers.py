@@ -84,7 +84,7 @@ def delete_customer(customer_id):
     """
 
     # Find the customer by their primary key
-    customer = Customers.query.get(customer_id)
+    customer = db.session.get(Customers, customer_id)
 
     # If customer doesn't exist, return a 404 Not Found error
     if not customer:
@@ -106,7 +106,7 @@ def update_customer(customer_id):
     The customer's name cannot be changed.
     """
     # Find the customer to update
-    customer = Customers.query.get(customer_id)
+    customer = db.session.get(Customers, customer_id)
     if not customer:
         return jsonify({"msg": "Müşteri bulunamadı."}), 404
 

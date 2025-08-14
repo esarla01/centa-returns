@@ -21,6 +21,7 @@ from endpoints.customers import customer_bp  # Customer-related endpoints
 from endpoints.products import product_bp  # Product-related endpoints
 from endpoints.returns import return_case_bp  # Return case-related endpoints
 from endpoints.admin import admin_bp  # Admin-related endpoints
+from endpoints.reports import reports_bp  # Reports-related endpoints
 
 from sqlalchemy.orm import joinedload # Load user with role
 
@@ -70,7 +71,7 @@ def create_app():
         try:
             verify_jwt_in_request()
             user_id = get_jwt_identity()
-            user = User.query.options(joinedload(User.role)).get(user_id)  
+            user = db.session.get(User, user_id, options=[joinedload(User.role)])  
             if user:
                 g.user = user
         except Exception:
@@ -89,6 +90,7 @@ def create_app():
     app.register_blueprint(product_bp)  
     app.register_blueprint(return_case_bp)  
     app.register_blueprint(admin_bp)
+    app.register_blueprint(reports_bp)
 
     return app
 

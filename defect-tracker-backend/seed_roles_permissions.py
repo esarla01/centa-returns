@@ -29,9 +29,7 @@ ROLE_PERMISSIONS = {
         AppPermissions.CUSTOMER_GET,
 
         AppPermissions.CASE_EDIT_DELIVERED,
-        AppPermissions.CASE_EDIT_DOCUMENTATION,
         AppPermissions.CASE_COMPLETE_DELIVERED,
-        AppPermissions.CASE_COMPLETE_DOCUMENTATION,
     ],
     UserRole.TECHNICIAN: [
         # Page Permissions

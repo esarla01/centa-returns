@@ -71,7 +71,7 @@ export default function Header({ onLogout }: HeaderProps) {
     { permission: 'PAGE_VIEW_CUSTOMER_LIST', href: '/manage-customers', text: 'Müşteri Listesi' },
     { permission: 'PAGE_VIEW_PRODUCT_LIST', href: '/manage-products', text: 'Ürün Listesi' },
     { permission: 'PAGE_VIEW_CASE_TRACKING', href: '/manage-returns', text: 'Arıza Takip Paneli' },
-    { permission: 'PAGE_VIEW_STATISTICS', href: '/statistics', text: 'Raporlar' },
+    { permission: 'PAGE_VIEW_STATISTICS', href: '/view-statistics', text: 'Raporlar' },
   ];
 
   // Filter nav links based on user permissions

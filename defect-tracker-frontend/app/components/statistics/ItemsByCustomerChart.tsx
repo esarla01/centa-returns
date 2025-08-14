@@ -123,7 +123,13 @@ export default function ItemsByCustomerChart({ startDate, endDate, refreshKey }:
       <div className="mt-4 grid grid-cols-1 gap-2">
         {chartData.map((item, index) => (
           <div key={item.customer_name} className="flex items-center justify-between text-sm">
-            <span className="text-gray-700">{item.customer_name}</span>
+            <div className="flex items-center">
+              <div
+                className="w-3 h-3 rounded-full mr-2"
+                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+              />
+              <span className="text-gray-700">{item.customer_name}</span>
+            </div>
             <span className="font-semibold text-gray-900">{item.percentage}%</span>
           </div>
         ))}
