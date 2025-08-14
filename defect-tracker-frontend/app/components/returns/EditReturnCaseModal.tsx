@@ -18,7 +18,7 @@ interface EditReturnCaseModalProps {
   onSuccess: () => void; // A function to be called when the form is successfully submitted.
 }
 
-type StageName = 'Teslim Alındı' | 'Teknik İnceleme' | 'Dokümantasyon' | 'Kargoya Verildi' | 'Tamamlandı';
+type StageName = 'Teslim Alındı' | 'Teknik İnceleme' | 'Ödeme Tahsilatı' | 'Kargoya Verildi' | 'Tamamlandı';
 
 // Type for editable product items
 type EditableProduct = {
@@ -35,11 +35,11 @@ type EditableProduct = {
 
 // Role-based field permissions
 const ROLE_PERMISSIONS: Record<string, StageName[]> = {
-  SUPPORT: ['Teslim Alındı', 'Teknik İnceleme', 'Dokümantasyon'],
+  SUPPORT: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı'],
   TECHNICIAN: ['Teknik İnceleme'],
   SHIPPING: ['Kargoya Verildi'],
   MANAGER: ['Tamamlandı'],
-  ADMIN: ['Teslim Alındı', 'Teknik İnceleme', 'Dokümantasyon', 'Kargoya Verildi', 'Tamamlandı']
+  ADMIN: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Verildi', 'Tamamlandı']
 };
 
 // Turkish role names mapping
@@ -218,9 +218,9 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
     };
   
   // Determine which stages are editable.
-  const currentStageIndex = ['Teslim Alındı', 'Teknik İnceleme', 'Dokümantasyon', 'Kargoya Verildi', 'Tamamlandı'].findIndex(name => name === returnCase.status);
+  const currentStageIndex = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Verildi', 'Tamamlandı'].findIndex(name => name === returnCase.status);
   const isTeslimAlindiEditable = currentStageIndex >= 0;
-  const isDokumantasyonEditable = currentStageIndex >= 2;
+  const isOdemeTahsilatiEditable = currentStageIndex >= 2;
   const isKargoyaVerildiEditable = currentStageIndex >= 3;
   const isTamamlandiEditable = currentStageIndex >= 4;
 

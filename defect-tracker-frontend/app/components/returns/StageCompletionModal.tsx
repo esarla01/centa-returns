@@ -21,8 +21,8 @@ const STAGE_CONFIGS = {
     color: 'blue',
     icon: '🔧'
   },
-  dokumantasyon: {
-    title: 'Dokümantasyon',
+      odeme_tahsilati: {
+    title: 'Ödeme Tahsilatı',
     color: 'yellow',
     icon: '📋'
   },

@@ -62,7 +62,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
   // Helper function to check if a filter is active (has a value)
   const isFilterActive = (value: string) => {
-    return value && value !== 'not_completed';
+    return value && value !== '';
   };
 
   // Filter product models based on selected product type
@@ -104,11 +104,11 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
               onChange={(e) => handleFilterChange('status', e.target.value)}
               className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
             >
-              <option value="not_completed">Tamamlanmamış Vakalar</option>
               <option value="">Tümü</option>
+              <option value="not_completed">Tamamlanmamış Vakalar</option>
               <option value="Teslim Alındı">Teslim Alındı</option>
               <option value="Teknik İnceleme">Teknik İnceleme</option>
-              <option value="Dokümantasyon">Dokümantasyon</option>
+              <option value="Ödeme Tahsilatı">Ödeme Tahsilatı</option>
               <option value="Kargoya Veriliyor">Kargoya Veriliyor</option>
               <option value="Tamamlandı">Tamamlandı</option>
             </select>
@@ -136,9 +136,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
                 onChange={(e) => {
                   handleFilterChange('productType', e.target.value);
                   // Clear product model when product type changes
-                  if (e.target.value !== filters.productType) {
-                    handleFilterChange('productModel', '');
-                  }
+                  handleFilterChange('productModel', '');
                 }}
                 className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent text-sm"
               >
@@ -166,25 +164,24 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
         <div>
           <label className={`block text-sm font-medium mb-1 ${isFilterActive(filters.productModel) ? 'text-blue-700' : 'text-gray-700'}`}>
             Ürün Modeli {isFilterActive(filters.productModel) && <span className="text-blue-500">●</span>}
+            {filters.productType && !isFilterActive(filters.productModel) && (
+              <span className="text-xs text-gray-500 ml-1">({filteredProductModels.length} model)</span>
+            )}
           </label>
           <div className={isFilterActive(filters.productModel) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md' : ''}>
             <select
               value={filters.productModel}
               onChange={(e) => handleFilterChange('productModel', e.target.value)}
               className="w-full border border-gray-300 rounded-md py-1.5 px-3 bg-transparent"
-              disabled={!filters.productType}
             >
               <option value="">Tüm Modeller</option>
-              {filteredProductModels.map((model) => (
+              {(filters.productType ? filteredProductModels : productModels).map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name}
                 </option>
               ))}
             </select>
-          </div>
-          {!filters.productType && (
-            <p className="text-xs text-gray-500 mt-1">Önce ürün tipi seçin</p>
-          )}
+          </div>        
         </div>
 
         {/* Date Range Filter */}

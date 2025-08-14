@@ -11,7 +11,7 @@ export const completeStage = async (caseId: number, stage: string): Promise<{ su
   const stageEndpoints = {
     'teslim_alindi': `/returns/${caseId}/complete-teslim-alindi`,
     'teknik_inceleme': `/returns/${caseId}/complete-teknik-inceleme`,
-    'dokumantasyon': `/returns/${caseId}/complete-dokumantasyon`,
+    'odeme_tahsilati': `/returns/${caseId}/complete-odeme-tahsilati`,
     'kargoya_verildi': `/returns/${caseId}/complete-kargoya-verildi`,
     'tamamlandi': `/returns/${caseId}/complete-tamamlandi`
   };

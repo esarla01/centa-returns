@@ -19,12 +19,6 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
     payment_status: returnCase.payment_status || '',
   });
 
-  const paymentStatusMap = {
-    'paid': 'Ödendi',
-    'unpaid': 'Ödenmedi',
-    'waived': 'Ücretsiz'
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -68,64 +62,68 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
         <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50">
           <div>
             <h2 className="text-2xl font-bold text-yellow-800">Ödeme Tahsilatı Aşaması Düzenle</h2>
-            <p className="text-sm text-yellow-600 mt-1">Vaka #{returnCase.id} - {returnCase.customer.name}</p>
+            <p className="text-yellow-700 mt-1">Vaka #{returnCase.id} - {returnCase.customer.name}</p>
           </div>
-          <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-yellow-100 rounded-lg transition-colors"
           >
-            <X size={24} />
+            <X className="h-6 w-6 text-yellow-800" />
           </button>
         </div>
-        
-        {/* Content */}
-        <div className="flex-grow overflow-y-auto">
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Status Messages */}
-            {error && (
-              <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md border border-red-300">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="p-4 text-sm text-green-700 bg-green-100 rounded-md border border-green-300">
-                {success}
-              </div>
-            )}
 
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Payment Status */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ödeme Durumu *
               </label>
               <select
                 value={formData.payment_status}
-                onChange={(e) => setFormData(prev => ({ ...prev, payment_status: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-yellow-500 focus:border-yellow-500"
+                onChange={(e) => setFormData({ ...formData, payment_status: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
                 required
               >
                 <option value="">Ödeme durumu seçin</option>
                 <option value="paid">Ödendi</option>
                 <option value="unpaid">Ödenmedi</option>
                 <option value="waived">Ücretsiz</option>
+                <option value="partial">Kısmi Ödeme</option>
               </select>
             </div>
 
+
+
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-800">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <p className="text-green-800">{success}</p>
+              </div>
+            )}
+
             {/* Submit Button */}
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               >
                 İptal
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 border border-transparent rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-yellow-600 text-white hover:bg-yellow-700 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Güncelleniyor...' : 'Güncelle'}
+                {isLoading ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
             </div>
           </form>

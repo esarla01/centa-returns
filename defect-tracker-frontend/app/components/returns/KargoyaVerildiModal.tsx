@@ -30,6 +30,18 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
     setError(null);
     setSuccess(null);
 
+    // Validate that shipping date is not in the future
+    if (formData.shippingDate) {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // End of today
+      
+      if (formData.shippingDate > today) {
+        setError('Kargoya verilme tarihi gelecekte olamaz. Lütfen bugün veya geçmiş bir tarih seçin.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     try {
       const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/kargoya-verildi`, {
         method: 'PUT',
@@ -132,6 +144,7 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
                 onChange={(date) => setFormData(prev => ({ ...prev, shippingDate: date }))}
                 dateFormat="dd/MM/yyyy"
                 locale={tr}
+                maxDate={new Date()} // Prevent selecting future dates
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
                 placeholderText="Tarih seçiniz"
               />

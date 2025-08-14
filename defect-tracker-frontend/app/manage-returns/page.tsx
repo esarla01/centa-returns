@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const initialFilters: Filters = {
   search: '',
-  status: 'not_completed',
+  status: '',
   startDate: '',
   endDate: '',
   receiptMethod: '',
@@ -55,7 +55,7 @@ export default function ReturnsDashboardPage() {
 
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: '10',
+      limit: '5',
     });
 
     (Object.keys(filters) as Array<keyof Filters>).forEach((key) => {
@@ -64,6 +64,9 @@ export default function ReturnsDashboardPage() {
         params.append(key, val);
       }
     });
+
+    console.log('Filters being sent:', filters);
+    console.log('API URL:', `http://localhost:5000/returns?${params.toString()}`);
 
     try {
       const res = await fetch(`http://localhost:5000/returns?${params.toString()}`, {
@@ -164,9 +167,9 @@ export default function ReturnsDashboardPage() {
                 <div className="flex-1">
                   <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                     <h2 className="text-xl lg:text-2xl font-bold text-gray-800">
-                    {Object.values(filters).some(value => value && value !== 'not_completed') ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
+                    {Object.values(filters).some(value => value) ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
                   </h2>
-                    {!Object.values(filters).some(value => value && value !== 'not_completed') && (
+                    {!Object.values(filters).some(value => value) && (
                       <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
                         <span className="text-gray-600 font-medium">İş Akışı:</span>
                         <div className="flex items-center gap-1 lg:gap-2">
@@ -181,7 +184,7 @@ export default function ReturnsDashboardPage() {
                         </div>
                         <div className="flex items-center gap-1 lg:gap-2">
                           <div className="w-2 h-2 lg:w-3 lg:h-3 bg-yellow-50 border border-yellow-200 rounded-full"></div>
-                          <span className="text-yellow-800">Dokümantasyon</span>
+                          <span className="text-yellow-800">Ödeme Tahsilatı</span>
                           <span className="text-gray-400 hidden sm:inline">→</span>
                         </div>
                         <div className="flex items-center gap-1 lg:gap-2">
@@ -197,7 +200,7 @@ export default function ReturnsDashboardPage() {
                     )}
                   </div>
                   <div className="text-red-600 mt-2">
-                    {Object.values(filters).some(value => value && value !== 'not_completed') ? 'Tüm vakalar için filtreleri temizleyin.' : ''}
+                    {Object.values(filters).some(value => value) ? 'Tüm vakalar için filtreleri temizleyin.' : ''}
                   </div>
                 </div>
                   <PermissionGate permission="CASE_CREATE">
