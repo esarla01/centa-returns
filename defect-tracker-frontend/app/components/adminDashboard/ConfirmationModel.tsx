@@ -60,9 +60,9 @@ export default function DeleteConfirmationModal({ user, onClose, onSuccess }: De
             </h3>
             <div className="mt-2">
               <p className="text-sm text-gray-500">
-                Are you sure you want to delete the user{' '}
-                <strong className="text-gray-900">{user.firstName} {user.lastName}</strong>?
-                This action cannot be undone.
+                Kullanıcıyı silmek istediğinizden emin misiniz{' '}
+                 <strong className="text-gray-900">{user.firstName} {user.lastName}</strong>?
+                Bu işlem geri alınamaz.
               </p>
             </div>
           </div>

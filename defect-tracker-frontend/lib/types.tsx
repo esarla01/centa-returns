@@ -103,7 +103,11 @@ export interface User {
   lastName:string;
   role: string;
   lastLogin: string | null; 
-  createdAt: string;
+  createdAt: string | null;
+  invitedAt: string | null;
+  invitedBy: string | null;
+  isInvited: boolean;
+  isActive: boolean;
 };
 
 

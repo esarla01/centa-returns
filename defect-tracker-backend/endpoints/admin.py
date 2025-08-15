@@ -4,30 +4,33 @@ from models import AppPermissions, Permission, Role, RolePermission, User, UserR
 from permissions import permission_required
 import re
 from sqlalchemy import or_
+import os
+import secrets
+from datetime import datetime, timedelta
+from services.email_service import CentaEmailService
+from flask_jwt_extended import get_jwt_identity
+import datetime
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
 
-# Endpoints to be moved here: retrieve-users, register, deregister 
 
-@admin_bp.route('/', methods=['POST'])
+@admin_bp.route('/invite-user', methods=['POST'])
 @permission_required(AppPermissions.PAGE_VIEW_ADMIN)
-def register():
+def invite_user():
     data = request.get_json()
-
+    
     if not data:
         return jsonify({"msg": "Veri sağlanmadı"}), 400
 
     email = data.get('email')
-    password = data.get('password')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
     role = data.get('role')
 
+
     # Validate required fields
-    if not email or not password or not first_name or not last_name or not role:
+    if not email or not role:
         return jsonify({"msg": "Tüm alanlar gereklidir"}), 400
 
     # Validate email format
@@ -45,31 +48,66 @@ def register():
     if not role_obj:
         return jsonify({"msg": "Rol veritabanında bulunamadı"}), 400
 
-    # Validate password strength
-    if not PASSWORD_REGEX.match(password):
-        return jsonify({"msg": "Şifre en az 8 karakter uzunluğunda olmalı, en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir"}), 400
-
     # Check if the user already exists
-    if User.query.filter_by(email=email).first():
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user and existing_user.password_hash:
         return jsonify({"msg": "Bu e-posta adresi ile bir kullanıcı zaten mevcut"}), 400
+    
+    is_already_invited = False
+    if existing_user and existing_user.invitation_token:
+        is_already_invited = True
 
     try:
-        # Create a new user
-        user = User(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            role_id=role_obj.id
-        )
-        user.set_password(password)
-        db.session.add(user)
+        # Generate invitation token
+        invitation_token = secrets.token_urlsafe(32)
+        invitation_expiry = datetime.datetime.utcnow() + timedelta(hours=24)
+        
+        # Get current user (admin who is sending invitation)
+        current_user_email = get_jwt_identity()
+        
+        if is_already_invited:
+            # Update existing invitation
+            existing_user.invitation_token = invitation_token
+            existing_user.invitation_expiry = invitation_expiry
+            existing_user.invited_by = current_user_email
+            existing_user.invited_at = datetime.datetime.utcnow()
+            user = existing_user  # So we can return user.to_dict() below
+        else:
+            # Create new invited user
+            user = User(
+                email=email,
+                role_id=role_obj.id,
+                invitation_token=invitation_token,
+                invitation_expiry=invitation_expiry,
+                invited_by=current_user_email,
+                invited_at=datetime.datetime.utcnow()
+            )         
+            db.session.add(user)
+        
         db.session.commit()
 
-        return jsonify({"msg": "Kullanıcı başarıyla kaydedildi"}), 201
+        # Send invitation email
+        invitation_url = f"http://localhost:3000/accept-invitation?token={invitation_token}"        
+        
+        if CentaEmailService.send_user_invitation(
+            email, 
+            role_enum.value,
+            invitation_url,
+            current_user_email
+        ):
+            return jsonify({
+                "msg": f"{email} adresine davet e-postası gönderildi",
+                "user": user.to_dict()
+            }), 200
+        else:
+            # Rollback if email fails
+            db.session.rollback()
+            return jsonify({"msg": "Davet e-postası gönderilemedi. Lütfen tekrar deneyin."}), 500
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"msg": "Kullanıcı kaydedilirken bir hata oluştu", "error": str(e)}), 500
+        print(f"Error: {e}")
+        return jsonify({"msg": "Kullanıcı davet edilirken bir hata oluştu", "error": str(e)}), 500
 
 @admin_bp.route('/', methods=['DELETE'])
 @permission_required(AppPermissions.PAGE_VIEW_ADMIN)
@@ -154,36 +192,53 @@ def retrieve_users():
         "lastName": user.last_name,
         "role": user.role.name.value,
         "createdAt": (
-            user.created_at.strftime("%d %B %Y")
-            .replace("January", "Ocak")
-            .replace("February", "Şubat")
-            .replace("March", "Mart")
-            .replace("April", "Nisan")
-            .replace("May", "Mayıs")
-            .replace("June", "Haziran")
-            .replace("July", "Temmuz")
-            .replace("August", "Ağustos")
-            .replace("September", "Eylül")
-            .replace("October", "Ekim")
-            .replace("November", "Kasım")
-            .replace("December", "Aralık")
-        ),
+            user.accepted_at.strftime("%d %b %Y %H:%M")
+            .replace("Jan", "Oca")
+            .replace("Feb", "Şub")
+            .replace("Mar", "Mar")
+            .replace("Apr", "Nis")
+            .replace("May", "May")
+            .replace("Jun", "Haz")
+            .replace("Jul", "Tem")
+            .replace("Aug", "Ağu")
+            .replace("Sep", "Eyl")
+            .replace("Oct", "Eki")
+            .replace("Nov", "Kas")
+            .replace("Dec", "Ara")
+        ) if user.accepted_at else None,
+        "invitedAt": (
+            user.invited_at.strftime("%d %b %Y %H:%M")
+            .replace("Jan", "Oca")
+            .replace("Feb", "Şub")
+            .replace("Mar", "Mar")
+            .replace("Apr", "Nis")
+            .replace("May", "May")
+            .replace("Jun", "Haz")
+            .replace("Jul", "Tem")
+            .replace("Aug", "Ağu")
+            .replace("Sep", "Eyl")
+            .replace("Oct", "Eki")
+            .replace("Nov", "Kas")
+            .replace("Dec", "Ara")
+        ) if user.invited_at else None,
         "lastLogin": (
-            user.last_login.strftime("%d %B %Y")
-            .replace("January", "Ocak")
-            .replace("February", "Şubat")
-            .replace("March", "Mart")
-            .replace("April", "Nisan")
-            .replace("May", "Mayıs")
-            .replace("June", "Haziran")
-            .replace("July", "Temmuz")
-            .replace("August", "Ağustos")
-            .replace("September", "Eylül")
-            .replace("October", "Ekim")
-            .replace("November", "Kasım")
-            .replace("December", "Aralık")
-            if user.last_login else None
-        ),
+            user.last_login.strftime("%d %b %Y %H:%M")
+            .replace("Jan", "Oca")
+            .replace("Feb", "Şub")
+            .replace("Mar", "Mar")
+            .replace("Apr", "Nis")
+            .replace("May", "May")
+            .replace("Jun", "Haz")
+            .replace("Jul", "Tem")
+            .replace("Aug", "Ağu")
+            .replace("Sep", "Eyl")
+            .replace("Oct", "Eki")
+            .replace("Nov", "Kas")
+            .replace("Dec", "Ara")
+        ) if user.last_login else None,
+        "invitedBy": user.invited_by,
+        "isInvited": bool(user.invitation_token and user.invitation_expiry and user.invitation_expiry > datetime.datetime.utcnow()),
+        "isActive": bool(user.password_hash),
        }
 
     # Return the serialized users

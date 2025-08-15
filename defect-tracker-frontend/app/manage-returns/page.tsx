@@ -169,7 +169,7 @@ export default function ReturnsDashboardPage() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div className="flex-1">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                       <h2 className="text-xl lg:text-2xl font-bold text-gray-800">
                         {Object.values(filters).some(value => value) ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
                       </h2>

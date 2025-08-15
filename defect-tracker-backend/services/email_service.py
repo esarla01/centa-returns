@@ -10,7 +10,7 @@ class CentaEmailService:
         """Send password reset email with Centa branding"""
         try:
             msg = Message(
-                subject="Centa - Şifre Sıfırlama",
+                subject="Centa Arıza Takip Sistemi - Şifre Sıfırlama",
                 recipients=[user_email],
                 body=f"""Merhaba {user_name},
 
@@ -33,6 +33,40 @@ ariza.takip@centa.com.tr
         except Exception as e:
             logging.error(f"Failed to send password reset email: {e}")
             return False
+
+    @staticmethod
+    def send_user_invitation(user_email, role_name, invitation_url, invited_by_name):
+        """Send user invitation email"""
+        try:
+            msg = Message(
+                subject="Centa Arıza Takip Sistemi - Davet",
+                recipients=[user_email],
+                body=f"""Merhaba,
+
+Centa Arıza Takip Sistemi'ne davet edildiniz.
+
+Davet Eden: {invited_by_name}
+Rol: {role_name}
+
+Hesabınızı aktifleştirmek için aşağıdaki bağlantıya tıklayın:
+{invitation_url}
+
+Bu bağlantı 24 saat boyunca geçerlidir.
+
+Hesabınızı aktifleştirdikten sonra şifrenizi belirleyebilir ve sisteme giriş yapabilirsiniz.
+
+Saygılarımızla,
+Centa Teknik Servis
+ariza.takip@centa.com.tr
+"""
+            )
+            mail.send(msg)
+            logging.info(f"User invitation email sent to {user_email}")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to send user invitation email: {e}")
+            return False
+                
 
     @staticmethod
     def send_return_case_notification(customer_email, customer_name, case_id, status):
@@ -95,4 +129,3 @@ ariza.takip@centa.com.tr
         except Exception as e:
             logging.error(f"Failed to send welcome email: {e}")
             return False
-            

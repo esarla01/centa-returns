@@ -9,6 +9,7 @@ from flask_mail import Message
 from models import AppPermissions, Permission, Role, RolePermission, User, UserRole, db, mail
 import re
 from permissions import permission_required
+from services.email_service import CentaEmailService
 
 URL_BASE = 'http://localhost:5000'
 
@@ -17,7 +18,79 @@ user_bp = Blueprint("user", __name__, url_prefix="/auth")
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
 
-# Removed: register, deregister, retrieve-users endpoints (now in admin.py)
+# endpoints/user.py - Add this new endpoint
+@user_bp.route('/accept-invitation', methods=['POST'])
+def accept_invitation():
+    data = request.get_json()
+    
+    token = data.get('token')
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    password = data.get('password')
+    
+    if not token or not password or not first_name or not last_name:
+        return jsonify({"msg": "Token, ad, soyad ve şifre gereklidir"}), 400
+
+    # Validate password strength
+    if not PASSWORD_REGEX.match(password):
+        return jsonify({"msg": "Şifre en az 8 karakter uzunluğunda olmalı, bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter içermelidir."}), 400
+
+    # Find user by invitation token
+    user = User.query.filter_by(invitation_token=token).first()
+    
+    if not user:
+        return jsonify({"msg": "Geçersiz davet bağlantısı"}), 400
+
+    # Check if invitation has expired
+    if user.invitation_expiry < datetime.datetime.utcnow():
+        return jsonify({"msg": "Davet süresi dolmuş. Lütfen yeni bir davet talep edin."}), 400
+
+    # Check if user is already activated
+    if user.password_hash:
+        return jsonify({"msg": "Bu hesap zaten aktifleştirilmiş"}), 400
+
+    try:
+        # Update user information and activate user
+        user.first_name = first_name.strip()
+        user.last_name = last_name.strip()
+        user.set_password(password)
+        user.accepted_at = datetime.datetime.utcnow()
+        user.is_invited = False
+        user.invitation_token = None
+        user.invitation_expiry = None
+        user.invited_by = None
+        
+        db.session.commit()
+
+        return jsonify({"msg": "Hesabınız başarıyla aktifleştirildi. Artık giriş yapabilirsiniz."}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Hesap aktifleştirilirken bir hata oluştu", "error": str(e)}), 500
+
+@user_bp.route('/validate-invitation/<token>', methods=['GET'])
+def validate_invitation(token):
+    """Validate invitation token and return user info"""
+    user = User.query.filter_by(invitation_token=token).first()
+    
+    if not user:
+        return jsonify({"valid": False, "msg": "Geçersiz davet bağlantısı"}), 400
+
+    if user.invitation_expiry < datetime.datetime.utcnow():
+        return jsonify({"valid": False, "msg": "Davet süresi dolmuş"}), 400
+
+    if user.password_hash:
+        return jsonify({"valid": False, "msg": "Bu hesap zaten aktifleştirilmiş"}), 400
+
+    return jsonify({
+        "valid": True,
+        "user": {
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role.name.value
+        }
+    }), 200
 
 @user_bp.route('/login', methods=['POST'])
 def login():
@@ -68,7 +141,6 @@ def forgot_password():
     
     user = User.query.filter_by(email=email).first()
 
-    # Do not reveal if the user exists for security reasons
     if not user:
         return jsonify(msg="Bu e-posta adresi mevcutsa, sıfırlama bağlantısı gönderildi."), 200
     
@@ -80,25 +152,8 @@ def forgot_password():
 
     reset_url = f" http://localhost:3000/reset-password?token={token}"
 
-    # Prepare the email message
-    msg = Message(
-        subject="Şifrenizi Sıfırlayın",
-        recipients=[user.email],
-        body=f"""Merhaba {user.first_name},
-
-    Şifrenizi sıfırlamak için bir talep aldık. Aşağıdaki 
-    bağlantıya tıklayarak yeni bir şifre seçebilirsiniz: 
-    {reset_url} 
-
-    Bu talebi siz yapmadıysanız, bu mesajı dikkate almayın. 
-    Bu bağlantı 15 dakika boyunca geçerlidir.
-
-    – Centa
-    """
-    )
-
     try:
-        mail.send(msg)
+        CentaEmailService.send_password_reset(user.email, user.first_name, reset_url)
     except Exception as e:
         # Log the error and return a generic message
         print(f"Error sending email: {e}")
@@ -136,20 +191,8 @@ def reset_password():
     user.reset_token_expiry = None
     db.session.commit()
 
-    # Send confirmation email
-    msg = Message(
-        subject="Şifrenizi Sıfırlayın",
-        recipients=[user.email],
-        body=f"""Merhaba {user.first_name},
-
-    Şifrenizi başarıyla sıfırladınız. Artık yeni şifrenizle 
-    giriş yapabilirsiniz. Eğer bu talebi siz yapmadıysanız, 
-    kimsenin bilmediğinden emin olduğunuz yeni bir şifre seçin 
-    ve lütfen şifrenizi tekrar sıfırlayın.
-    """
-    )
     try:
-        mail.send(msg)
+        CentaEmailService.send_password_reset_confirmation(user.email, user.first_name)
     except Exception as e:
         # Log the error and return a generic message
         print(f"Error sending email: {e}")

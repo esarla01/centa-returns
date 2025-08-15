@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
+from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt 
 from datetime import datetime
 from enum import Enum, auto
@@ -7,6 +8,7 @@ from enum import Enum, auto
 db = SQLAlchemy()
 mail = Mail()
 bcrypt = Bcrypt()
+
 
 class UserRole(Enum):
     ADMIN = "ADMIN"
@@ -17,7 +19,6 @@ class UserRole(Enum):
     LOGISTICS = "LOGISTICS"
 
 class AppPermissions(Enum):
-    PAGE_VIEW_ADMIN = auto()
 
     # CUSTOMER
     PAGE_VIEW_CUSTOMER_LIST = auto()
@@ -27,11 +28,13 @@ class AppPermissions(Enum):
     CUSTOMER_UPDATE = auto()
     CUSTOMER_GET = auto()
 
+    # PAGES
+    PAGE_VIEW_ADMIN = auto()
     PAGE_VIEW_PRODUCT_LIST = auto()
     PAGE_VIEW_CASE_TRACKING = auto()
     PAGE_VIEW_STATISTICS = auto()
 
-
+    # CASES
     CASE_CREATE = auto()
     CASE_EDIT = auto()
     CASE_DELETE = auto()
@@ -50,17 +53,6 @@ class AppPermissions(Enum):
     CASE_COMPLETE_PAYMENT_COLLECTION = auto() # Support
     CASE_COMPLETE_SHIPPING = auto() # Logistics
     CASE_COMPLETE_COMPLETED = auto() # Manager
-
-   
-    # CASE_EDIT_INITIAL_INFO = auto()
-    # CASE_TRANSITION_TO_TECHNICAL_REVIEW_REPAIR = auto()
-    # CASE_EDIT_TECHNICAL_REVIEW = auto()
-    # CASE_EDIT_REPAIR_DETAILS = auto()
-    # CASE_TRANSITION_TO_DOCUMENTATION_COST_ENTRY = auto()
-    # CASE_EDIT_COST = auto()
-    # CASE_TRANSITION_TO_COST_REIMBURSEMENT_SHIPPING = auto()
-    # CASE_TRANSITION_TO_COMPLETED = auto()
-    # CASE_EDIT_SHIPPING = auto()
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -82,24 +74,30 @@ class User(db.Model):
     __tablename__ = 'users'
     # User credentials
     email = db.Column(db.String(254), primary_key=True)
-    password_hash = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(100), nullable=True)
 
     # Role information
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), nullable=False)    
     role = db.relationship('Role')
 
     # Personal information
-    first_name = db.Column(db.String(50), nullable=False)
-    last_name = db.Column(db.String(50), nullable=False)
+    first_name = db.Column(db.String(50), nullable=True)
+    last_name = db.Column(db.String(50), nullable=True)
 
     # Login information
     last_login = db.Column(db.DateTime(timezone=True))
     last_logout = db.Column(db.DateTime(timezone=True))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    accepted_at = db.Column(db.DateTime, nullable=True)
 
     # Password reset information
     reset_token = db.Column(db.String(128), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
+
+    # New invitation fields
+    invitation_token = db.Column(db.String(128), nullable=True)
+    invitation_expiry = db.Column(db.DateTime, nullable=True)
+    invited_by = db.Column(db.String(254), db.ForeignKey('users.email'), nullable=True)
+    invited_at = db.Column(db.DateTime, nullable=True)
 
     def set_password(self, pw):
         self.password_hash = bcrypt.generate_password_hash(pw).decode('utf-8')
@@ -107,6 +105,18 @@ class User(db.Model):
     def check_password(self, pw):
         return bcrypt.check_password_hash(self.password_hash, pw)
 
+    def to_dict(self):
+        return {
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'role': self.role.name.value,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'accepted_at': self.accepted_at.isoformat() if self.accepted_at else None,
+            'invited_by': self.invited_by,
+            'invited_at': self.invited_at.isoformat() if self.invited_at else None,
+            'is_active': bool(self.password_hash)  # User is active if they have a password
+        }
 
 class Customers(db.Model):
     __tablename__ = 'customers'

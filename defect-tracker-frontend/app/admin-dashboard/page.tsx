@@ -114,9 +114,9 @@ export default function AdminDashboard() {
       <Header onLogout={() => {}} />
       
       {isModalOpen && (
-        <AddUserModal 
+        <AddUserModal   
           onClose={() => setIsModalOpen(false)} 
-          onUserAdded={handleUserAdded}
+          onUserInvited={handleUserAdded}
         />
       )}
 
@@ -231,7 +231,8 @@ export default function AdminDashboard() {
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KULLANICI</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROL</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EKLENME TARİHİ</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DAVET TARİHİ</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DAVET KABUL TARİHİ</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SON GİRİŞ</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EYLEMLER</th>
                   </tr>
@@ -263,7 +264,7 @@ export default function AdminDashboard() {
                             <div className="flex-shrink-0 h-10 w-10">
                               <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                                 <span className="text-sm font-medium text-blue-600">
-                                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                                  {user.firstName ? user.firstName.charAt(0) : ''}{user.lastName ? user.lastName.charAt(0) : ''}
                                 </span>
                               </div>
                             </div>
@@ -281,7 +282,10 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.createdAt}
+                          {user.invitedAt ?? '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {user.createdAt ?? '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {user.lastLogin ?? '—'}

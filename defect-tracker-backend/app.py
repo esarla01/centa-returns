@@ -2,6 +2,8 @@ from mailbox import Message
 import os
 import datetime
 
+from flask_migrate import Migrate
+
 from flask import Flask, g
 from flask_cors import CORS
 # from flask_migrate import Migrate
@@ -73,7 +75,7 @@ def create_app():
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
-    # Migrate(app, db)
+    Migrate(app, db) 
     JWTManager(app)  
     mail.init_app(app)        
 
@@ -95,7 +97,8 @@ def create_app():
         # db.drop_all()
         # db.create_all()
         # seed_all()
-        pass  # Add pass statement to fix indentation
+        pass
+        # pass  # Add pass statement to fix indentation
 
     # Register blueprints
     app.register_blueprint(user_bp)
