@@ -28,50 +28,43 @@ from endpoints.reports import reports_bp  # Reports-related endpoints
 
 from sqlalchemy.orm import joinedload # Load user with role
 
-from seed_roles_permissions import seed_all
+from seed_roles_permissions import seed_roles_permissions
+from seed import seed_users
 
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
     
-    # SQLAlchemy Configuration
+   # SQLAlchemy Configuration
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-        # Session Configuration
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  # Ensure this is set in your environment
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=8)  # Token expiration time
+    # Session Configuration
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')  
+    jwt_exp_hours = int(os.getenv('JWT_ACCESS_TOKEN_EXPIRES', 1))  
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=jwt_exp_hours)  
 
     # Configure JWT to use cookies
-    app.config['JWT_TOKEN_LOCATION'] = ['cookies']  # Use cookies to store the token
-    app.config['JWT_ACCESS_COOKIE_NAME'] = 'access_token'  # Name of the access token cookie
-    app.config['JWT_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
-    app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # Enable CSRF protection in production
-    app.config['JWT_COOKIE_SAMESITE'] = 'Lax'  # Or 'None' if needed
+    jwt_token_location = os.getenv('JWT_TOKEN_LOCATION', 'cookies')
+    app.config['JWT_TOKEN_LOCATION'] = [jwt_token_location] 
+    app.config['JWT_ACCESS_COOKIE_NAME'] = os.getenv('JWT_ACCESS_COOKIE_NAME', 'access_token')
+   # Convert string to boolean properly
+    app.config['JWT_COOKIE_SECURE'] = os.getenv('JWT_COOKIE_SECURE', 'False').lower() == 'true'
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = os.getenv('JWT_COOKIE_CSRF_PROTECT', 'False').lower() == 'true'
+    app.config['JWT_COOKIE_SAMESITE'] = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
 
-    
-    # # Email Configuration
-    # app.config['MAIL_SERVER'] = 'mail.centa.com.tr'  # or centa.com.tr
-    # # app.config['MAIL_PORT'] = 587
-    # # app.config['MAIL_USE_TLS'] = True
-    # app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-    # app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-    # app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
-
-    # app.config['MAIL_PORT'] = 465  # SSL port
-    # app.config['MAIL_USE_SSL'] = True  # Use SSL instead of TLS
 
     # Email Configuration
-    app.config['MAIL_SERVER'] = 'smtp.yandex.com'
-    app.config['MAIL_PORT'] = 465
-    app.config['MAIL_USERNAME'] = 'ariza.takip@centa.com.tr'
-    app.config['MAIL_PASSWORD'] = 'C3nta*25'
-    app.config['MAIL_DEFAULT_SENDER'] = 'ariza.takip@centa.com.tr'
-    app.config['MAIL_USE_SSL'] = True
-    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '465'))
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+    app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'True').lower() == 'true'
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False').lower() == 'true'
 
-   
+    
     # Initialize extensions
     db.init_app(app)
     bcrypt.init_app(app)
@@ -79,7 +72,15 @@ def create_app():
     JWTManager(app)  
     mail.init_app(app)        
 
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
+    # Get frontend URL from environment
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+    CORS(app, 
+        supports_credentials=True, 
+        resources={r"/*": {"origins": [frontend_url]}},
+        methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowed_headers=['Content-Type', 'Authorization'])
+
 
     @app.before_request
     def load_user():
@@ -94,10 +95,12 @@ def create_app():
     
    # Create all tables
     with app.app_context():
-        # db.drop_all()
-        # db.create_all()
-        # seed_all()
-        pass
+        # # db.drop_all()
+        # # db.create_all()
+        # # seed_all()
+        # pass
+        seed_users()
+        seed_roles_permissions()
         # pass  # Add pass statement to fix indentation
 
     # Register blueprints
@@ -112,6 +115,7 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host="localhost", port=5000, debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(host="0.0.0.0", port=int(os.getenv('PORT', 5000)), debug=debug_mode)
 
 

@@ -3,7 +3,7 @@
 import { FullReturnCase } from "@/lib/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useState } from "react";
-import { Pencil, Trash2, X, CheckCircle } from 'lucide-react';
+import { Pencil, Trash2, X, CheckCircle, Mail } from 'lucide-react';
 import StageCompletionModal from './StageCompletionModal';
 import TeslimAlindiModal from './TeslimAlindiModal';
 import TeknikIncelemeModal from './TeknikIncelemeModal';
@@ -11,6 +11,7 @@ import OdemeTahsilatiModal from './OdemeTahsilatiModal';
 import KargoyaVerildiModal from './KargoyaVerildiModal';
 import TamamlandiModal from './TamamlandiModal';
 import ViewReturnCaseModal from './ViewReturnCaseModal';
+import EmailCustomerModal from './EmailCustomerModal';
 
 
 interface CasesTableProps {
@@ -190,6 +191,14 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
 
   const [viewModal, setViewModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
 
+  const [emailCustomerModal, setEmailCustomerModal] = useState<{
+    isOpen: boolean;
+    case: FullReturnCase | null;
+  }>({
+    isOpen: false,
+    case: null
+  });
+
   const handleCaseSelection = (caseId: number) => {
     setSelectedCaseId(selectedCaseId === caseId ? null : caseId);
   };
@@ -287,6 +296,10 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
       caseId: 0,
       stage: ''
     });
+  };
+
+  const handleEmailCustomer = (caseItem: FullReturnCase) => {
+    setEmailCustomerModal({ isOpen: true, case: caseItem });
   };
 
   return (
@@ -991,6 +1004,25 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           <X className="h-4 w-4" />
                         )}
                       </button>
+                      {/* Email Customer Button - Only show for shipping role when case is in shipping stage */}
+                      {user?.role === 'SHIPPING' && isStageCompleted(c.status, 'Ödeme Tahsilatı') && (
+                        <button
+                          onClick={() => handleEmailCustomer(c)}
+                          disabled={!isSelected}
+                          className={`transition-colors p-1 rounded ${
+                            isSelected
+                              ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'
+                              : 'text-gray-400 cursor-not-allowed'
+                          }`}
+                          title={
+                            !isSelected
+                              ? "Önce vakayı seçin"
+                              : "Müşteriye e-posta gönder"
+                          }
+                        >
+                          <Mail className="h-3 w-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   
@@ -1199,6 +1231,14 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
         <ViewReturnCaseModal
           returnCase={viewModal.case}
           onClose={() => setViewModal({ isOpen: false, case: null })}
+        />
+      )}
+
+      {emailCustomerModal.isOpen && emailCustomerModal.case && (
+        <EmailCustomerModal
+          returnCase={emailCustomerModal.case}
+          onClose={() => setEmailCustomerModal({ isOpen: false, case: null })}
+          onSuccess={handleStageCompleteSuccess}
         />
       )}
         </div>

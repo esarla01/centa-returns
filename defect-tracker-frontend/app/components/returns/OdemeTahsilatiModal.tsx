@@ -90,7 +90,6 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
                 <option value="paid">Ödendi</option>
                 <option value="unpaid">Ödenmedi</option>
                 <option value="waived">Ücretsiz</option>
-                <option value="partial">Kısmi Ödeme</option>
               </select>
             </div>
 

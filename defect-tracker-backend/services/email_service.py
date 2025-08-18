@@ -129,3 +129,24 @@ ariza.takip@centa.com.tr
         except Exception as e:
             logging.error(f"Failed to send welcome email: {e}")
             return False
+
+    @staticmethod
+    def send_custom_customer_email(customer_email, customer_name, case_id, email_content):
+        """Send custom email to customer about their return case"""
+        try:
+            msg = Message(
+                subject=f"Centa - İade Vakası #{case_id} Bilgilendirmesi",
+                recipients=[customer_email],
+                body=f"""{email_content}
+
+---
+Bu e-posta Centa Arıza Takip Sistemi tarafından otomatik olarak gönderilmiştir.
+ariza.takip@centa.com.tr
+"""
+            )
+            mail.send(msg)
+            logging.info(f"Custom customer email sent to {customer_email} for case #{case_id}")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to send custom customer email: {e}")
+            return False

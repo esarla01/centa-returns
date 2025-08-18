@@ -697,3 +697,47 @@ def delete_return_case(return_case_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'msg': 'Silme işlemi sırasında bir hata oluştu.', 'error': str(e)}), 500
+
+# Email Customer ----------------------------------------------------------
+
+@return_case_bp.route('/<int:return_case_id>/send-customer-email', methods=['POST'])
+@jwt_required()
+@permission_required(AppPermissions.CASE_EDIT_SHIPPING)
+def send_customer_email(return_case_id):
+    """Send email to customer about their return case"""
+    try:
+        return_case = db.session.get(ReturnCase, return_case_id)
+        if not return_case:
+            return jsonify({"error": "Vaka bulunamadı"}), 404
+
+        data = request.get_json()
+        email_content = data.get('emailContent', '').strip()
+        
+        if not email_content:
+            return jsonify({"error": "E-posta içeriği gereklidir"}), 400
+
+        # Get customer information
+        customer = return_case.customer
+        if not customer:
+            return jsonify({"error": "Müşteri bilgisi bulunamadı"}), 404
+
+        # For now, we'll use a placeholder email since customer email is not in the model
+        # In a real implementation, you would add customer email to the Customers model
+        customer_email = f"{customer.name.lower().replace(' ', '.')}@example.com"  # Placeholder
+        
+        # Import the email service
+        from services.email_service import CentaEmailService
+        
+        # Send the email
+        if CentaEmailService.send_custom_customer_email(
+            customer_email, 
+            customer.name, 
+            return_case_id, 
+            email_content
+        ):
+            return jsonify({"message": "E-posta başarıyla gönderildi"}), 200
+        else:
+            return jsonify({"error": "E-posta gönderilemedi"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500

@@ -43,14 +43,14 @@ class AppPermissions(Enum):
     # CASE_EDIT_STAGES
     CASE_EDIT_DELIVERED = auto() # Support
     CASE_EDIT_TECHNICAL_REVIEW = auto() # Technician
-    CASE_EDIT_PAYMENT_COLLECTION = auto() # Support
+    CASE_EDIT_PAYMENT_COLLECTION = auto() # Sales
     CASE_EDIT_SHIPPING = auto() # Logistics
 
 
     # CASE_COMPLETE_STAGES
     CASE_COMPLETE_DELIVERED = auto() # Support
     CASE_COMPLETE_TECHNICAL_REVIEW = auto() # Technician
-    CASE_COMPLETE_PAYMENT_COLLECTION = auto() # Support
+    CASE_COMPLETE_PAYMENT_COLLECTION = auto() # Sales
     CASE_COMPLETE_SHIPPING = auto() # Logistics
     CASE_COMPLETE_COMPLETED = auto() # Manager
 

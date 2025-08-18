@@ -30,4 +30,3 @@ python-dateutil==2.8.2
 
 # Production Security
 cryptography>=42.0.0
-
