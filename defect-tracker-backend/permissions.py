@@ -2,7 +2,7 @@ from functools import wraps
 from flask_jwt_extended import jwt_required, get_jwt
 from flask import jsonify
 from flask import Blueprint, g
-from seed_roles_permissions import ROLE_PERMISSIONS
+from seed import ROLE_PERMISSIONS
 from models import Permission, RolePermission, UserRole
 
 def permission_required(permission):

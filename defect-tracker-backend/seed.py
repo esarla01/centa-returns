@@ -1,4 +1,3 @@
-# seed_roles_permissions.py
 import click
 from flask.cli import with_appcontext
 from models import User, db, UserRole, AppPermissions, Role, Permission, RolePermission
