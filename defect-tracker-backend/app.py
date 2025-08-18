@@ -24,7 +24,7 @@ from endpoints.reports import reports_bp
 
 # Seed functions
 from seed_roles_permissions import seed_roles_permissions
-from seed import seed_users
+from seed_roles_permissions import seed_users
 
 import click
 
