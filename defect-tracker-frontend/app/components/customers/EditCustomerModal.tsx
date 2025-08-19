@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Customer } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface EditCustomerModalProps {
   customer: Customer;
@@ -25,7 +26,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }: Edit
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/customers/${customer.id}`, {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '/' + customer.id, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

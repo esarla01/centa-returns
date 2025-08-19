@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface AddProductModalProps {
   onClose: () => void;
@@ -20,7 +21,7 @@ export default function AddProductModal({ onClose, onSuccess }: AddProductModalP
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/products/', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, product_type: productType }),

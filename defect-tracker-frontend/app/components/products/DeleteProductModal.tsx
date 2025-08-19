@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { ProductModel } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface DeleteProductModalProps {
   product: ProductModel;
@@ -18,7 +19,7 @@ export default function DeleteProductModal({ product, onClose, onSuccess }: Dele
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/products/${product.id}`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '/' + product.id, {
         method: 'DELETE',
         credentials: 'include',
       });
