@@ -10,7 +10,7 @@ export default function AcceptInvitationPage() {
   const router = useRouter();
   const token = searchParams.get('token');
 
-  const [userInfo, setUserInfo] = useState<any>(null);
+  const [userInfo, setUserInfo] = useState<{ first_name?: string; last_name?: string; email?: string; role?: string } | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
@@ -21,12 +21,6 @@ export default function AcceptInvitationPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (token) {
-      validateInvitation();
-    }
-  }, [token]);
 
   const validateInvitation = async () => {
     try {
@@ -41,12 +35,18 @@ export default function AcceptInvitationPage() {
       } else {
         setMessage(data.msg);
       }
-    } catch (error) {
+    } catch {
       setMessage('Davet bağlantısı doğrulanamadı.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (token) {
+      validateInvitation();
+    }
+  }, [token, validateInvitation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

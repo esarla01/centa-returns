@@ -30,7 +30,6 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-            const data = await res.json();
             // Refresh user state after successful login
             await refreshUser();
             router.push('/manage-returns'); // Redirect to manage-returns page after successful login

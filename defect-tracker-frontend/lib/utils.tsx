@@ -38,7 +38,7 @@ export const completeStage = async (caseId: number, stage: string): Promise<{ su
     } else {
       return { success: false, error: data.error || 'Bir hata oluştu' };
     }
-  } catch (error) {
+  } catch (e: unknown) {
     return { success: false, error: 'Bağlantı hatası' };
   }
 };

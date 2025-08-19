@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus } from 'lucide-react';
-import { FullReturnCase, User } from '@/lib/types';
+import { FullReturnCase } from '@/lib/types';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import FilterSidebar, { Filters } from '../components/returns/FilterSidebar';

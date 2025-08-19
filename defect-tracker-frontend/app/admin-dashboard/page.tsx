@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Search, ListFilter, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, ListFilter, Trash2 } from 'lucide-react';
 import { User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Header from '@/app/components/Header';

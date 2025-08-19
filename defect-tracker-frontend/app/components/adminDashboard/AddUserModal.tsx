@@ -1,7 +1,6 @@
 // components/admin/AddUserModal.tsx
 'use client';
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface AddUserModalProps {

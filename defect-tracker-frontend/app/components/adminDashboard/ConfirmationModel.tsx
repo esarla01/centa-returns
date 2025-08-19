@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { User } from '@/lib/types'; // Make sure to import your User type
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface DeleteConfirmationModalProps {
@@ -40,8 +40,8 @@ export default function DeleteConfirmationModal({ user, onClose, onSuccess }: De
       onSuccess(); 
       onClose();   
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }

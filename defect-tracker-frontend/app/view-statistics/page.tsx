@@ -11,7 +11,6 @@ import ServiceTypeChart from '../components/statistics/ServiceTypeChart';
 import ResolutionMethodChart from '../components/statistics/ResolutionMethodChart';
 import ProductTypeChart from '../components/statistics/ProductTypeChart';
 import { RequirePermission } from '../components/RequirePermission';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 export default function StatisticsPage() {
   const [startDate, setStartDate] = useState<Date | null>(
