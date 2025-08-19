@@ -23,7 +23,7 @@ def is_valid_phone_number(phone_string):
     digits_only = re.sub(r'\D', '', phone_string)
     return 7 <= len(digits_only) <= 15
 
-@customer_bp.route('/', methods=['POST'])
+@customer_bp.route('', methods=['POST'])
 @permission_required(AppPermissions.PAGE_VIEW_CUSTOMER_LIST)
 def create_customer():
     """
