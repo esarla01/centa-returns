@@ -140,7 +140,7 @@ def deregister():
 
     return jsonify({"msg": f'{user_to_delete.first_name} {user_to_delete.last_name} kullanıcısının kaydı başarıyla silindi'}), 200
 
-@admin_bp.route('/', methods=['GET'])
+@admin_bp.route('', methods=['GET'])
 @jwt_required()
 def retrieve_users():
     """
