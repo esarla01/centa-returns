@@ -41,9 +41,14 @@ def create_app():
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=jwt_exp_hours)  
     app.config['JWT_TOKEN_LOCATION'] = [os.getenv('JWT_TOKEN_LOCATION', 'cookies')] 
     app.config['JWT_ACCESS_COOKIE_NAME'] = os.getenv('JWT_ACCESS_COOKIE_NAME', 'access_token')
-    app.config['JWT_COOKIE_SECURE'] = os.getenv('JWT_COOKIE_SECURE', 'False').lower() == 'true'
+    # app.config['JWT_COOKIE_SECURE'] = os.getenv('JWT_COOKIE_SECURE', 'False').lower() == 'true'
+    # app.config['JWT_COOKIE_CSRF_PROTECT'] = os.getenv('JWT_COOKIE_CSRF_PROTECT', 'False').lower() == 'true'
+    # app.config['JWT_COOKIE_SAMESITE'] = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
+    # Update these JWT settings
+    app.config['JWT_COOKIE_SECURE'] = os.getenv('JWT_COOKIE_SECURE', 'True').lower() == 'true'
+    app.config['JWT_COOKIE_SAMESITE'] = os.getenv('JWT_COOKIE_SAMESITE', 'None')  # None for cross-origin
     app.config['JWT_COOKIE_CSRF_PROTECT'] = os.getenv('JWT_COOKIE_CSRF_PROTECT', 'False').lower() == 'true'
-    app.config['JWT_COOKIE_SAMESITE'] = os.getenv('JWT_COOKIE_SAMESITE', 'Lax')
+    app.config['JWT_COOKIE_DOMAIN'] = os.getenv('JWT_COOKIE_DOMAIN', None)
 
     # Email Config
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
@@ -62,11 +67,20 @@ def create_app():
     mail.init_app(app)        
 
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+    # CORS(app, 
+    #     supports_credentials=True, 
+    #     resources={r"/*": {"origins": [frontend_url]}},
+    #     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    #     allowed_headers=['Content-Type', 'Authorization']
+    # )
+    # More permissive CORS for development (remove for production)
     CORS(app, 
         supports_credentials=True, 
-        resources={r"/*": {"origins": [frontend_url]}},
+        resources={r"/*": {"origins": "*"}},
         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowed_headers=['Content-Type', 'Authorization']
+        allowed_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+        expose_headers=['Set-Cookie'],
+        allow_credentials=True
     )
 
     @app.route("/")
