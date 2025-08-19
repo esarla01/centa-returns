@@ -1,5 +1,6 @@
 'use client';
 
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -44,7 +45,7 @@ export default function ProductTypeChart({
         const endDateStr = endDate.toISOString().split('T')[0];
 
         const response = await fetch(
-          `http://localhost:5000/reports/product-type-stats?start_date=${startDateStr}&end_date=${endDateStr}`,
+          buildApiUrl(API_ENDPOINTS.REPORTS.PRODUCT_TYPE_STATS) + `?start_date=${startDateStr}&end_date=${endDateStr}`,
           {
             credentials: 'include',
           }

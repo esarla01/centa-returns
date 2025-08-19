@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types'; // Using the full type for consistency
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface DeleteReturnCaseModalProps {
   returnCase: FullReturnCase;
@@ -18,7 +19,7 @@ export default function DeleteReturnCaseModal({ returnCase, onClose, onSuccess }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id, {
         method: 'DELETE',
         credentials: 'include',
       });

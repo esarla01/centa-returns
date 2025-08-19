@@ -179,7 +179,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <button 
               className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 hover:underline"
-              onClick={() => router.push('http://localhost:3000/forgot-password')}
+              onClick={() => router.push('/forgot-password')}
             >
               Şifremi unuttum
             </button>

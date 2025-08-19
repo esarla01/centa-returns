@@ -1,5 +1,6 @@
 'use client';
 
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, ReferenceLine
@@ -34,7 +35,7 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
           start_date: startDate ?  startDate.toISOString().split("T")[0] : "",
           end_date: endDate? endDate.toISOString().split("T")[0] : "",
         });
-        const res = await fetch(`http://localhost:5000/reports/returns-breakdown?${params.toString()}`);
+        const res = await fetch(buildApiUrl(API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN) + `?${params.toString()}`);
         const json = await res.json();
 
         // Expecting API to return:

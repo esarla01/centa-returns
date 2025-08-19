@@ -3,6 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X, Mail, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface EmailCustomerModalProps {
   returnCase: FullReturnCase;
@@ -74,7 +75,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/send-customer-email`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/send-customer-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -1,3 +1,4 @@
+import { API_ENDPOINTS, buildApiUrl } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -20,7 +21,7 @@ export default function ItemsByProductModelChart({ startDate, endDate, refreshKe
       const sd = startDate ? startDate.toISOString().split("T")[0] : "";
       const ed = endDate ? endDate.toISOString().split("T")[0] : "";
       const res = await fetch(
-        `http://localhost:5000/reports/items-by-product-model?start_date=${sd}&end_date=${ed}`
+        buildApiUrl(API_ENDPOINTS.REPORTS.ITEMS_BY_PRODUCT_MODEL) + `?start_date=${sd}&end_date=${ed}`
       );
       const json = await res.json();
       setData(json.data || []);

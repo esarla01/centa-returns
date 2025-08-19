@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface OdemeTahsilatiModalProps {
   returnCase: FullReturnCase;
@@ -26,7 +27,7 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/odeme-tahsilati`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/odeme-tahsilati', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

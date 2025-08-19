@@ -7,6 +7,7 @@ import { tr } from 'date-fns/locale';
 import { useState, useEffect, FormEvent, use } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { Customer, User, ProductModel } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface AddReturnCaseModalProps {
   onClose: () => void;
@@ -37,8 +38,8 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
             try {
                 // Fetch all data in parallel
                 const [custRes, userRes] = await Promise.all([
-                    fetch('http://localhost:5000/customers?limit=1000', { method: 'GET', credentials: 'include' }),
-                    fetch('http://localhost:5000/products?limit=1000', { method: 'GET', credentials: 'include' })
+                    fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', { method: 'GET', credentials: 'include' }),
+                    fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', { method: 'GET', credentials: 'include' })
                 ]);
                 const custData = await custRes.json();
                 const userData = await userRes.json();
@@ -71,7 +72,7 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         }
         setIsSubmitting(true);
         try {
-            const response = await fetch('http://localhost:5000/returns/simple', {
+                const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.SIMPLE), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

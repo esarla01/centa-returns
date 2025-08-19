@@ -1,5 +1,6 @@
 'use client';
 
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { User } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -43,7 +44,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
   useEffect(() => {
     const fetchProductModels = async () => {
       try {
-        const response = await fetch('http://localhost:5000/products?limit=1000', {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', {
           method: 'GET',
           credentials: 'include',
         });

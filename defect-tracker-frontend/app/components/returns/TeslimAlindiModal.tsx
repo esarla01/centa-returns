@@ -7,6 +7,7 @@ import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface TeslimAlindiModalProps {
   returnCase: FullReturnCase;
@@ -31,7 +32,7 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/customers?limit=1000', {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', {
           method: 'GET',
           credentials: 'include',
         });
@@ -51,7 +52,7 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/teslim-alindi`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/teslim-alindi', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Customer } from '@/lib/types';
 import { AlertTriangle } from 'lucide-react';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface DeleteCustomerModalProps {
   customer: Customer;
@@ -20,7 +21,7 @@ export default function DeleteCustomerModal({ customer, onClose, onSuccess }: De
 
     try {
         // ASSUMPTION: The API endpoint for deleting is DELETE /api/customers/:id
-      const response = await fetch(`http://localhost:5000/customers/${customer.id}`, {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '/' + customer.id, {
         method: 'DELETE',
         credentials: 'include',
       });

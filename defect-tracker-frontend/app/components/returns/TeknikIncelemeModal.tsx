@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { FullReturnCase, FullReturnCaseItem, ProductModel } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface TeknikIncelemeModalProps {
   returnCase: FullReturnCase;
@@ -106,7 +107,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
   useEffect(() => {
     const fetchProductModels = async () => {
       try {
-        const response = await fetch('http://localhost:5000/products?limit=1000', {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', {
           method: 'GET',
           credentials: 'include',
         });
@@ -213,7 +214,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       
       console.log('TeknikIncelemeModal: Sending data to backend:', requestBody);
       
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/teknik-inceleme`, {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/teknik-inceleme', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

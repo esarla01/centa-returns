@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase, FullReturnCaseItem } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface DokumantasyonModalProps {
   returnCase: FullReturnCase;
@@ -58,7 +59,7 @@ export default function DokumantasyonModal({ returnCase, onClose, onSuccess }: D
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/dokumantasyon`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.DOKUMANTASYON(returnCase.id.toString())), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface AddCustomerModalProps {
   onClose: () => void;
@@ -24,7 +25,7 @@ export default function AddCustomerModal({ onClose, onCustomerAdded }: AddCustom
 
     try {
       // ASSUMPTION: The API endpoint to add a customer is POST /api/customers
-      const response = await fetch('http://localhost:5000/customers/', {
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

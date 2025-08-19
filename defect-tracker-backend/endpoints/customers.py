@@ -8,8 +8,6 @@ from models import db, Customers, AppPermissions
 from permissions import permission_required
 
 
-URL_BASE = 'http://localhost:5000'
-
 customer_bp = Blueprint("customer", __name__, url_prefix="/customers")
 
 EMAIL_REGEX = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
@@ -133,7 +131,7 @@ def update_customer(customer_id):
         db.session.rollback()
         return jsonify({"msg": "Müşteri güncellenemedi.", "error": str(e)}), 500
     
-@customer_bp.route('/',methods=['GET'])
+@customer_bp.route('',methods=['GET'])
 @jwt_required()
 def get_customers():
     """
