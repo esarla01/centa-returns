@@ -11,6 +11,7 @@ import DeleteCustomerModal from '../components/customers/DeleteCustomerModal';
 import EditCustomerModal from '../components/customers/EditCustomerModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 
 export default function CustomersPage() {
@@ -48,7 +49,7 @@ export default function CustomersPage() {
     });
 
     try {
-      const res = await fetch(`http://localhost:5000/customers?${params.toString()}`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?' + params.toString(), {
         method: 'GET',
         credentials: 'include',
       });

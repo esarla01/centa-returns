@@ -11,6 +11,7 @@ import { RequirePermission } from '../components/RequirePermission';
 import AddUserModal from '../components/adminDashboard/AddUserModal';
 import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationModel';
 import { useAuth } from '../contexts/AuthContext';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 const getRoleClass = (role: string) => {
   switch (role) {
@@ -72,12 +73,10 @@ export default function AdminDashboard() {
     });
 
     try {
-      const res = await fetch(`http://localhost:5000/admin?${params.toString()}`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.USERS) + '?' + params.toString(), {
         method: 'GET',
         credentials: 'include', 
-      }
-      
-      );
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setUsers(data.users);

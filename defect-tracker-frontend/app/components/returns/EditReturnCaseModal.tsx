@@ -10,6 +10,7 @@ import DatePicker from 'react-datepicker'; // A component for selecting dates fr
 import { format } from 'date-fns'; // A function for formatting dates.
 import { tr } from 'date-fns/locale'; // Turkish locale for date formatting.
 import 'react-datepicker/dist/react-datepicker.css'; // Styles for the DatePicker component.
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 // Define the properties (props) that the EditReturnCaseModal component expects.
 interface EditReturnCaseModalProps {
@@ -150,12 +151,12 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
     const fetchData = async () => {
       try {
         // Fetch users
-        const usersResponse = await fetch('http://localhost:5000/admin/', { credentials: 'include' });
+        const usersResponse = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.USERS), { credentials: 'include' });
         const usersData = await usersResponse.json();
         setUsers(usersData.users || []);
 
         // Fetch product models
-        const productsResponse = await fetch('http://localhost:5000/products/', { credentials: 'include' });
+        const productsResponse = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS), { credentials: 'include' });
         const productsData = await productsResponse.json();
         setProductModels(productsData.products || []);
       } catch (err) {
@@ -173,7 +174,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}`, {
+      const response = await fetch(buildApiUrl(`${API_ENDPOINTS.RETURNS.BASE}/${returnCase.id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

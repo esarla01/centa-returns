@@ -2,6 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface AddUserModalProps {
   onClose: () => void;
@@ -23,7 +24,7 @@ export default function AddUserModal({ onClose, onUserInvited }: AddUserModalPro
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/admin/invite-user', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.INVITE_USER), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 export default function AcceptInvitationPage() {
   const searchParams = useSearchParams();
@@ -29,7 +30,7 @@ export default function AcceptInvitationPage() {
 
   const validateInvitation = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/auth/validate-invitation/${token}`);
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.VALIDATE_INVITATION(token!)));
       const data = await response.json();
 
       if (response.ok && data.valid) {
@@ -64,7 +65,7 @@ export default function AcceptInvitationPage() {
     setMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/auth/accept-invitation', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.ACCEPT_INVITATION), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

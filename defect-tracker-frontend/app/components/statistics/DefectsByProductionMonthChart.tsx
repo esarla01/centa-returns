@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 type Props = {
   startDate: Date | null;
@@ -38,7 +39,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
       const ed = endDate ? endDate.toISOString().split("T")[0] : "";
       
       const res = await fetch(
-        `http://localhost:5000/reports/defects-by-production-month?start_date=${sd}&end_date=${ed}`
+        buildApiUrl(API_ENDPOINTS.REPORTS.DEFECTS_BY_PRODUCTION_MONTH) + `?start_date=${sd}&end_date=${ed}`
       );
       
       if (!res.ok) {

@@ -1,6 +1,7 @@
 // lib/utils.ts
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { buildApiUrl } from './api';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -22,7 +23,7 @@ export const completeStage = async (caseId: number, stage: string): Promise<{ su
   }
 
   try {
-    const response = await fetch(`http://localhost:5000${endpoint}`, {
+    const response = await fetch(buildApiUrl(endpoint), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

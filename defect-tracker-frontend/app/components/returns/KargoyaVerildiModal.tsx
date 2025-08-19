@@ -6,6 +6,7 @@ import { FullReturnCase } from '@/lib/types';
 import DatePicker from 'react-datepicker';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface KargoyaVerildiModalProps {
   returnCase: FullReturnCase;
@@ -43,7 +44,7 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/kargoya-verildi`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.KARGOYA_VERILDI(returnCase.id.toString())), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

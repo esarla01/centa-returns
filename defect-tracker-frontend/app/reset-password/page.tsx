@@ -2,6 +2,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Image from 'next/image';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 export default function ResetPasswordPage() {
   const searchParams = useSearchParams();
@@ -28,7 +29,7 @@ export default function ResetPasswordPage() {
     setMessage('');
 
     try {
-      const res = await fetch('http://localhost:5000/auth/reset-password', {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.RESET_PASSWORD), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, new_password }),

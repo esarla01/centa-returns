@@ -1,6 +1,7 @@
 // app/context/AuthContext.tsx
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 type User = {
   email: string;
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Get user from backend
-      const response = await fetch('http://localhost:5000/auth/whoami', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.WHOAMI), {
         method: 'GET',
         credentials: 'include',
       });
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      const response = await fetch('http://localhost:5000/auth/logout', {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.LOGOUT), {
         method: 'POST',
         credentials: 'include',
       });

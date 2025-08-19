@@ -15,6 +15,7 @@ import DeleteReturnCaseModal from '../components/returns/DeleteReturnCaseModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
 import { useAuth } from '../contexts/AuthContext';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 const initialFilters: Filters = {
   search: '',
@@ -66,10 +67,10 @@ export default function ReturnsDashboardPage() {
     });
 
     console.log('Filters being sent:', filters);
-    console.log('API URL:', `http://localhost:5000/returns?${params.toString()}`);
+    console.log('API URL:', buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '?' + params.toString());
 
     try {
-      const res = await fetch(`http://localhost:5000/returns?${params.toString()}`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '?' + params.toString(), {
         method: 'GET',
         credentials: 'include',
       });

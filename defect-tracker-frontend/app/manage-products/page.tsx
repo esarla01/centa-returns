@@ -11,6 +11,7 @@ import AddProductModal from '../components/products/AddProductModal';
 import DeleteProductModal from '../components/products/DeleteProductModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 // Helper to get a color style based on product type
 const getTypeClass = (type: ProductType) => {
@@ -57,10 +58,10 @@ export default function ProductsPage() {
     });
 
     console.log('Fetching products with filters:', filters);
-    console.log('API URL:', `http://localhost:5000/products?${params.toString()}`);
+    console.log('API URL:', buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?' + params.toString());
 
     try {
-      const res = await fetch(`http://localhost:5000/products?${params.toString()}`, {
+      const res = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?' + params.toString(), {
         method: 'GET',
         credentials: 'include',
       });

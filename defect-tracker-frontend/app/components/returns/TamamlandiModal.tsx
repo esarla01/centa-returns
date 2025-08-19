@@ -3,6 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
+import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
 interface TamamlandiModalProps {
   returnCase: FullReturnCase;
@@ -42,7 +43,7 @@ export default function TamamlandiModal({ returnCase, onClose, onSuccess }: Tama
     setSuccess(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/returns/${returnCase.id}/tamamlandi`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.TAMAMLANDI(returnCase.id.toString())), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
