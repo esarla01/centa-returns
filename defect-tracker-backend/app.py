@@ -105,6 +105,9 @@ def create_app():
     app.register_blueprint(return_case_bp)  
     app.register_blueprint(admin_bp)
     app.register_blueprint(reports_bp)
+    
+    app.url_map.strict_slashes = False
+
 
     return app
 
