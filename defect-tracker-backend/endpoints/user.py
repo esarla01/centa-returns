@@ -82,6 +82,14 @@ def validate_invitation(token):
     if user.password_hash:
         return jsonify({"valid": False, "msg": "Bu hesap zaten aktifleştirilmiş"}), 400
 
+
+    # Send welcome email
+    try:
+        CentaEmailService.send_welcome_email(user.email, user.first_name)
+    except Exception as e:
+        print(f"Error sending welcome email: {e}")
+        return jsonify({"valid": True, "msg": "Davet bağlantısı doğrulandı, ancak hoşgeldiniz e-postası gönderilemedi."}), 200
+
     return jsonify({
         "valid": True,
         "user": {

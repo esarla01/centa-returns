@@ -87,7 +87,7 @@ def invite_user():
         db.session.commit()
 
         # Send invitation email
-        invitation_url = f"http://localhost:3000/accept-invitation?token={invitation_token}"        
+        invitation_url = f"https://centa-returns-frontend-production.up.railway.app/accept-invitation?token={invitation_token}"        
         
         if CentaEmailService.send_user_invitation(
             email, 

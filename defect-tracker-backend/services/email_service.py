@@ -110,12 +110,6 @@ Centa Arıza Takip Sistemi'ne hoş geldiniz!
 
 Hesabınız başarıyla oluşturuldu ve sisteme giriş yapabilirsiniz.
 
-Sistem Özellikleri:
-• İade vakalarını takip etme
-• Müşteri yönetimi
-• Ürün yönetimi
-• Detaylı raporlama
-
 Herhangi bir sorunuz için bizimle iletişime geçebilirsiniz.
 
 Saygılarımızla,
