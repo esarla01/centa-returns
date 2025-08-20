@@ -52,7 +52,7 @@ function ProductsContent() {
     setIsLoading(true);
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: '10',
+      limit: '5',
       ...(filters.search ? { search: filters.search } : {}),
       ...(filters.typeFilter ? { type: filters.typeFilter } : {}),
     });
