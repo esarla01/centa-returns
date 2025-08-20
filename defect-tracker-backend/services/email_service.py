@@ -266,7 +266,7 @@ ariza.takip@centa.com.tr
         """Send notification when a case is fully completed"""
         try:
             # Retrieve the list of all user emails
-            users = User.query.all()
+            users = User.query.filter(User.role.in_(['admin', 'manager'])).all()
             user_emails = [user.email for user in users]
             
             if not user_emails:

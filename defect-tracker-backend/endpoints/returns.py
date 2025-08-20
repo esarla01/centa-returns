@@ -377,9 +377,6 @@ def update_teknik_inceleme(return_case_id):
                     service_type_key = convert_turkish_to_enum(item_data['service_type'], ServiceTypeEnum)
                     if service_type_key:
                         service_type = ServiceTypeEnum[service_type_key]
-                
-                
-
 
                 new_item = ReturnCaseItem(
                     return_case_id=return_case_id,
@@ -410,6 +407,8 @@ def update_teknik_inceleme(return_case_id):
 @permission_required(AppPermissions.CASE_COMPLETE_TECHNICAL_REVIEW)
 def complete_teknik_inceleme(return_case_id):
     """Complete Teknik İnceleme stage and move to Documentation"""
+    current_user = get_current_user()
+    current_user_name = current_user.get('name', 'Sistem')
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
@@ -453,9 +452,7 @@ def complete_teknik_inceleme(return_case_id):
             
             if not item.service_type:
                 return jsonify({"error": "Hizmet türü eksik. Lütfen tüm ürünler için hizmet türünü belirtin."}), 400
-            
-
-            
+              
             if not item.cable_check:
                 return jsonify({"error": "Kablo kontrol eksik. Lütfen tüm ürünler için kablo kontrolünü tamamlayın."}), 400
             
@@ -483,6 +480,16 @@ def complete_teknik_inceleme(return_case_id):
             return jsonify({"error": "Teknik servis notu eksik. Lütfen teknik servis notunu belirtin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.PAYMENT_COLLECTION
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Teknik İnceleme",
+                next_stage="Ödeme Tahsilatı",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
+
         db.session.commit()
         return jsonify({"message": "Teknik İnceleme aşaması tamamlandı, durum Ödeme Tahsilatı olarak güncellendi"}), 200
 
@@ -522,6 +529,8 @@ def update_odeme_tahsilati(return_case_id):
 @permission_required(AppPermissions.CASE_COMPLETE_PAYMENT_COLLECTION)
 def complete_odeme_tahsilati(return_case_id):
     """Complete Ödeme Tahsilatı stage and move to Shipping"""
+    current_user = get_current_user()
+    current_user_name = current_user.get('name', 'Sistem')
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
@@ -539,6 +548,15 @@ def complete_odeme_tahsilati(return_case_id):
             return jsonify({"error": "Ödeme tahsilatı aşaması tamamlanamaz. Ödeme durumu 'Ücretsiz' veya 'Ödendi' olmalıdır."}), 400
 
         return_case.workflow_status = CaseStatusEnum.SHIPPING
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Ödeme Tahsilatı",
+                next_stage="Kargoya Verildi",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
         db.session.commit()
         return jsonify({"message": "Ödeme tahsilatı aşaması tamamlandı, durum Kargoya Veriliyor olarak güncellendi"}), 200
 
@@ -585,6 +603,9 @@ def update_kargoya_verildi(return_case_id):
 @permission_required(AppPermissions.CASE_COMPLETE_SHIPPING)
 def complete_kargoya_verildi(return_case_id):
     """Complete Kargoya Verildi stage and move to Completed"""
+    current_user = get_current_user()
+    current_user_name = current_user.get('name', 'Sistem')
+
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
@@ -604,6 +625,16 @@ def complete_kargoya_verildi(return_case_id):
             return jsonify({"error": "Kargo tarihi eksik. Lütfen kargo tarihini belirtin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.COMPLETED
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Kargoya Verildi",
+                next_stage="Tamamlandı",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
+
         db.session.commit()
         return jsonify({"message": "Kargoya Verildi aşaması tamamlandı, durum Tamamlandı olarak güncellendi"}), 200
 
@@ -642,6 +673,8 @@ def update_tamamlandi(return_case_id):
 @permission_required(AppPermissions.CASE_COMPLETE_COMPLETED)
 def complete_tamamlandi(return_case_id):
     """Complete Tamamlandı stage (final stage)"""
+    current_user = get_current_user()
+    current_user_name = current_user.get('name', 'Sistem')
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
@@ -655,6 +688,14 @@ def complete_tamamlandi(return_case_id):
             return jsonify({"error": "Ödeme durumu eksik. Lütfen ödeme durumunu belirtin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.COMPLETED
+        try:
+            CentaEmailService.send_case_completion_notification(
+                case_id=return_case.id,
+                completed_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
+
         db.session.commit()
         return jsonify({"message": "Tamamlandı aşaması tamamlandı"}), 200
 
