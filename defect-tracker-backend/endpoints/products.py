@@ -3,7 +3,8 @@ from flask_jwt_extended import jwt_required
 from permissions import permission_required
 
 # Import your db instance and models
-from models import AppPermissions, db, ProductModel, ProductTypeEnum
+from models import AppPermissions, db, ProductModel, ProductTypeEnum, ReturnCaseItem
+
 
 product_bp = Blueprint("product", __name__, url_prefix="/products")
 
@@ -106,6 +107,24 @@ def update_product(product_id):
 def delete_product(product_id):
     """ Delete a product model. """
     product = ProductModel.query.get_or_404(product_id)
-    db.session.delete(product)
-    db.session.commit()
-    return jsonify({"msg": "Ürün modeli başarıyla silindi."}), 200
+    
+    # Check if product has associated return case items
+    # We need to check through the relationship
+    from models import ReturnCaseItem
+    associated_items = ReturnCaseItem.query.filter_by(product_model_id=product_id).first()
+    
+    if associated_items:
+        # Count all associated items
+        item_count = ReturnCaseItem.query.filter_by(product_model_id=product_id).count()
+        return jsonify({
+            "msg": "Bu ürün modeli silinemez çünkü iade vakalarında kullanılmaktadır. Önce ilgili iade vakalarını silin.",
+            "return_case_item_count": item_count
+        }), 400
+
+    try:
+        db.session.delete(product)
+        db.session.commit()
+        return jsonify({"msg": "Ürün modeli başarıyla silindi."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": "Ürün modeli silinemedi.", "error": str(e)}), 500
