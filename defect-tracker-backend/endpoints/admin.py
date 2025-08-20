@@ -109,7 +109,7 @@ def invite_user():
         print(f"Error: {e}")
         return jsonify({"msg": "Kullanıcı davet edilirken bir hata oluştu", "error": str(e)}), 500
 
-@admin_bp.route('/', methods=['DELETE'])
+@admin_bp.route('', methods=['DELETE'])
 @permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def deregister():
     data = request.get_json()
