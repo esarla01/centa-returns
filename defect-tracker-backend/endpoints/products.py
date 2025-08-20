@@ -7,7 +7,7 @@ from models import AppPermissions, db, ProductModel, ProductTypeEnum
 
 product_bp = Blueprint("product", __name__, url_prefix="/products")
 
-@product_bp.route('/', methods=['GET'])
+@product_bp.route('', methods=['GET'])
 @jwt_required()
 def get_products():
     """

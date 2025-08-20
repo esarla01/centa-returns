@@ -52,7 +52,7 @@ def create_return_case():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
-@return_case_bp.route('/', methods=['GET'])
+@return_case_bp.route('', methods=['GET'])
 def get_return_cases():
     try:
         # Get pagination parameters
