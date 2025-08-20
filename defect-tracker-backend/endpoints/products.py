@@ -110,7 +110,6 @@ def delete_product(product_id):
     
     # Check if product has associated return case items
     # We need to check through the relationship
-    from models import ReturnCaseItem
     associated_items = ReturnCaseItem.query.filter_by(product_model_id=product_id).first()
     
     if associated_items:

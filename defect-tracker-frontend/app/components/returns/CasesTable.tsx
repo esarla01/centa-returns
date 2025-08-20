@@ -135,6 +135,14 @@ const formatCurrency = (amount: number | null | undefined): string => {
   }).format(amount);
 };
 
+// Truncate long text values and append an ellipsis. Keeps UI compact in table cells.
+const truncateTextWithEllipsis = (text: string | null | undefined, maxCharacters: number): string => {
+  if (!text) return "—";
+  const normalized = text.trim();
+  if (normalized.length <= maxCharacters) return normalized;
+  return normalized.slice(0, maxCharacters) + '…';
+};
+
 export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefresh }: CasesTableProps) {
   const { user } = useAuth();
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
@@ -526,8 +534,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                       <ul className="space-y-1">
                         {c.items.map(item => (
                           <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.yapilan_islemler || "—"}
+                            <div className="text-xs" title={item.yapilan_islemler || undefined}>
+                              {truncateTextWithEllipsis(item.yapilan_islemler, 80)}
                             </div>
                           </li>
                         ))}
