@@ -19,6 +19,7 @@ def convert_turkish_to_enum(turkish_value, enum_class):
 
 return_case_bp = Blueprint('returns', __name__, url_prefix='/returns')
 
+@return_case_bp.route('', methods=['POST'])
 @return_case_bp.route('/', methods=['POST'])
 def create_return_case():
     data = request.get_json()
@@ -53,6 +54,7 @@ def create_return_case():
         return jsonify({"error": str(e)}), 500
 
 @return_case_bp.route('', methods=['GET'])
+@return_case_bp.route('/', methods=['GET'])
 def get_return_cases():
     try:
         # Get pagination parameters

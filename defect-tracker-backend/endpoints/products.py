@@ -49,6 +49,7 @@ def get_products():
         "currentPage": paginated_products.page
     }), 200
 
+@product_bp.route('', methods=['POST'])
 @product_bp.route('/', methods=['POST'])
 @permission_required(AppPermissions.PAGE_VIEW_PRODUCT_LIST)
 def create_product():
