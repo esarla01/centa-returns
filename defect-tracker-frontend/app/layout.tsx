@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Centa İade Takip Sistemi",
   description: "Centa İade Takip Sistemi",
+  icons: {
+    icon: '/logo.png', // Using your existing logo.png
+  },
 };
 
 export default function RootLayout({
