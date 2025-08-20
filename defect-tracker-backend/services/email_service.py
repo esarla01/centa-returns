@@ -1,6 +1,6 @@
 # services/email_service.py
 from flask_mail import Message
-from models import mail
+from models import ReturnCase, User, mail
 import logging
 from datetime import datetime
 
@@ -28,10 +28,10 @@ ariza.takip@centa.com.tr
 """
             )
             mail.send(msg)
-            logging.info(f"Password reset email sent to {user_email}")
+            logging.info(f"Şifre sıfırlama e-postası {user_email} adresine gönderildi")
             return True
         except Exception as e:
-            logging.error(f"Failed to send password reset email: {e}")
+            logging.error(f"Şifre sıfırlama e-postası gönderilemedi: {e}")
             return False
 
     @staticmethod
@@ -61,10 +61,10 @@ ariza.takip@centa.com.tr
 """
             )
             mail.send(msg)
-            logging.info(f"User invitation email sent to {user_email}")
+            logging.info(f"Kullanıcı davet e-postası {user_email} adresine gönderildi")
             return True
         except Exception as e:
-            logging.error(f"Failed to send user invitation email: {e}")
+            logging.error(f"Kullanıcı davet e-postası gönderilemedi: {e}")
             return False
                 
 
@@ -91,11 +91,63 @@ ariza.takip@centa.com.tr
 """
             )
             mail.send(msg)
-            logging.info(f"Return case notification sent to {customer_email}")
+            logging.info(f"İade vakası bildirimi {customer_email} adresine gönderildi")
             return True
         except Exception as e:
-            logging.error(f"Failed to send return case notification: {e}")
+            logging.error(f"İade vakası bildirimi gönderilemedi: {e}")
             return False
+    
+    @staticmethod
+    def send_return_case_notification_to_all(case_id):
+        """Send return case notification to all users"""
+        try:
+            # Retrieve the list of all user emails
+            users = User.query.all()
+            user_emails = [user.email for user in users]
+            
+            if not user_emails:
+                logging.warning("E-posta gönderilecek kullanıcı bulunamadı")
+                return False
+
+            # Retrieve the case from the database
+            case = ReturnCase.query.get(case_id)
+            if not case:
+                logging.error(f"Vaka bulunamadı, vaka numarası: {case_id}")
+                return False
+
+            # Get customer information
+            customer_name = case.customer.name
+            customer_contact_info = case.customer.contact_info if case.customer else "Bilinmiyor"
+            arrival_date = case.arrival_date.strftime('%d.%m.%Y') if case.arrival_date else "Belirtilmemiş"
+
+            msg = Message(
+                subject=f"Centa - İade Vakası #{case_id} Bildirimi",
+                recipients=user_emails,
+                body=f"""Merhaba,
+
+Centa Arıza Takip Sistemi'nde yeni bir iade vakası oluşturuldu.
+
+Vaka Numarası: {case_id}
+Tarih: {arrival_date}
+Müşteri: {customer_name}
+Müşteri İletişim Bilgileri: {customer_contact_info}
+
+En yakın zamanda iade vakasının durumunu güncelleyiniz.
+
+Detaylı bilgi için sistemimize giriş yapabilirsiniz.
+
+Saygılarımızla,
+Centa Teknik Servis
+ariza.takip@centa.com.tr
+"""
+            )
+            mail.send(msg)
+            logging.info(f"İade vakası #{case_id} bildirimi {len(user_emails)} kullanıcıya gönderildi")
+            return True
+        except Exception as e:
+            logging.error(f"İade vakası bildirimi tüm kullanıcılara gönderilemedi: {e}")
+            return False
+
 
     @staticmethod
     def send_welcome_email(user_email, user_name):
@@ -118,10 +170,10 @@ ariza.takip@centa.com.tr
 """
             )
             mail.send(msg)
-            logging.info(f"Welcome email sent to {user_email}")
+            logging.info(f"Hoş geldin e-postası {user_email} adresine gönderildi")
             return True
         except Exception as e:
-            logging.error(f"Failed to send welcome email: {e}")
+            logging.error(f"Hoş geldin e-postası gönderilemedi: {e}")
             return False
 
     @staticmethod
@@ -139,8 +191,8 @@ ariza.takip@centa.com.tr
 """
             )
             mail.send(msg)
-            logging.info(f"Custom customer email sent to {customer_email} for case #{case_id}")
+            logging.info(f"Özel müşteri e-postası {customer_email} adresine vaka #{case_id} için gönderildi")
             return True
         except Exception as e:
-            logging.error(f"Failed to send custom customer email: {e}")
+            logging.error(f"Özel müşteri e-postası gönderilemedi: {e}")
             return False

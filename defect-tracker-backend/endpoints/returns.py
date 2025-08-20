@@ -4,6 +4,7 @@ from models import AppPermissions, Role, User, UserRole, WarrantyStatusEnum, Pay
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from permissions import permission_required
+from services.email_service import CentaEmailService
 
 
 # Helper function to convert Turkish values to enum keys
@@ -240,6 +241,10 @@ def create_simple_return_case():
         )
         db.session.add(case)
         db.session.commit()
+
+        # Send notification to all users
+        CentaEmailService.send_return_case_notification_to_all(case.id)
+
         return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
     except Exception as e:
         db.session.rollback()
