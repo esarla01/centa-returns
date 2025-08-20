@@ -102,7 +102,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
       <div style={{ width: "100%", height: "300px" }} className="relative">
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-gray-500">Veri bulunamadı</span>
+            <span className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</span>
           </div>
         )}
         <ResponsiveContainer>

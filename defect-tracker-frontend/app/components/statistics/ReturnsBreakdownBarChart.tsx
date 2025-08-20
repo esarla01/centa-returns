@@ -25,11 +25,13 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
   const [data, setData] = useState<ReturnData[]>([]);
   const [customers, setCustomers] = useState<string[]>([]);
   const [productModels, setProductModels] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!startDate || !endDate) return;
 
     const fetchData = async () => {
+      setLoading(true);
       try {
         const params = new URLSearchParams({
           start_date: startDate ?  startDate.toISOString().split("T")[0] : "",
@@ -38,18 +40,13 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
         const res = await fetch(buildApiUrl(API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN) + `?${params.toString()}`);
         const json = await res.json();
 
-        // Expecting API to return:
-        // {
-        //   data: [{ period: '2025-07', 'Model A|Customer 1': 5, ... }],
-        //   customers: ['Customer 1', 'Customer 2', ...],
-        //   productModels: ['Model A', 'Model B', ...]
-        // }
-
         setData(json.data);
         setCustomers(json.customers);
         setProductModels(json.productModels);
       } catch (error) {
         console.error('Failed to fetch breakdown data', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -61,6 +58,16 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
     '#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00C49F',
     '#0088FE', '#FFBB28', '#FF4444', '#AA66CC', '#99CC00'
   ];
+
+  const isEmpty = !loading && (!data || data.length === 0);
+
+  if (isEmpty) {
+    return (
+      <div className="flex items-center justify-center h-[400px]">
+        <span className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</span>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={400}>
