@@ -19,39 +19,39 @@ def convert_turkish_to_enum(turkish_value, enum_class):
 
 return_case_bp = Blueprint('returns', __name__, url_prefix='/returns')
 
-@return_case_bp.route('', methods=['POST'])
-@return_case_bp.route('/', methods=['POST'])
-def create_return_case():
-    data = request.get_json()
+# @return_case_bp.route('', methods=['POST'])
+# @return_case_bp.route('/', methods=['POST'])
+# def create_return_case():
+#     data = request.get_json()
 
-    try:
-        case = ReturnCase(
-            customer_id=data['customerId'],
-            arrival_date=datetime.strptime(data['arrivalDate'], '%Y-%m-%d'),
-            receipt_method=ReceiptMethodEnum[data['receiptMethod']],
-            workflow_status=CaseStatusEnum.TECHNICAL_REVIEW,
-        )
-        db.session.add(case)
-        db.session.flush()  # to get case.id
+#     try:
+#         case = ReturnCase(
+#             customer_id=data['customerId'],
+#             arrival_date=datetime.strptime(data['arrivalDate'], '%Y-%m-%d'),
+#             receipt_method=ReceiptMethodEnum[data['receiptMethod']],
+#             workflow_status=CaseStatusEnum.TECHNICAL_REVIEW,
+#         )
+#         db.session.add(case)
+#         db.session.flush()  # to get case.id
 
-        # handle each product item
-        for item in data.get('items', []):
-            count = item.get('productCount', 1)
-            main_item = ReturnCaseItem(
-                return_case_id=case.id,
-                product_model_id=item.get('productModelId'),
-                product_count=count,
-                production_date=item.get('productionDate'), 
-                has_control_unit=item.get('attachControlUnit', False),
-            )
-            db.session.add(main_item)
+#         # handle each product item
+#         for item in data.get('items', []):
+#             count = item.get('productCount', 1)
+#             main_item = ReturnCaseItem(
+#                 return_case_id=case.id,
+#                 product_model_id=item.get('productModelId'),
+#                 product_count=count,
+#                 production_date=item.get('productionDate'), 
+#                 has_control_unit=item.get('attachControlUnit', False),
+#             )
+#             db.session.add(main_item)
 
-        db.session.commit()
-        return jsonify({"message": "İade vakası oluşturuldu", "caseId": case.id}), 201
+#         db.session.commit()
+#         return jsonify({"message": "İade vakası oluşturuldu", "caseId": case.id}), 201
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         db.session.rollback()
+#         return jsonify({"error": str(e)}), 500
 
 @return_case_bp.route('', methods=['GET'])
 @return_case_bp.route('/', methods=['GET'])
@@ -220,7 +220,6 @@ def create_simple_return_case():
     arrival_date = data.get('arrivalDate')
     receipt_method = data.get('receiptMethod')
     notes = data.get('notes')
-
 
 
     if not customer_id or not arrival_date or not receipt_method:
