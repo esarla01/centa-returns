@@ -132,7 +132,6 @@ def update_customer(customer_id):
         return jsonify({"msg": "Müşteri güncellenemedi.", "error": str(e)}), 500
     
 @customer_bp.route('',methods=['GET'])
-@customer_bp.route('/',methods=['GET'])
 @jwt_required()
 def get_customers():
     """

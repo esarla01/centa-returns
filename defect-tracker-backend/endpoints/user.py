@@ -150,7 +150,7 @@ def forgot_password():
     user.reset_token_expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
     db.session.commit()
 
-    reset_url = f" http://localhost:3000/reset-password?token={token}"
+    reset_url = f" https://centa-returns-frontend-production.up.railway.app/reset-password?token={token}"
 
     try:
         CentaEmailService.send_password_reset(user.email, user.first_name, reset_url)
