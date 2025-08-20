@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from models import AppPermissions, Role, User, UserRole, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum
@@ -6,8 +7,19 @@ from sqlalchemy.orm import joinedload
 from permissions import permission_required
 from services.email_service import CentaEmailService
 
+def get_current_user():
+    """Get current user from JWT token"""
+    try:
+        identity = get_jwt_identity()
+        claims = get_jwt()
+        return {
+            'id': identity,
+            'role': claims.get('role'),
+            'name': claims.get('name', 'Sistem')
+        }
+    except:
+        return {'id': None, 'role': None, 'name': 'Sistem'}
 
-# Helper function to convert Turkish values to enum keys
 def convert_turkish_to_enum(turkish_value, enum_class):
     """Convert Turkish display values to enum keys"""
     if not turkish_value or not turkish_value.strip():
@@ -15,44 +27,9 @@ def convert_turkish_to_enum(turkish_value, enum_class):
     for enum_item in enum_class:
         if enum_item.value == turkish_value:
             return enum_item.name
-    return turkish_value  # Return as is if no match found
-
+    return turkish_value  
 
 return_case_bp = Blueprint('returns', __name__, url_prefix='/returns')
-
-# @return_case_bp.route('', methods=['POST'])
-# @return_case_bp.route('/', methods=['POST'])
-# def create_return_case():
-#     data = request.get_json()
-
-#     try:
-#         case = ReturnCase(
-#             customer_id=data['customerId'],
-#             arrival_date=datetime.strptime(data['arrivalDate'], '%Y-%m-%d'),
-#             receipt_method=ReceiptMethodEnum[data['receiptMethod']],
-#             workflow_status=CaseStatusEnum.TECHNICAL_REVIEW,
-#         )
-#         db.session.add(case)
-#         db.session.flush()  # to get case.id
-
-#         # handle each product item
-#         for item in data.get('items', []):
-#             count = item.get('productCount', 1)
-#             main_item = ReturnCaseItem(
-#                 return_case_id=case.id,
-#                 product_model_id=item.get('productModelId'),
-#                 product_count=count,
-#                 production_date=item.get('productionDate'), 
-#                 has_control_unit=item.get('attachControlUnit', False),
-#             )
-#             db.session.add(main_item)
-
-#         db.session.commit()
-#         return jsonify({"message": "İade vakası oluşturuldu", "caseId": case.id}), 201
-
-#     except Exception as e:
-#         db.session.rollback()
-#         return jsonify({"error": str(e)}), 500
 
 @return_case_bp.route('', methods=['GET'])
 @return_case_bp.route('/', methods=['GET'])
@@ -222,7 +199,6 @@ def create_simple_return_case():
     receipt_method = data.get('receiptMethod')
     notes = data.get('notes')
 
-
     if not customer_id or not arrival_date or not receipt_method:
         return jsonify({'error': 'customerId, arrivalDate ve receiptMethod gereklidir.'}), 400
 
@@ -243,7 +219,7 @@ def create_simple_return_case():
         db.session.commit()
 
         # Send notification to all users
-        CentaEmailService.send_return_case_notification_to_all(case.id)
+        CentaEmailService.new_return_case_notification(case.id)
 
         return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
     except Exception as e:
@@ -297,6 +273,8 @@ def update_teslim_alindi(return_case_id):
 @permission_required(AppPermissions.CASE_COMPLETE_DELIVERED)
 def complete_teslim_alindi(return_case_id):
     """Complete Teslim Alındı stage and move to Technical Review"""
+    current_user = get_current_user()
+    current_user_name = current_user.get('name', 'Sistem')
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
@@ -316,6 +294,17 @@ def complete_teslim_alindi(return_case_id):
             return jsonify({"error": "Teslim alma yöntemi eksik. Lütfen teslim alma yöntemini seçin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.TECHNICAL_REVIEW
+        # Send email notification
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Teslim Alındı",
+                next_stage="Teknik İnceleme",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
+        
         db.session.commit()
         return jsonify({"message": "Teslim Alındı aşaması tamamlandı, durum Teknik İnceleme olarak güncellendi"}), 200
 
