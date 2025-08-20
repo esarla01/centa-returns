@@ -1,7 +1,7 @@
 import os
 import datetime
 
-from flask import Flask, g
+from flask import Flask, g, request, redirect
 from flask_cors import CORS
 from flask_migrate import Migrate
 from dotenv import load_dotenv  
@@ -87,6 +87,15 @@ def create_app():
     def index():
         return "Hello from Flask with Gunicorn!"
 
+    @app.before_request
+    def force_https():
+        """Force HTTPS redirects in production"""
+        if os.getenv('RAILWAY_ENVIRONMENT'):
+            # For Railway, always ensure HTTPS
+            if request.headers.get('X-Forwarded-Proto') == 'http':
+                url = request.url.replace('http://', 'https://', 1)
+                return redirect(url, code=301)
+    
     @app.before_request
     def load_user():
         try:
