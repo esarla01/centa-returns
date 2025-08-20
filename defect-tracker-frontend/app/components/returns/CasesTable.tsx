@@ -337,7 +337,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               <th className="p-4 text-blue-800">Hata Sorumluluğu</th>
               <th className="p-4 text-blue-800">Çözüm Yöntemi</th>
               <th className="p-4 text-blue-800">Hizmet</th>
-              <th className="p-4 text-blue-800">Yapılan İşlemler</th>
+              <th className="p-4 text-blue-800 min-w-[300px]">Yapılan İşlemler</th>
               <th className="p-4 text-blue-800">Teknik İnceleme Eylemler</th>
               
               {/* Ödeme Tahsilatı Stage - Yellow */}
@@ -530,7 +530,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     </td>
 
                     {/* Teknik İnceleme Stage - Yapılan İşlemler */}
-                    <td className="p-4">
+                    <td className="p-4 min-w-[300px]">
                       <ul className="space-y-1">
                         {c.items.map(item => (
                           <li key={item.id} className="border-b last:border-b-0 pb-1">
