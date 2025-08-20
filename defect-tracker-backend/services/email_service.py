@@ -105,7 +105,7 @@ ariza.takip@centa.com.tr
                 subject="Centa Arıza Takip Sistemi - Hoş Geldiniz",
                 recipients=[user_email],
                 body=f"""Merhaba {user_name},
-
+                
 Centa Arıza Takip Sistemi'ne hoş geldiniz!
 
 Hesabınız başarıyla oluşturuldu ve sisteme giriş yapabilirsiniz.

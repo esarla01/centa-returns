@@ -455,91 +455,119 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     
                     {/* Teknik İnceleme Stage */}
                     <td className="p-4 min-w-[200px]">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="flex flex-row">
-                              <span className="text-xs text-gray-600">
-                              <span className="font-semibold">{item.product_model?.name} </span>
-                              ({item.product_count} adet{item.has_control_unit ? ", ünite dahil" : ""})
-                              </span>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="flex flex-row">
+                                <span className="text-xs text-gray-600">
+                                <span className="font-semibold">{item.product_model?.name || "—"} </span>
+                                {item.product_count ? `(${item.product_count} adet${item.has_control_unit ? ", ünite dahil" : ""})` : ""}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
                     <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.production_date || "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="text-xs">
+                                {item.production_date || "—"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
                     <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.warranty_status === 'Garanti Dahilinde' ? 'Var' :
-                               item.warranty_status === 'Garanti Dışı' ? 'Yok' : "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="text-xs">
+                                {item.warranty_status === 'Garanti Dahilinde' ? 'Var' :
+                                 item.warranty_status === 'Garanti Dışı' ? 'Yok' : "—"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
                     <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.fault_responsibility === 'Kullanıcı Hatası' ? 'Kullanıcı Hatası' :
-                               item.fault_responsibility === 'Teknik Sorun' ? 'Teknik Sorun' :
-                               item.fault_responsibility === 'Karışık' ? 'Karışık' : "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="text-xs">
+                                {item.fault_responsibility === 'Kullanıcı Hatası' ? 'Kullanıcı Hatası' :
+                                 item.fault_responsibility === 'Teknik Sorun' ? 'Teknik Sorun' :
+                                 item.fault_responsibility === 'Karışık' ? 'Karışık' : "—"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
                     <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0  pb-1">
-                            <div className="text-xs">
-                              {item.resolution_method === 'Tamir' ? 'Tamir' :
-                               item.resolution_method === 'Değişim' ? 'Değişim' : "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0  pb-1">
+                              <div className="text-xs">
+                                {item.resolution_method === 'Tamir' ? 'Tamir' :
+                                 item.resolution_method === 'Değişim' ? 'Değişim' : "—"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
                     {/* Hizmet */}
                     <td className="p-4">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs">
-                              {item.service_type || "—"}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="text-xs">
+                                {item.service_type || "—"}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
 
                     {/* Teknik İnceleme Stage - Yapılan İşlemler */}
                     <td className="p-4 min-w-[300px]">
-                      <ul className="space-y-1">
-                        {c.items.map(item => (
-                          <li key={item.id} className="border-b last:border-b-0 pb-1">
-                            <div className="text-xs" title={item.yapilan_islemler || undefined}>
-                              {truncateTextWithEllipsis(item.yapilan_islemler, 80)}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {c.items.length > 0 ? (
+                        <ul className="space-y-1">
+                          {c.items.map(item => (
+                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                              <div className="text-xs" title={item.yapilan_islemler || undefined}>
+                                {truncateTextWithEllipsis(item.yapilan_islemler, 80)}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-xs text-gray-500">—</div>
+                      )}
                     </td>
 
                     {/* Teknik İnceleme Eylemler */}
@@ -1135,35 +1163,47 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                 {/* Products */}
                 <div>
                   <span className="text-gray-500 text-sm">Ürünler ({c.items.length}):</span>
-                  <div className="mt-1 space-y-1">
-                    {c.items.slice(0, 2).map(item => (
-                      <div key={item.id} className="text-xs bg-gray-50 p-2 rounded">
-                        <span className="font-medium">{item.product_model?.name}</span>
-                        <span className="text-gray-500"> ({item.product_count} adet)</span>
-                        <div className="text-gray-400 mt-1">
-                          <span className="mr-2">
-                            <strong>Üretim Tarihi:</strong> {item.production_date || "—"}
-                          </span>
-                          <span className="mr-2">
-                            {item.warranty_status === 'Garanti Dahilinde' ? '✅ Garanti Dahilinde' :
-                             item.warranty_status === 'Garanti Dışı' ? '❌ Garanti Dışı' : '—'}
-                          </span>
-                          <span className="mr-2">
-                            {item.fault_responsibility === 'Kullanıcı Hatası' ? '👤 Kullanıcı Hatası' :
-                             item.fault_responsibility === 'Teknik Sorun' ? '🔧 Teknik Sorun' :
-                             item.fault_responsibility === 'Karışık' ? '🔄 Karışık' : "—"}
-                          </span>
-                          <span>
-                            {item.resolution_method === 'Tamir' ? '🔨 Tamir' :
-                             item.resolution_method === 'Değişim' ? '🔄 Değişim' : "—"}
-                          </span>
+                  {c.items.length > 0 ? (
+                    <div className="mt-1 space-y-1">
+                      {c.items.slice(0, 2).map(item => (
+                        <div key={item.id} className="text-xs bg-gray-50 p-2 rounded">
+                          <span className="font-medium">{item.product_model?.name || "—"}</span>
+                          <span className="text-gray-500"> ({item.product_count || 0} adet)</span>
+                          <div className="text-gray-400 mt-1">
+                            <span className="mr-2">
+                              <strong>Üretim Tarihi:</strong> {item.production_date || "—"}
+                            </span>
+                            <span className="mr-2">
+                              {item.warranty_status === 'Garanti Dahilinde' ? '✅ Garanti Dahilinde' :
+                               item.warranty_status === 'Garanti Dışı' ? '❌ Garanti Dışı' : '—'}
+                            </span>
+                            <span className="mr-2">
+                              {item.fault_responsibility === 'Kullanıcı Hatası' ? '👤 Kullanıcı Hatası' :
+                               item.fault_responsibility === 'Teknik Sorun' ? '🔧 Teknik Sorun' :
+                               item.fault_responsibility === 'Karışık' ? '🔄 Karışık' : "—"}
+                            </span>
+                            <span className="mr-2">
+                              {item.resolution_method === 'Tamir' ? '🔨 Tamir' :
+                               item.resolution_method === 'Değişim' ? '🔄 Değişim' : "—"}
+                            </span>
+                            <span>
+                              {item.service_type || "—"}
+                            </span>
+                          </div>
+                          {item.yapilan_islemler && (
+                            <div className="text-gray-400 mt-1">
+                              <strong>Yapılan İşlemler:</strong> {item.yapilan_islemler.length > 50 ? `${item.yapilan_islemler.substring(0, 50)}...` : item.yapilan_islemler}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                    {c.items.length > 2 && (
-                      <div className="text-xs text-gray-500">+{c.items.length - 2} daha...</div>
-                    )}
-                  </div>
+                      ))}
+                      {c.items.length > 2 && (
+                        <div className="text-xs text-gray-500">+{c.items.length - 2} daha...</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-1 text-xs text-gray-500">—</div>
+                  )}
                 </div>
 
                 {/* Performed Services */}
