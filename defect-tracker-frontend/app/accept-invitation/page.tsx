@@ -1,7 +1,7 @@
 // app/accept-invitation/page.tsx
 'use client';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Image from 'next/image';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
@@ -22,7 +22,7 @@ function AcceptInvitationContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const validateInvitation = async () => {
+  const validateInvitation = useCallback(async () => {
     try {
       const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.VALIDATE_INVITATION(token!)));
       const data = await response.json();
@@ -40,7 +40,7 @@ function AcceptInvitationContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (token) {
