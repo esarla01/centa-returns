@@ -95,7 +95,7 @@ ariza.takip@centa.com.tr
             return False
 
     @staticmethod
-    def send_custom_customer_email(customer_email, customer_name, case_id, email_content):
+    def send_custom_customer_email(customer_email, case_id, email_content):
         """Send custom email to customer about their return case"""
         try:
             msg = Message(

@@ -65,7 +65,12 @@ export interface FullReturnCase {
     status: string;
     arrival_date: string;
     receipt_method: string;
-    customer: { id: number; name: string; };
+    customer: { 
+        id: number; 
+        name: string; 
+        contact_info?: string;
+        address?: string;
+    };
     items: FullReturnCaseItem[];
     
     notes: string | null;

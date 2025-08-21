@@ -3,7 +3,7 @@
 import { FullReturnCase } from "@/lib/types";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useState } from "react";
-import { Pencil, Trash2, X, CheckCircle, Mail } from 'lucide-react';
+import { Pencil, Trash2, X, CheckCircle, Mail, Eye } from 'lucide-react';
 import StageCompletionModal from './StageCompletionModal';
 import TeslimAlindiModal from './TeslimAlindiModal';
 import TeknikIncelemeModal from './TeknikIncelemeModal';
@@ -100,6 +100,14 @@ const isCurrentStage = (currentStatus: string, stage: string): boolean => {
 const canUserDeleteCase = (userRole: string, caseStatus: string): boolean => {
   if (caseStatus === 'Teslim Alındı') {
     return userRole === 'SUPPORT';
+  }
+  return false;
+};
+
+const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => {
+  console.log('canUserEmailCustomer', userRole, caseStatus);
+  if (caseStatus === 'Tamamlandı') {
+    return userRole === 'LOGISTICS';
   }
   return false;
 };
@@ -370,8 +378,12 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               cases.map((c) => {
                 const isSelected = selectedCaseId === c.id;
                 const canDelete = canUserDeleteCase(user?.role || '', c.status);
+                const canEmail = canUserEmailCustomer(user?.role || '', c.status);
                 const isDeleteButtonActive = isSelected && canDelete;
                 const isViewButtonActive = isSelected;
+                const isEmailButtonActive = isSelected && canEmail;
+                // const isEmailButtonActive = isSelected;
+
 
                 return (
                   <tr key={c.id} className={getStatusStyle(c.status)}>
@@ -722,40 +734,51 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           )}
                         </button>
                       </div>
-                            </td>
-                    
-
+                    </td>                
                     
                     {/* Actions */}
-                    <td className="p-4">                     
-                      <button 
-                        onClick={() => setViewModal({ isOpen: true, case: c })}
-                        disabled={!isViewButtonActive}
-                        className={`transition-all duration-200 ${
-                          isViewButtonActive
-                            ? 'text-blue-600 hover:text-blue-800 cursor-pointer opacity-100'
-                            : 'text-gray-300 cursor-not-allowed opacity-50'
-                        }`}
-                        title="Görüntüle"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-                          <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 105.197 11.16l3.646 3.647a.75.75 0 101.06-1.061l-3.646-3.646A6.75 6.75 0 0010.5 3.75zm-5.25 6.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0z" clipRule="evenodd" />
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteClick(c)}
-                        disabled={!isDeleteButtonActive}
-                        className={`transition-all duration-200 ${
-                          isDeleteButtonActive
-                            ? 'text-red-500 hover:text-red-700 cursor-pointer opacity-100'
-                            : 'text-gray-300 cursor-not-allowed opacity-50'
-                        }`}
-                        title={getDeletePermissionMessage(user?.role || '', c.status)}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                    <td className="p-4">  
+                      <div className="flex items-center justify-center space-x-2">
+                        <button 
+                          onClick={() => setViewModal({ isOpen: true, case: c })}
+                          disabled={!isViewButtonActive}
+                          className={`transition-all duration-200 ${
+                            isViewButtonActive
+                              ? 'text-blue-600 hover:text-blue-800 cursor-pointer opacity-100'
+                              : 'text-gray-300 cursor-not-allowed opacity-50'
+                          }`}
+                          title="Görüntüle"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleEmailCustomer(c)}
+                          disabled={!isEmailButtonActive}
+                          className={`transition-all duration-200 ${
+                            isEmailButtonActive
+                              ? 'text-blue-600 hover:text-blue-800 cursor-pointer opacity-100'
+                              : 'text-gray-300 cursor-not-allowed opacity-50'
+                          }`}
+                          title="Müşteriye e-posta gönder"
+                        >
+                          <Mail className="h-5 w-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClick(c)}
+                          disabled={!isDeleteButtonActive}
+                          className={`transition-all duration-200 ${
+                            isDeleteButtonActive
+                              ? 'text-red-500 hover:text-red-700 cursor-pointer opacity-100'
+                              : 'text-gray-300 cursor-not-allowed opacity-50'
+                          }`}
+                          title={getDeletePermissionMessage(user?.role || '', c.status)}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                        
+                      </div>
                     </td>
-                        </tr>
+                  </tr>
                 );
               })
                 )}
@@ -1040,25 +1063,6 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           <X className="h-4 w-4" />
                         )}
                       </button>
-                      {/* Email Customer Button - Only show for shipping role when case is in shipping stage */}
-                      {user?.role === 'SHIPPING' && isStageCompleted(c.status, 'Ödeme Tahsilatı') && (
-                        <button
-                          onClick={() => handleEmailCustomer(c)}
-                          disabled={!isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            isSelected
-                              ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : "Müşteriye e-posta gönder"
-                          }
-                        >
-                          <Mail className="h-3 w-3" />
-                        </button>
-                      )}
                     </div>
                   </div>
                   

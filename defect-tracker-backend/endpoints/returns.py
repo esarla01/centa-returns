@@ -163,7 +163,9 @@ def get_return_cases():
             "status": c.workflow_status.value if c.workflow_status else None,
             "customer": {
                 "id": c.customer.id if c.customer else None,
-                "name": c.customer.name if c.customer else "Bilinmeyen Müşteri"
+                "name": c.customer.name if c.customer else "Bilinmeyen Müşteri",
+                "contact_info": c.customer.contact_info if c.customer else None,
+                "address": c.customer.address if c.customer else None
             },
             "arrival_date": c.arrival_date.isoformat() if c.arrival_date else None,
             "receipt_method": c.receipt_method.value if c.receipt_method else None,
@@ -748,26 +750,25 @@ def send_customer_email(return_case_id):
 
         data = request.get_json()
         email_content = data.get('emailContent', '').strip()
+        recipient_email = data.get('recipientEmail', '').strip()
         
         if not email_content:
             return jsonify({"error": "E-posta içeriği gereklidir"}), 400
+
+        if not recipient_email:
+            return jsonify({"error": "Alıcı e-posta adresi gereklidir"}), 400
 
         # Get customer information
         customer = return_case.customer
         if not customer:
             return jsonify({"error": "Müşteri bilgisi bulunamadı"}), 404
 
-        # For now, we'll use a placeholder email since customer email is not in the model
-        # In a real implementation, you would add customer email to the Customers model
-        customer_email = f"{customer.name.lower().replace(' ', '.')}@example.com"  # Placeholder
-        
         # Import the email service
         from services.email_service import CentaEmailService
         
-        # Send the email
+        # Send the email using the provided recipient email
         if CentaEmailService.send_custom_customer_email(
-            customer_email, 
-            customer.name, 
+            recipient_email, 
             return_case_id, 
             email_content
         ):
@@ -776,4 +777,5 @@ def send_customer_email(return_case_id):
             return jsonify({"error": "E-posta gönderilemedi"}), 500
 
     except Exception as e:
+        logging.error(f"Error sending customer email for case {return_case_id}: {str(e)}")
         return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500

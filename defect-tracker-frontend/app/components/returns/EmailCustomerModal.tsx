@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent, useEffect } from 'react';
-import { X, Mail, Send, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, Mail, Send, AlertCircle, CheckCircle, User, Package, Calendar, MapPin, Phone } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
@@ -16,6 +16,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [emailContent, setEmailContent] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
 
   // Generate default email content based on return case
   const generateDefaultEmail = () => {
@@ -63,9 +64,14 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
     return content;
   };
 
-  // Set default email content when component mounts
+  // Set default email content and recipient when component mounts
   useEffect(() => {
     setEmailContent(generateDefaultEmail());
+    // Set default recipient email if available in customer data
+    if (returnCase.customer.contact_info && returnCase.customer.contact_info.includes('@')) {
+      // If contact_info contains an email address, use it
+      setRecipientEmail(returnCase.customer.contact_info);
+    }
   }, [returnCase]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -80,7 +86,8 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          emailContent: emailContent
+          emailContent: emailContent,
+          recipientEmail: recipientEmail
         })
       });
 
@@ -128,78 +135,119 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center space-x-3">
-            <Mail className="h-8 w-8 text-blue-600" />
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center space-x-2">
+            <Mail className="h-6 w-6 text-blue-600" />
             <div>
-              <h2 className="text-2xl font-bold text-blue-800">Müşteriye E-posta Gönder</h2>
-              <p className="text-sm text-blue-600 mt-1">
+              <h2 className="text-xl font-bold text-blue-800">Müşteriye E-posta Gönder</h2>
+              <p className="text-xs text-blue-600 mt-1">
                 Vaka #{returnCase.id} - {returnCase.customer.name}
               </p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
         
         {/* Content */}
         <div className="flex-grow overflow-y-auto">
-          <div className="p-6 space-y-6">
-            {/* Return Case Summary */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
-                Vaka Özeti
+          <div className="p-4 space-y-4">
+            
+            {/* SECTION 1: Customer Information (Top Section) */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+              <h3 className="text-lg font-bold text-blue-800 mb-3 flex items-center">
+                <User className="h-5 w-5 text-blue-600 mr-2" />
+                Müşteri Bilgileri
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Müşteri:</span>
-                  <p className="font-medium text-gray-900">{returnCase.customer.name}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="bg-white rounded-lg p-3 border border-blue-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <User className="h-3 w-3 text-blue-600" />
+                    <span className="text-xs font-medium text-gray-600">Müşteri Adı</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{returnCase.customer.name}</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Geliş Tarihi:</span>
-                  <p className="font-medium text-gray-900">{formatTurkishDate(returnCase.arrival_date)}</p>
+                
+                <div className="bg-white rounded-lg p-3 border border-blue-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Phone className="h-3 w-3 text-blue-600" />
+                    <span className="text-xs font-medium text-gray-600">İletişim Bilgileri</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{returnCase.customer.contact_info || "—"}</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Toplam Maliyet:</span>
-                  <p className="font-semibold text-blue-600">{formatCurrency(returnCase.cost)}</p>
+                
+                <div className="bg-white rounded-lg p-3 border border-blue-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <MapPin className="h-3 w-3 text-blue-600" />
+                    <span className="text-xs font-medium text-gray-600">Adres</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{returnCase.customer.address || "—"}</p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Durum:</span>
-                  <p className="font-medium text-gray-900">{returnCase.status}</p>
+              </div>
+            </div>
+
+            {/* SECTION 2: Return Case Summary (Middle Section) */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+              <h3 className="text-lg font-bold text-green-800 mb-3 flex items-center">
+                <Package className="h-5 w-5 text-green-600 mr-2" />
+                İade Vakası Özeti
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <div className="bg-white rounded-lg p-3 border border-green-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Calendar className="h-3 w-3 text-green-600" />
+                    <span className="text-xs font-medium text-gray-600">Geliş Tarihi</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{formatTurkishDate(returnCase.arrival_date)}</p>
+                </div>
+                
+                <div className="bg-white rounded-lg p-3 border border-green-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Package className="h-3 w-3 text-green-600" />
+                    <span className="text-xs font-medium text-gray-600">Ürün Sayısı</span>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">{returnCase.items.length} ürün</p>
+                </div>
+                
+                <div className="bg-white rounded-lg p-3 border border-green-100">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <AlertCircle className="h-3 w-3 text-green-600" />
+                    <span className="text-xs font-medium text-gray-600">Toplam Maliyet</span>
+                  </div>
+                  <p className="text-sm font-semibold text-green-600">{formatCurrency(returnCase.cost)}</p>
                 </div>
               </div>
 
-              {/* Items Summary */}
-              <div className="mt-4">
-                <h4 className="font-medium text-gray-800 mb-2">Ürün Detayları:</h4>
-                <div className="space-y-2">
+              {/* Products List */}
+              <div className="bg-white rounded-lg p-3 border border-green-100 mb-3">
+                <h4 className="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                  <Package className="h-3 w-3 text-green-600 mr-1" />
+                  Ürünler
+                </h4>
+                <div className="space-y-1">
                   {returnCase.items.map((item, index) => (
-                    <div key={item.id} className="bg-white rounded p-3 border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{item.product_model.name}</p>
-                          <p className="text-sm text-gray-600">
-                            {item.product_count} adet • {item.resolution_method === 'Tamir' ? '🔨 Tamir Edildi' : '🔄 Değiştirildi'}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            item.resolution_method === 'Tamir' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {item.resolution_method}
-                          </span>
-                        </div>
+                    <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 text-sm">{item.product_model.name}</p>
+                        <p className="text-xs text-gray-600">
+                          {item.product_count} adet • {item.resolution_method === 'Tamir' ? '🔨 Tamir Edildi' : '🔄 Değiştirildi'}
+                        </p>
                       </div>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        item.resolution_method === 'Tamir' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {item.resolution_method}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -207,25 +255,28 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
 
               {/* Shipping Information */}
               {(returnCase.shipping_info || returnCase.tracking_number || returnCase.shipping_date) && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-800 mb-2">Kargo Bilgileri:</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                <div className="bg-white rounded-lg p-3 border border-green-100">
+                  <h4 className="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                    <Package className="h-3 w-3 text-green-600 mr-1" />
+                    Kargo Bilgileri
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {returnCase.shipping_info && (
                       <div>
-                        <span className="text-gray-600">Kargo Firması:</span>
-                        <p className="font-medium text-gray-900">{returnCase.shipping_info}</p>
+                        <span className="text-xs font-medium text-gray-600">Kargo Firması:</span>
+                        <p className="font-semibold text-gray-900 text-sm">{returnCase.shipping_info}</p>
                       </div>
                     )}
                     {returnCase.tracking_number && (
                       <div>
-                        <span className="text-gray-600">Takip No:</span>
-                        <p className="font-medium text-gray-900">{returnCase.tracking_number}</p>
+                        <span className="text-xs font-medium text-gray-600">Kargo Numarası:</span>
+                        <p className="font-semibold text-gray-900 text-sm">{returnCase.tracking_number}</p>
                       </div>
                     )}
                     {returnCase.shipping_date && (
                       <div>
-                        <span className="text-gray-600">Kargo Tarihi:</span>
-                        <p className="font-medium text-gray-900">{formatTurkishDate(returnCase.shipping_date)}</p>
+                        <span className="text-xs font-medium text-gray-600">Kargoya Verilme Tarihi:</span>
+                        <p className="font-semibold text-gray-900 text-sm">{formatTurkishDate(returnCase.shipping_date)}</p>
                       </div>
                     )}
                   </div>
@@ -233,69 +284,99 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
               )}
             </div>
 
-            {/* Email Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="emailContent" className="block text-sm font-medium text-gray-700 mb-2">
-                  E-posta İçeriği *
-                </label>
-                <textarea
-                  id="emailContent"
-                  value={emailContent}
-                  onChange={(e) => setEmailContent(e.target.value)}
-                  rows={12}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  placeholder="E-posta içeriğini buraya yazın..."
-                  required
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  E-posta içeriğini müşteriye uygun şekilde özelleştirebilirsiniz.
-                </p>
-              </div>
-
-              {/* Error/Success Messages */}
-              {error && (
-                <div className="flex items-center space-x-2 p-3 text-sm text-red-700 bg-red-100 rounded-md">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>{error}</span>
+            {/* SECTION 3: Email Composition (Bottom Section) */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+              <h3 className="text-lg font-bold text-purple-800 mb-3 flex items-center">
+                <Mail className="h-5 w-5 text-purple-600 mr-2" />
+                E-posta Oluşturma
+              </h3>
+              
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {/* Recipient Email Field */}
+                <div>
+                  <label htmlFor="recipientEmail" className="block text-xs font-medium text-gray-700 mb-1">
+                    Alıcı E-posta Adresi *
+                  </label>
+                  <input
+                    type="email"
+                    id="recipientEmail"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                    placeholder="ornek@email.com"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Müşterinin e-posta adresini girin.
+                  </p>
                 </div>
-              )}
 
-              {success && (
-                <div className="flex items-center space-x-2 p-3 text-sm text-green-700 bg-green-100 rounded-md">
-                  <CheckCircle className="h-4 w-4" />
-                  <span>{success}</span>
+                {/* Email Content */}
+                <div>
+                  <label htmlFor="emailContent" className="block text-xs font-medium text-gray-700 mb-1">
+                    E-posta İçeriği *
+                  </label>
+                  <div className="border border-gray-300 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-purple-500">
+                    <textarea
+                      id="emailContent"
+                      value={emailContent}
+                      onChange={(e) => setEmailContent(e.target.value)}
+                      rows={8}
+                      className="w-full px-3 py-2 border-0 rounded-lg resize-none text-sm focus:outline-none focus:ring-0"
+                      placeholder="E-posta içeriğini buraya yazın..."
+                      required
+                      style={{ maxHeight: '200px', overflowY: 'auto' }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    E-posta içeriğini müşteriye uygun şekilde özelleştirebilirsiniz.
+                  </p>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || !emailContent.trim()}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Gönderiliyor...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      E-posta Gönder
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
+                {/* Error/Success Messages */}
+                {error && (
+                  <div className="flex items-center space-x-2 p-3 text-xs text-red-700 bg-red-100 rounded-lg border border-red-200">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="flex items-center space-x-2 p-3 text-xs text-green-700 bg-green-100 rounded-lg border border-green-200">
+                    <CheckCircle className="h-3 w-3" />
+                    <span>{success}</span>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end space-x-2 pt-3 border-t border-purple-200">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="px-4 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading || !emailContent.trim() || !recipientEmail.trim()}
+                    className="inline-flex items-center px-4 py-2 text-xs font-medium text-white bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                        Gönderiliyor...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-3 w-3 mr-1" />
+                        E-posta Gönder
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
