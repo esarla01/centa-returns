@@ -127,8 +127,8 @@ def get_return_cases():
                 except (ValueError):
                     pass  # Invalid product model ID, ignore filter
 
-        # Order by arrival date descending
-        query = query.order_by(ReturnCase.arrival_date.desc())
+        # Order by arrival date descending, then by id descending as tie-breaker
+        query = query.order_by(ReturnCase.arrival_date.desc(), ReturnCase.id.desc())
 
         # Get total count before pagination
         total_cases = query.count()
