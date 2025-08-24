@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, Search, ListFilter, Trash2, ChevronDown, ChevronUp, X, Filter, User } from 'lucide-react';
 import { User as UserType } from '@/lib/types';
-import { cn, truncateTextWithEllipsis } from '@/lib/utils';
+import { cn, truncateTextWithEllipsis, getRoleNameInTurkish } from '@/lib/utils';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import { RequirePermission } from '../components/RequirePermission';
@@ -25,114 +25,113 @@ const getRoleClass = (role: string) => {
   }
 };
 
-const getTurkishRoleName = (role: string) => {
-  switch (role) {
-    case 'ADMIN': return 'Yönetici';
-    case 'MANAGER': return 'Yönetici Yardımcısı';
-    case 'TECHNICIAN': return 'Teknisyen';
-    case 'SUPPORT': return 'Destek';
-    case 'SALES': return 'Satış';
-    case 'LOGISTICS': return 'Lojistik';
-    default: return role;
-  }
-};
-
 function AdminDashboardContent() {
   // Loading state for the user
   const { loading } = useAuth();
 
-  // Using useSearchParams to handle pagination
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
+
+  // Current page
   const currentPage = Number(pageParam) || 1;
 
-  // State for users, total pages, search term, and role filter
-  const [users, setUsers] = useState<UserType[]>([]);
+  // State for total pages
   const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState('');
+
+
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [filters, setFilters] = useState({
+    search: '',
+    role: '',
+  });
 
   // State for modal open and user to delete
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
+  const [userAddModal, setUserAddModal] = useState(false);
+  const [selectedUserForDeletion, setSelectedUserForDeletion] = useState<UserType | null>(null);
 
   // Loading state for the users
   const [isLoading, setIsLoading] = useState(true);
 
   // Mobile filter state
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isMobileFilterOn, setIsMobileFilterOn] = useState(false);
 
-  // Get the current user from context
+  // Fetch the users from the database
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
-    const params = new URLSearchParams({
-      page: String(currentPage),
-      limit: '4',
-      ...(search ? { search } : {}),
-      ...(role ? { role } : {}),
-    });
+
+    const params = new URLSearchParams();
+    params.append('page', String(currentPage));
+    params.append('limit', '4');
+    if (filters.search) params.append('search', filters.search);
+    if (filters.role) params.append('role', filters.role);
+
+    const url = `${buildApiUrl(API_ENDPOINTS.ADMIN.USERS)}?${params.toString()}`;
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.USERS) + '?' + params.toString(), {
+      const response = await fetch(url, {
         method: 'GET',
-        credentials: 'include', 
+        credentials: 'include',
       });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
+
+      if (!response.ok) {
+        throw new Error('Kullanıcılar getirilirken bir hata oluştu');
+      }
+
+      const data = await response.json();
       setUsers(data.users);
       setTotalPages(data.totalPages);
-      setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Kullanıcılar getirilirken bir hata oluştu:', error);
       setUsers([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [currentPage, search, role]);
+  }, [currentPage, filters.search, filters.role]);
 
   // Fetch users when the component mounts or when dependencies change
   useEffect(() => {
     if (!loading) {
       fetchUsers();
     }
-  }, [currentPage, search, role, loading]);
+  }, [currentPage, filters.search, filters.role, loading]);
 
   // Handler for when a new user is added
   const handleUserAdded = () => {
-    setIsModalOpen(false);
+    setUserAddModal(false);
     fetchUsers(); 
   }
 
-  // Handler for when a user deletion is successful
+  // Handler for when a user deleted
   const handleDeletionSuccess = () => {
-    setUserToDelete(null); 
+    setSelectedUserForDeletion(null); 
     fetchUsers();  
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setSearch('');
-    setRole('');
-    setIsFilterOpen(false);
+    setFilters({ search: '', role: '' });
+    setIsMobileFilterOn(false);
   };
 
   // Check if any filters are active
-  const hasActiveFilters = search || role;
+  const hasActiveFilters = filters.search || filters.role;
 
   return (
     <RequirePermission permission="PAGE_VIEW_ADMIN" >
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header onLogout={() => {}} />
       
-      {isModalOpen && (
+      {userAddModal && (
         <AddUserModal   
-          onClose={() => setIsModalOpen(false)} 
+          onClose={() => setUserAddModal(false)} 
           onUserInvited={handleUserAdded}
         />
       )}
 
-      {userToDelete && (
+      {selectedUserForDeletion && (
         <DeleteConfirmationModal
-          user={userToDelete}
-          onClose={() => setUserToDelete(null)}
+          user={selectedUserForDeletion}
+          onClose={() => setSelectedUserForDeletion(null)}
           onSuccess={handleDeletionSuccess}
         />
       )}
@@ -151,7 +150,7 @@ function AdminDashboardContent() {
           
           {/* Floating Action Button for Mobile */}
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setUserAddModal(true)}
             className="md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
           >
             <Plus className="h-6 w-6" />
@@ -159,7 +158,7 @@ function AdminDashboardContent() {
 
           {/* Desktop Add User Button */}
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setUserAddModal(true)}
             className="hidden md:flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
           >
             <Plus className="h-5 w-5" />
@@ -170,7 +169,7 @@ function AdminDashboardContent() {
         {/* Mobile Filter Toggle */}
         <div className="md:hidden mb-4">
           <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            onClick={() => setIsMobileFilterOn(!isMobileFilterOn)}
             className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
           >
             <div className="flex items-center gap-2">
@@ -182,7 +181,7 @@ function AdminDashboardContent() {
                 </span>
               )}
             </div>
-            {isFilterOpen ? (
+            {isMobileFilterOn ? (
               <ChevronUp className="h-5 w-5 text-gray-500" />
             ) : (
               <ChevronDown className="h-5 w-5 text-gray-500" />
@@ -191,7 +190,7 @@ function AdminDashboardContent() {
         </div>
 
         {/* Mobile Collapsible Filters */}
-        {isFilterOpen && (
+        {isMobileFilterOn && (
           <div className="md:hidden mb-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm space-y-3">
             {/* Search Input */}
             <div className="relative">
@@ -200,8 +199,8 @@ function AdminDashboardContent() {
                 type="text"
                 placeholder="İsme veya emaile göre arama..."
                 className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={filters.search}
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
               />
             </div>
 
@@ -209,8 +208,8 @@ function AdminDashboardContent() {
             <div className="relative">
               <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <select
-                value={role} 
-                onChange={(e) => setRole(e.target.value)}
+                value={filters.role} 
+                onChange={(e) => setFilters(f => ({ ...f, role: e.target.value }))}
                 className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Tüm Roller</option>
@@ -240,9 +239,9 @@ function AdminDashboardContent() {
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-800 mb-2">
-                {(search || role) ? 'Arama Sonuçları' : 'Tüm Kullanıcılar'}
+                {(filters.search || filters.role) ? 'Arama Sonuçları' : 'Tüm Kullanıcılar'}
               </h2>
-              {(search || role) && (
+              {(filters.search || filters.role) && (
                 <div className="text-red-600 text-sm">
                   Tüm kullanıcılar için filtreleri temizleyin.
                 </div>
@@ -257,8 +256,8 @@ function AdminDashboardContent() {
                   type="text"
                   placeholder="İsme veya emaile göre arama..."
                   className="pl-10 w-64 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={filters.search}
+                  onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                 />
               </div>
 
@@ -266,8 +265,8 @@ function AdminDashboardContent() {
               <div className="relative">
                 <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <select
-                  value={role} 
-                  onChange={(e) => setRole(e.target.value)}
+                  value={filters.role} 
+                  onChange={(e) => setFilters(f => ({ ...f, role: e.target.value }))}
                   className="pl-10 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Tüm Roller</option>
@@ -281,7 +280,7 @@ function AdminDashboardContent() {
               </div>
 
               {/* Clear Filters Button */}
-              {(search || role) && (
+              {(filters.search || filters.role) && (
                 <button
                   onClick={clearFilters}
                   className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
@@ -306,7 +305,7 @@ function AdminDashboardContent() {
                 <User className="h-12 w-12 mx-auto" />
               </div>
               <p className="text-gray-500">
-                {search || role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
+                {filters.search || filters.role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
               </p>
             </div>
           ) : (
@@ -326,11 +325,18 @@ function AdminDashboardContent() {
                     {/* User Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
-                          {user.firstName} {user.lastName}
-                        </h3>
+                        {user.firstName && user.lastName ? (
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
+                            {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
+                          </h3>
+                        ) : (
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
+                            Davet Edilen Kullanıcı
+                          </h3>
+                        )
+                        }
                         <span className={cn('px-2 py-1 text-xs font-medium rounded-full', getRoleClass(user.role))}>
-                          {getTurkishRoleName(user.role)}
+                          {getRoleNameInTurkish[user.role]}
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 truncate">{user.email}</p>
@@ -342,7 +348,7 @@ function AdminDashboardContent() {
                   
                   {/* Action Button */}
                   <button 
-                    onClick={() => setUserToDelete(user)}
+                    onClick={() => setSelectedUserForDeletion(user)}
                     className="flex-shrink-0 ml-2 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors" 
                     title="Kullanıcıyı Sil"
                   >
@@ -383,7 +389,7 @@ function AdminDashboardContent() {
                   ) : users.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        {search || role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
+                        {filters.search || filters.role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
                       </td>
                     </tr>
                   ) : (
@@ -402,16 +408,23 @@ function AdminDashboardContent() {
                               </div>
                             </div>
                             <div className="ml-4">
+                              {user.firstName && user.lastName ? (
                               <div className="text-sm font-medium text-gray-900">
-                                {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
+                                    {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
                               </div>
+                              ) : (
+                                <div className="text-sm font-medium text-gray-900">
+                                  Davet Edilen Kullanıcı
+                                </div>
+                              )
+                              }                           
                               <div className="text-sm text-gray-500">{truncateTextWithEllipsis(user.email, 30)}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={cn('px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full', getRoleClass(user.role))}>
-                            {getTurkishRoleName(user.role)}
+                            {getRoleNameInTurkish[user.role]}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -425,7 +438,7 @@ function AdminDashboardContent() {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button 
-                            onClick={() => setUserToDelete(user)}
+                            onClick={() => setSelectedUserForDeletion(user)}
                             className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50" 
                             title="Kullanıcıyı Sil"
                           >
