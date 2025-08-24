@@ -8,7 +8,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Stage completion API utility
 export const completeStage = async (caseId: number, stage: string): Promise<{ success: boolean; message?: string; error?: string }> => {
   const stageEndpoints = {
     'teslim_alindi': `/returns/${caseId}/complete-teslim-alindi`,
@@ -49,6 +48,15 @@ export const truncateTextWithEllipsis = (text: string | null, maxCharacters: num
   const normalized = text.trim();
   if (normalized.length <= maxCharacters) return normalized;
   return normalized.slice(0, maxCharacters) + '…';
+};
+
+export const getRoleNameInTurkish: Record<string, string> = {
+  SALES: 'Satış',
+  LOGISTICS: 'Lojistik',
+  SUPPORT: 'Destek',
+  TECHNICIAN: 'Teknisyen',
+  MANAGER: 'Yönetici',
+  ADMIN: 'Yönetici'
 };
 
 // Mobile detection utility - SSR safe

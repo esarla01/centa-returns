@@ -54,7 +54,7 @@ const formatDate = (dateString: string) => {
 };
 
 function ReturnsDashboardContent() {
-  // Loading state for the user
+  // Loading state for the ]=
   const { loading, user } = useAuth();
 
   // Pagination

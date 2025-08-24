@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
+import { getRoleNameInTurkish } from '@/lib/utils';
 
 interface HeaderProps {
   onLogout: () => void;
@@ -24,12 +25,10 @@ export default function Header({ onLogout }: HeaderProps) {
       }
       router.push('/login');
     } catch (error) {
-      console.error('Error during logout:', error);
       router.push('/login');
     }
   };
 
-  // Show loading state while user data is being fetched
   if (loading) {
     return (
       <header className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-300 shadow-md">
@@ -92,19 +91,6 @@ export default function Header({ onLogout }: HeaderProps) {
 
   const isActiveLink = (href: string) => pathname === href;
 
-  // Function to convert role to Turkish
-  const getRoleInTurkish = (role: string) => {
-    const roleMap: { [key: string]: string } = {
-      'ADMIN': 'Yönetici',
-      'MANAGER': 'Müdür',
-      'TECHNICIAN': 'Teknisyen',
-      'SUPPORT': 'Destek',
-      'SALES': 'Satış',
-      'LOGISTICS': 'Lojistik'
-    };
-    return roleMap[role] || role;
-  };
-
   return (
     <header className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-md">
       <div className="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -157,7 +143,7 @@ export default function Header({ onLogout }: HeaderProps) {
                 <span className="text-sm text-blue-900 font-semibold">
                   {user.firstName} {user.lastName}
                   <span className="text-blue-700 font-normal ml-1">
-                    ({getRoleInTurkish(user.role)})
+                    ({getRoleNameInTurkish[user.role]})
                   </span>
                 </span>
               </div>

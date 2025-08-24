@@ -1,28 +1,25 @@
-// This directive marks the component as a "Client Component,"
-// allowing it to be rendered in the browser and use interactive features like state and effects.
 'use client';
 
-// Import necessary hooks, components, and utilities from React and other libraries.
 import { useState, useEffect, FormEvent } from 'react';
-import { X } from 'lucide-react'; // 'X' icon for the close button.
-import { FullReturnCase, FullReturnCaseItem, User } from '@/lib/types'; // Type definitions for data structures.
-import DatePicker from 'react-datepicker'; // A component for selecting dates from a calendar.
-import { format } from 'date-fns'; // A function for formatting dates.
-import { tr } from 'date-fns/locale'; // Turkish locale for date formatting.
-import 'react-datepicker/dist/react-datepicker.css'; // Styles for the DatePicker component.
+import { X } from 'lucide-react'; 
+import { FullReturnCase, User } from '@/lib/types';
+import DatePicker from 'react-datepicker'; 
+import { format } from 'date-fns'; 
+import { tr } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css'; 
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { getRoleNameInTurkish } from '@/lib/utils';
+import { RequirePermission } from '../RequirePermission';
 
-// Define the properties (props) that the EditReturnCaseModal component expects.
 interface EditReturnCaseModalProps {
-  returnCase: FullReturnCase; // The return case object to be edited.
-  onClose: () => void; // A function to be called when the modal is closed.
-  onSuccess: () => void; // A function to be called when the form is successfully submitted.
+  returnCase: FullReturnCase; 
+  onClose: () => void; 
+  onSuccess: () => void; 
 }
 
 type StageName = 'Teslim Alındı' | 'Teknik İnceleme' | 'Ödeme Tahsilatı' | 'Kargoya Veriliyor' | 'Tamamlandı';
 
-// Type for editable product items
 type EditableProduct = {
   id: number;
   product_model: { name: string };
@@ -37,7 +34,6 @@ type EditableProduct = {
   isNew?: boolean;
 };
 
-// Role-based field permissions based on CasesTable analysis
 const ROLE_PERMISSIONS: Record<string, StageName[]> = {
   SUPPORT: ['Teslim Alındı'],
   TECHNICIAN: ['Teknik İnceleme'],
@@ -47,7 +43,6 @@ const ROLE_PERMISSIONS: Record<string, StageName[]> = {
   ADMIN: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı']
 };
 
-// Turkish role names mapping
 const TURKISH_ROLE_NAMES: Record<string, string> = {
   SALES: 'Satış',
   LOGISTICS: 'Lojistik',
@@ -57,11 +52,8 @@ const TURKISH_ROLE_NAMES: Record<string, string> = {
   ADMIN: 'Yönetici'
 };
 
-// The main component for the modal.
 export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: EditReturnCaseModalProps) {
-  // Get current user from auth context
-  const { user } = useAuth();
-  
+  const { user, loading } = useAuth();
   // State variables for managing loading, errors, and success messages.
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +61,6 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
   const [users, setUsers] = useState<User[]>([]);
   const [productModels, setProductModels] = useState<any[]>([]);
 
-  // State for storing the form data. It's initialized with the existing return case data.
   const [formData, setFormData] = useState({
     status: returnCase.status,
     notes: returnCase.notes || '',
@@ -251,19 +242,18 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
   const isKargoyaVerildiEditable = currentStageIndex >= 3;
   const isTamamlandiEditable = currentStageIndex >= 4;
 
-  // --- JSX Rendering ---
 
     return (
-    // The main modal container with a semi-transparent background.
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
-      <div className="relative w-full max-w-5xl max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">Vaka Düzenle: #{returnCase.id}</h2>
+      <RequirePermission permission="PAGE_VIEW_CASE_TRACKING" >
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
+        <div className="relative w-full max-w-5xl max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Vaka Düzenle: #{returnCase.id}</h2>
             <p className="text-shadow-2xs text-gray-500 mt-1">
-              Kullanıcı Rolü: {TURKISH_ROLE_NAMES[user?.role || ''] || user?.role}
+              Kullanıcı Rolü: {getRoleNameInTurkish[user?.role ?? '']}  
             </p>
           </div>
           <button 
@@ -354,7 +344,6 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                           ? 'Elden Teslim'
                           : formData.receiptMethod
                       }
-                      disabled
                       className="w-full border border-orange-300 rounded p-2 bg-orange-100 text-orange-800 font-semibold cursor-not-allowed text-sm"
                     />
                   )}
@@ -807,5 +796,6 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }
