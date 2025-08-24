@@ -29,6 +29,7 @@ function AdminDashboardContent() {
   // Loading state for the user
   const { loading } = useAuth();
 
+
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
 
@@ -330,8 +331,8 @@ function AdminDashboardContent() {
                             {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
                           </h3>
                         ) : (
-                          <h3 className="text-sm font-semibold text-gray-900 truncate">
-                            Davet Edilen Kullanıcı
+                          <h3 className="text-sm font-medium text-gray-600 truncate">
+                            Davet Edildi
                           </h3>
                         )
                         }
@@ -413,8 +414,8 @@ function AdminDashboardContent() {
                                     {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
                               </div>
                               ) : (
-                                <div className="text-sm font-medium text-gray-900">
-                                  Davet Edilen Kullanıcı
+                                <div className="text-sm font-medium text-gray-600">
+                                  Davet Edildi
                                 </div>
                               )
                               }                           
