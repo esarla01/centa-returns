@@ -58,23 +58,3 @@ export const getRoleNameInTurkish: Record<string, string> = {
   MANAGER: 'Yönetici',
   ADMIN: 'Yönetici'
 };
-
-// Mobile detection utility - SSR safe
-export const isMobile = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return window.innerWidth < 768; // md breakpoint in Tailwind
-};
-
-// Hook for mobile detection with SSR safety
-export const useIsMobile = (): boolean => {
-  const [isMobileState, setIsMobileState] = useState(false);
-  
-  useEffect(() => {
-    const checkMobile = () => setIsMobileState(isMobile());
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  
-  return isMobileState;
-};

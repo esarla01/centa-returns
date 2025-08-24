@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import router from 'next/router';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -131,7 +132,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <button 
               className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 hover:underline"
-              onClick={() => window.history.back()}
+              onClick={() => router.push('/login')}
             >
               ← Giriş sayfasına dön
             </button>
