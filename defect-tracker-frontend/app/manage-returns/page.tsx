@@ -123,6 +123,11 @@ function ReturnsDashboardContent() {
     return stages.some(stage => canEditStage(returnCase.status, stage));
   };
 
+  // Check if user can delete a case
+  const canDeleteCase = (returnCase: FullReturnCase): boolean => {
+    return returnCase.status === 'Teslim Alındı' && user?.role === 'SUPPORT';
+  };
+
   // Fetch return cases
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -447,7 +452,12 @@ function ReturnsDashboardContent() {
                     </button>
                     <button
                       onClick={() => setCaseToDelete(returnCase)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                      disabled={!canDeleteCase(returnCase)}
+                      className={`p-2 rounded-full transition-colors ${
+                        canDeleteCase(returnCase)
+                          ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
                       title="Vakayı Sil"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

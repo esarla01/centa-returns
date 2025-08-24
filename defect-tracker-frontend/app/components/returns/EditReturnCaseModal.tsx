@@ -11,6 +11,7 @@ import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getRoleNameInTurkish } from '@/lib/utils';
 import { RequirePermission } from '../RequirePermission';
+import { PermissionGate } from '../PermissionGate';
 
 interface EditReturnCaseModalProps {
   returnCase: FullReturnCase; 
@@ -298,6 +299,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
             </div>
 
             {/* Stage 1: Teslim Alındı */}
+            <PermissionGate permission="CASE_EDIT_DELIVERED">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
               <h3 className="text-base font-semibold text-orange-800 mb-2 flex items-center">
                 <div className="w-2 h-2 bg-orange-400 rounded-full mr-2" />
@@ -369,13 +371,15 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                 </div>
               </div>
             </div>
+            </PermissionGate>
 
+            <PermissionGate permission="CASE_EDIT_TECHNICAL_REVIEW">
             {/* Stage 2: Teknik İnceleme */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-              <h3 className="text-base font-semibold text-blue-800 mb-2 flex items-center">
-                <div className="w-2 h-2 bg-blue-400 rounded-full mr-2" />
-                Teknik İnceleme (Sadece {TURKISH_ROLE_NAMES.TECHNICIAN} Ekibi Düzenleyebilir)
-              </h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                <h3 className="text-base font-semibold text-blue-800 mb-2 flex items-center">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mr-2" />
+                  Teknik İnceleme (Sadece {TURKISH_ROLE_NAMES.TECHNICIAN} Ekibi Düzenleyebilir)
+                </h3>
               
               {/* Ürünler Section */}
               <div className="space-y-3">
@@ -457,8 +461,8 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                                 className="w-full border border-blue-300 rounded p-2 bg-blue-50 text-blue-800 font-semibold cursor-not-allowed text-sm"
                               />
                             )}
-             </div>
-        </div>
+                          </div>
+                      </div>
 
                         {/* Technical Analysis Fields */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
@@ -637,6 +641,9 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
               </div>
             </div>
 
+            </PermissionGate>
+
+            <PermissionGate permission="CASE_EDIT_PAYMENT_COLLECTION">
             {/* Stage 3: Ödeme Tahsilatı */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
               <h3 className="text-base font-semibold text-yellow-800 mb-2 flex items-center">
@@ -675,7 +682,9 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                 </div>
               </div>
             </div>
+            </PermissionGate>
 
+            <PermissionGate permission="CASE_EDIT_SHIPPING">
             {/* Stage 4: Kargoya Verildi */}
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
               <h3 className="text-base font-semibold text-purple-800 mb-2 flex items-center">
@@ -745,43 +754,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                 </div>
               </div>
             </div>
-
-            {/* Stage 5: Tamamlandı */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
-              <h3 className="text-base font-semibold text-green-800 mb-2 flex items-center">
-                <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
-                Tamamlandı (Sadece {TURKISH_ROLE_NAMES.MANAGER} Ekibi Düzenleyebilir)
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-green-700 mb-1">Final Ödeme Durumu</label>
-                  {canEditStage('Tamamlandı') ? (
-                    <select
-                      value={formData.paymentStatus}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paymentStatus: e.target.value }))}
-                      className="w-full border border-green-300 rounded p-2 bg-white text-green-800 text-sm"
-                    >
-                      <option value="">Seçiniz</option>
-                      <option value="paid">Ödendi</option>
-                      <option value="unpaid">Ödenmedi</option>
-                      <option value="waived">Ücretsiz</option>
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={
-                        formData.paymentStatus === 'paid' ? 'Ödendi' :
-                        formData.paymentStatus === 'unpaid' ? 'Ödenmedi' :
-                        formData.paymentStatus === 'waived' ? 'Ücretsiz' : formData.paymentStatus
-                      }
-                      disabled
-                      className="w-full border border-green-300 rounded p-2 bg-green-50 text-green-800 font-semibold cursor-not-allowed text-sm"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
+            </PermissionGate>
 
             {/* Action Buttons */}
             <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 bg-gray-50 -mx-6 px-6 py-4">
