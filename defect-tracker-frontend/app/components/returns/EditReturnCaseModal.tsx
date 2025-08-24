@@ -11,6 +11,7 @@ import { format } from 'date-fns'; // A function for formatting dates.
 import { tr } from 'date-fns/locale'; // Turkish locale for date formatting.
 import 'react-datepicker/dist/react-datepicker.css'; // Styles for the DatePicker component.
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 // Define the properties (props) that the EditReturnCaseModal component expects.
 interface EditReturnCaseModalProps {
@@ -19,7 +20,7 @@ interface EditReturnCaseModalProps {
   onSuccess: () => void; // A function to be called when the form is successfully submitted.
 }
 
-type StageName = 'Teslim Alındı' | 'Teknik İnceleme' | 'Ödeme Tahsilatı' | 'Kargoya Verildi' | 'Tamamlandı';
+type StageName = 'Teslim Alındı' | 'Teknik İnceleme' | 'Ödeme Tahsilatı' | 'Kargoya Veriliyor' | 'Tamamlandı';
 
 // Type for editable product items
 type EditableProduct = {
@@ -30,32 +31,37 @@ type EditableProduct = {
   warranty_status: string;
   fault_responsibility: string;
   resolution_method: string;
+  service_type?: string;
+  work_done?: string;
   includeAttachedUnit?: boolean;
   isNew?: boolean;
 };
 
-// Role-based field permissions
+// Role-based field permissions based on CasesTable analysis
 const ROLE_PERMISSIONS: Record<string, StageName[]> = {
-  SUPPORT: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı'],
+  SUPPORT: ['Teslim Alındı'],
   TECHNICIAN: ['Teknik İnceleme'],
-  SHIPPING: ['Kargoya Verildi'],
+  SALES: ['Ödeme Tahsilatı'],
+  LOGISTICS: ['Kargoya Veriliyor'],
   MANAGER: ['Tamamlandı'],
-  ADMIN: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Verildi', 'Tamamlandı']
+  ADMIN: ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı']
 };
 
 // Turkish role names mapping
 const TURKISH_ROLE_NAMES: Record<string, string> = {
   SALES: 'Satış',
-  SHIPPING: 'Lojistik',
+  LOGISTICS: 'Lojistik',
   SUPPORT: 'Destek',
   TECHNICIAN: 'Teknisyen',
-  MANAGER: 'Yönetici Yardımcısı',
+  MANAGER: 'Yönetici',
   ADMIN: 'Yönetici'
 };
 
-
 // The main component for the modal.
 export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: EditReturnCaseModalProps) {
+  // Get current user from auth context
+  const { user } = useAuth();
+  
   // State variables for managing loading, errors, and success messages.
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,18 +91,34 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
       warranty_status: item.warranty_status || 'unknown',
       fault_responsibility: item.fault_responsibility || 'unknown',
       resolution_method: item.resolution_method || 'unknown',
-      includeAttachedUnit: false // Default for existing items
+      service_type: item.service_type || 'unknown',
+      work_done: item.yapilan_islemler || '',
+      includeAttachedUnit: item.has_control_unit || false
     }))
   );
   const [nextProductId, setNextProductId] = useState(1000); // For new products
 
-  // Get current user role (you'll need to pass this from parent component or get from context)
-  const currentUserRole = 'SUPPORT'; // This should come from your auth context
-
   // Check if user can edit a specific stage
   const canEditStage = (stageName: StageName): boolean => {
-    const userPermissions = ROLE_PERMISSIONS[currentUserRole] || [];
+    if (!user?.role) return false;
+    const userPermissions = ROLE_PERMISSIONS[user.role] || [];
     return userPermissions.includes(stageName);
+  };
+
+  // Check if user can edit the current case status
+  const canEditCurrentStatus = (): boolean => {
+    if (!user?.role) return false;
+    
+    const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
+    const currentIndex = stageOrder.indexOf(returnCase.status);
+    
+    // Check if user has permission for current stage or any previous stage
+    for (let i = 0; i <= currentIndex; i++) {
+      if (canEditStage(stageOrder[i] as StageName)) {
+        return true;
+      }
+    }
+    return false;
   };
 
   // Product management functions
@@ -109,6 +131,8 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
       warranty_status: 'unknown',
       fault_responsibility: 'unknown',
       resolution_method: 'unknown',
+      service_type: 'unknown',
+      work_done: '',
       includeAttachedUnit: false,
       isNew: true // Flag to identify new products
     };
@@ -194,6 +218,8 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
             warranty_status: p.warranty_status,
             fault_responsibility: p.fault_responsibility,
             resolution_method: p.resolution_method,
+            service_type: p.service_type,
+            yapilan_islemler: p.work_done,
             includeAttachedUnit: p.includeAttachedUnit || false
           }))
         })
@@ -219,7 +245,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
     };
   
   // Determine which stages are editable.
-  const currentStageIndex = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Verildi', 'Tamamlandı'].findIndex(name => name === returnCase.status);
+  const currentStageIndex = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'].findIndex(name => name === returnCase.status);
   const isTeslimAlindiEditable = currentStageIndex >= 0;
   const isOdemeTahsilatiEditable = currentStageIndex >= 2;
   const isKargoyaVerildiEditable = currentStageIndex >= 3;
@@ -237,7 +263,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Vaka Düzenle: #{returnCase.id}</h2>
             <p className="text-shadow-2xs text-gray-500 mt-1">
-              Kullanıcı Rolü: {TURKISH_ROLE_NAMES[currentUserRole] || currentUserRole}
+              Kullanıcı Rolü: {TURKISH_ROLE_NAMES[user?.role || ''] || user?.role}
             </p>
           </div>
           <button 
@@ -521,6 +547,53 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                               />
                             )}
                           </div>
+                          <div>
+                            <label className="block text-xs font-medium text-blue-700 mb-1">Hizmet Türü</label>
+                            {canEditStage('Teknik İnceleme') && item.isNew ? (
+                              <select
+                                value={item.service_type}
+                                onChange={(e) => handleProductChange(item.id, 'service_type', e.target.value)}
+                                className="w-full border border-blue-300 rounded p-2 bg-white text-blue-800 text-sm"
+                              >
+                                <option value="unknown">Bilinmiyor</option>
+                                <option value="warranty">Garanti</option>
+                                <option value="paid">Ücretli</option>
+                                <option value="free">Ücretsiz</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="text"
+                                value={
+                                  item.service_type === 'warranty' ? 'Garanti' :
+                                  item.service_type === 'paid' ? 'Ücretli' :
+                                  item.service_type === 'free' ? 'Ücretsiz' : 'Bilinmiyor'
+                                }
+                                disabled
+                                className="w-full border border-blue-300 rounded p-2 bg-blue-50 text-blue-800 font-semibold cursor-not-allowed text-sm"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Work Done Field */}
+                        <div className="mt-3">
+                          <label className="block text-xs font-medium text-blue-700 mb-1">Yapılan İşlemler</label>
+                          {canEditStage('Teknik İnceleme') && item.isNew ? (
+                            <textarea
+                              value={item.work_done}
+                              onChange={(e) => handleProductChange(item.id, 'work_done', e.target.value)}
+                              className="w-full border border-blue-300 rounded p-2 bg-white text-blue-800 text-sm"
+                              rows={2}
+                              placeholder="Yapılan işlemleri detaylı olarak açıklayın..."
+                            />
+                          ) : (
+                            <textarea
+                              value={item.work_done || ''}
+                              disabled
+                              className="w-full border border-blue-300 rounded p-2 bg-blue-50 text-blue-800 text-sm cursor-not-allowed"
+                              rows={2}
+                            />
+                          )}
                         </div>
                         
                         {/* Control Unit Logic */}
@@ -575,17 +648,56 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
               </div>
             </div>
 
+            {/* Stage 3: Ödeme Tahsilatı */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-4">
+              <h3 className="text-base font-semibold text-yellow-800 mb-2 flex items-center">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full mr-2" />
+                Ödeme Tahsilatı (Sadece {TURKISH_ROLE_NAMES.SALES} Ekibi Düzenleyebilir)
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-yellow-700 mb-1">Ödeme Durumu</label>
+                  {canEditStage('Ödeme Tahsilatı') ? (
+                    <select
+                      value={formData.paymentStatus}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paymentStatus: e.target.value }))}
+                      className="w-full border border-yellow-300 rounded p-2 bg-white text-yellow-800 text-sm"
+                    >
+                      <option value="">Seçiniz</option>
+                      <option value="pending">Beklemede</option>
+                      <option value="paid">Ödendi</option>
+                      <option value="unpaid">Ödenmedi</option>
+                      <option value="waived">Ücretsiz</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={
+                        formData.paymentStatus === 'pending' ? 'Beklemede' :
+                        formData.paymentStatus === 'paid' ? 'Ödendi' :
+                        formData.paymentStatus === 'unpaid' ? 'Ödenmedi' :
+                        formData.paymentStatus === 'waived' ? 'Ücretsiz' : formData.paymentStatus
+                      }
+                      disabled
+                      className="w-full border border-yellow-300 rounded p-2 bg-yellow-50 text-yellow-800 font-semibold cursor-not-allowed text-sm"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Stage 4: Kargoya Verildi */}
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
               <h3 className="text-base font-semibold text-purple-800 mb-2 flex items-center">
                 <div className="w-2 h-2 bg-purple-400 rounded-full mr-2" />
-                Kargoya Verildi (Sadece {TURKISH_ROLE_NAMES.SHIPPING} Ekibi Düzenleyebilir)
+                Kargoya Verildi (Sadece {TURKISH_ROLE_NAMES.LOGISTICS} Ekibi Düzenleyebilir)
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-purple-700 mb-1">Kargo Bilgisi</label>
-                  {canEditStage('Kargoya Verildi') ? (
+                  {canEditStage('Kargoya Veriliyor') ? (
                     <input
                       type="text"
                       value={formData.shippingInfo}
@@ -604,7 +716,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-purple-700 mb-1">Kargo Numarası</label>
-                  {canEditStage('Kargoya Verildi') ? (
+                  {canEditStage('Kargoya Veriliyor') ? (
                     <input
                       type="text"
                       value={formData.trackingNumber}
@@ -623,7 +735,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-purple-700 mb-1">Kargoya Verilme Tarihi</label>
-                  {canEditStage('Kargoya Verildi') ? (
+                  {canEditStage('Kargoya Veriliyor') ? (
                     <DatePicker
                       selected={formData.shippingDate}
                       onChange={(date) => setFormData(prev => ({ ...prev, shippingDate: date as Date }))}
@@ -646,20 +758,20 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
             </div>
 
             {/* Stage 5: Tamamlandı */}
-            <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 mt-4">
-              <h3 className="text-base font-semibold text-pink-800 mb-2 flex items-center">
-                <div className="w-2 h-2 bg-pink-400 rounded-full mr-2" />
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+              <h3 className="text-base font-semibold text-green-800 mb-2 flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
                 Tamamlandı (Sadece {TURKISH_ROLE_NAMES.MANAGER} Ekibi Düzenleyebilir)
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-pink-700 mb-1">Ödeme Durumu</label>
+                  <label className="block text-xs font-medium text-green-700 mb-1">Final Ödeme Durumu</label>
                   {canEditStage('Tamamlandı') ? (
                     <select
                       value={formData.paymentStatus}
                       onChange={(e) => setFormData(prev => ({ ...prev, paymentStatus: e.target.value }))}
-                      className="w-full border border-pink-300 rounded p-2 bg-white text-pink-800 text-sm"
+                      className="w-full border border-green-300 rounded p-2 bg-white text-green-800 text-sm"
                     >
                       <option value="">Seçiniz</option>
                       <option value="paid">Ödendi</option>
@@ -675,7 +787,7 @@ export default function EditReturnCaseModal({ returnCase, onClose, onSuccess }: 
                         formData.paymentStatus === 'waived' ? 'Ücretsiz' : formData.paymentStatus
                       }
                       disabled
-                      className="w-full border border-pink-300 rounded p-2 bg-pink-50 text-pink-800 font-semibold cursor-not-allowed text-sm"
+                      className="w-full border border-green-300 rounded p-2 bg-green-50 text-green-800 font-semibold cursor-not-allowed text-sm"
                     />
                   )}
                 </div>

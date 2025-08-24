@@ -178,7 +178,21 @@ def get_customers():
             'representative': customer.representative,
             'contact_info': customer.contact_info,
             'address': customer.address,
-            'created_at': customer.created_at.isoformat() # Convert datetime to string
+            'created_at': (
+                customer.created_at.strftime("%d %b %Y %H:%M")
+                .replace("Jan", "Oca")
+                .replace("Feb", "Şub")
+                .replace("Mar", "Mar")
+                .replace("Apr", "Nis")
+                .replace("May", "May")
+                .replace("Jun", "Haz")
+                .replace("Jul", "Tem")
+                .replace("Aug", "Ağu")
+                .replace("Sep", "Eyl")
+                .replace("Oct", "Eki")
+                .replace("Nov", "Kas")
+                .replace("Dec", "Ara")
+            ) if customer.created_at else None
         }
         for customer in paginated_customers.items
     ]

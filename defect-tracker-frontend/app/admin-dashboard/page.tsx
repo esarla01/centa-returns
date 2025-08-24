@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, Search, ListFilter, Trash2 } from 'lucide-react';
-import { User } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { Plus, Search, ListFilter, Trash2, ChevronDown, ChevronUp, X, Filter, User } from 'lucide-react';
+import { User as UserType } from '@/lib/types';
+import { cn, truncateTextWithEllipsis } from '@/lib/utils';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import { RequirePermission } from '../components/RequirePermission';
@@ -37,7 +37,6 @@ const getTurkishRoleName = (role: string) => {
   }
 };
 
-
 function AdminDashboardContent() {
   // Loading state for the user
   const { loading } = useAuth();
@@ -48,26 +47,27 @@ function AdminDashboardContent() {
   const currentPage = Number(pageParam) || 1;
 
   // State for users, total pages, search term, and role filter
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
 
   // State for modal open and user to delete
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserType | null>(null);
 
   // Loading state for the users
   const [isLoading, setIsLoading] = useState(true);
 
+  // Mobile filter state
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
   // Get the current user from context
   const fetchUsers = useCallback(async () => {
-    // console.log('Fetching users...');
-    // console.log('Role:', role);
     setIsLoading(true);
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: '5',
+      limit: '4',
       ...(search ? { search } : {}),
       ...(role ? { role } : {}),
     });
@@ -91,7 +91,6 @@ function AdminDashboardContent() {
   // Fetch users when the component mounts or when dependencies change
   useEffect(() => {
     if (!loading) {
-      // Check if the user is authorized before fetching users
       fetchUsers();
     }
   }, [currentPage, search, role, loading]);
@@ -101,11 +100,22 @@ function AdminDashboardContent() {
     setIsModalOpen(false);
     fetchUsers(); 
   }
+
   // Handler for when a user deletion is successful
   const handleDeletionSuccess = () => {
     setUserToDelete(null); 
     fetchUsers();  
   };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearch('');
+    setRole('');
+    setIsFilterOpen(false);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = search || role;
 
   return (
     <RequirePermission permission="PAGE_VIEW_ADMIN" >
@@ -127,101 +137,225 @@ function AdminDashboardContent() {
         />
       )}
 
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mt-7">
-          <div className="flex-1 space-y-3">
-            <h1 className="text-3xl font-bold text-gray-900">
+        {/* Simplified Header Section */}
+        <div className="flex items-center justify-between mt-6 mb-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
               Yönetici Paneli
             </h1>
-            <p className="text-md text-gray-500 max-w-2xl">
-              Bu panel üzerinden tüm kullanıcıları görüntüleyebilir, isim, e-posta veya role göre filtreleme yapabilir, yeni kullanıcılar ekleyebilir ya da mevcut kullanıcıları düzenleyip silebilirsiniz.
+            <p className="text-sm text-gray-500 mt-1 hidden md:block">
+              Kullanıcı yönetimi ve sistem ayarları
             </p>
           </div>
-          <div className="flex-shrink-0">
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Kullanıcı Ekle</span>
-            </button>
+          
+          {/* Floating Action Button for Mobile */}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+
+          {/* Desktop Add User Button */}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="hidden md:flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Kullanıcı Ekle</span>
+          </button>
+        </div>
+
+        {/* Mobile Filter Toggle */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-gray-500" />
+              <span className="font-medium text-gray-700">Filtreler</span>
+              {hasActiveFilters && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                  Aktif
+                </span>
+              )}
+            </div>
+            {isFilterOpen ? (
+              <ChevronUp className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Collapsible Filters */}
+        {isFilterOpen && (
+          <div className="md:hidden mb-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm space-y-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="İsme veya emaile göre arama..."
+                className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Role Filter */}
+            <div className="relative">
+              <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <select
+                value={role} 
+                onChange={(e) => setRole(e.target.value)}
+                className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Tüm Roller</option>
+                <option value="ADMIN">Yönetici</option>
+                <option value="MANAGER">Yönetici Yardımcısı</option>
+                <option value="TECHNICIAN">Teknisyen</option>
+                <option value="SUPPORT">Destek</option>
+                <option value="SALES">Satış</option>
+                <option value="LOGISTICS">Lojistik</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="w-full px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors text-sm font-medium"
+              >
+                Filtreleri Temizle
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Desktop Filters */}
+        <div className="hidden md:block mb-6 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">
+                {(search || role) ? 'Arama Sonuçları' : 'Tüm Kullanıcılar'}
+              </h2>
+              {(search || role) && (
+                <div className="text-red-600 text-sm">
+                  Tüm kullanıcılar için filtreleri temizleyin.
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="İsme veya emaile göre arama..."
+                  className="pl-10 w-64 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              {/* Role Filter */}
+              <div className="relative">
+                <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <select
+                  value={role} 
+                  onChange={(e) => setRole(e.target.value)}
+                  className="pl-10 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Tüm Roller</option>
+                  <option value="ADMIN">Yönetici</option>
+                  <option value="MANAGER">Yönetici Yardımcısı</option>
+                  <option value="TECHNICIAN">Teknisyen</option>
+                  <option value="SUPPORT">Destek</option>
+                  <option value="SALES">Satış</option>
+                  <option value="LOGISTICS">Lojistik</option>
+                </select>
+              </div>
+
+              {/* Clear Filters Button */}
+              {(search || role) && (
+                <button
+                  onClick={clearFilters}
+                  className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
+                >
+                  Filtreleri Temizle
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm">
-          {/* Filters and Actions Bar */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex-1">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-800 mb-2">
-                  {(search || role) ? 'Arama Sonuçları' : 'Tüm Kullanıcılar'}
-                </h2>
-                {(search || role) && (
-                  <div className="text-red-600 text-sm">
-                    Tüm kullanıcılar için filtreleri temizleyin.
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {/* Search Input */}
-                <div className="relative flex-1 sm:flex-none sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="İsme veya emaile göre arama..."
-                    className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-
-                {/* Role Filter */}
-                <div className="relative flex items-center bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                  <label 
-                    htmlFor="role-filter" 
-                    className="flex items-center gap-2 w-full cursor-pointer px-4 py-2"
-                  >
-                    <ListFilter className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                    <select
-                      id="role-filter"
-                      value={role} 
-                      onChange={(e) => setRole(e.target.value)}
-                      className="appearance-none bg-transparent w-full text-sm text-gray-700 focus:outline-none"
-                    >
-                      <option value="">Tüm Roller</option>
-                      <option value="ADMIN">Yönetici</option>
-                      <option value="MANAGER">Yönetici Yardımcısı</option>
-                      <option value="TECHNICIAN">Teknisyen</option>
-                      <option value="SUPPORT">Destek</option>
-                      <option value="SALES">Satış</option>
-                      <option value="LOGISTICS">Lojistik</option>
-                    </select>
-                  </label>
-                </div>
-
-                {/* Clear Filters Button */}
-                {(search || role) && (
-                  <button
-                    onClick={() => {
-                      setSearch('');
-                      setRole('');
-                    }}
-                    className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
-                  >
-                    Filtreleri Temizle
-                  </button>
-                )}
-
-                
-              </div>
+        {/* Mobile Card Layout */}
+        <div className="md:hidden space-y-3">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+              <span className="text-gray-500">Yükleniyor...</span>
             </div>
-          </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-2">
+                <User className="h-12 w-12 mx-auto" />
+              </div>
+              <p className="text-gray-500">
+                {search || role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
+              </p>
+            </div>
+          ) : (
+            users.map((user, idx) => (
+              <div key={user.email} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3 flex-1">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <span className="text-sm font-medium text-blue-600">
+                          {user.firstName ? user.firstName.charAt(0) : ''}{user.lastName ? user.lastName.charAt(0) : ''}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-gray-900 truncate">
+                          {user.firstName} {user.lastName}
+                        </h3>
+                        <span className={cn('px-2 py-1 text-xs font-medium rounded-full', getRoleClass(user.role))}>
+                          {getTurkishRoleName(user.role)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">{user.email}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Son giriş: {user.lastLogin || '—'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Action Button */}
+                  <button 
+                    onClick={() => setUserToDelete(user)}
+                    className="flex-shrink-0 ml-2 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors" 
+                    title="Kullanıcıyı Sil"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
-          {/* Table Section */}
+        {/* Desktop Table Layout */}
+        <div className="hidden md:block bg-white rounded-lg shadow-sm">
           <div className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -239,7 +373,7 @@ function AdminDashboardContent() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-2"></div>
                           Yükleniyor...
@@ -248,7 +382,7 @@ function AdminDashboardContent() {
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                         {search || role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
                       </td>
                     </tr>
@@ -269,9 +403,9 @@ function AdminDashboardContent() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {user.firstName} {user.lastName}
+                                {truncateTextWithEllipsis(user.firstName + ' ' + user.lastName, 30)}
                               </div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                              <div className="text-sm text-gray-500">{truncateTextWithEllipsis(user.email, 30)}</div>
                             </div>
                           </div>
                         </td>
@@ -281,16 +415,16 @@ function AdminDashboardContent() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.invitedAt ?? '—'}
+                          {user.invitedAt || '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.createdAt ?? '—'}
+                          {user.createdAt || '—'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.lastLogin ?? '—'}
+                          {user.lastLogin || '—'}
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
-                        <button 
+                          <button 
                             onClick={() => setUserToDelete(user)}
                             className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50" 
                             title="Kullanıcıyı Sil"
@@ -305,11 +439,11 @@ function AdminDashboardContent() {
               </table>
             </div>
           </div>
+        </div>
 
-          {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200">
-            <Pagination currentPage={currentPage} totalPages={totalPages} />
-          </div>
+        {/* Pagination */}
+        <div className="mt-6">
+          <Pagination currentPage={currentPage} totalPages={totalPages} />
         </div>
       </div>
     </div>
