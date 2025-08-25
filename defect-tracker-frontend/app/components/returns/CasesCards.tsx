@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Calendar, User, Building2, Eye, Pencil, CheckCircle, Trash2 } from 'lucide-react';
+import { Package, Calendar, User, Building2, Eye, Pencil, CheckCircle, Trash2, Mail } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import TeslimAlindiModal from './TeslimAlindiModal';
@@ -11,6 +11,7 @@ import KargoyaVerildiModal from './KargoyaVerildiModal';
 import TamamlandiModal from './TamamlandiModal';
 import StageCompletionModal from './StageCompletionModal';
 import ViewReturnCaseModal from './ViewReturnCaseModal';
+import EmailCustomerModal from './EmailCustomerModal';
 
 interface CasesCardsProps {
   cases: FullReturnCase[];
@@ -48,6 +49,7 @@ export function CasesCards({
   const [tamamlandiModal, setTamamlandiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
   const [stageCompletionModal, setStageCompletionModal] = useState<{ isOpen: boolean; case: FullReturnCase | null; stage: string }>({ isOpen: false, case: null, stage: '' });
   const [viewModal, setViewModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+  const [emailCustomerModal, setEmailCustomerModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
 
   // Helper function: a stage is editable only if the user has permission to edit the return case at that stage.
   const canEditStage = (currentStatus: string, stage: string): boolean => {
@@ -99,6 +101,14 @@ export function CasesCards({
     if (returnCase.status !== 'Teslim Alındı') return false;
     
     return true;
+  };
+
+  // Check if user can email customer (LOGISTICS role for Tamamlandı stage)
+  const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => {
+    if (caseStatus === 'Tamamlandı') {
+      return userRole === 'LOGISTICS';
+    }
+    return false;
   };
 
   // Check if user can complete the current stage of a case
@@ -285,6 +295,17 @@ export function CasesCards({
                       </button>
                     )}
                     
+                    {/* Email Button - Only show if user is LOGISTICS and case is at Tamamlandı stage */}
+                    {canUserEmailCustomer(user?.role || '', returnCase.status) && (
+                      <button
+                        onClick={() => setEmailCustomerModal({ isOpen: true, case: returnCase })}
+                        className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Müşteriye E-posta Gönder"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </button>
+                    )}
+                    
                     {/* Delete Button - Only show if user is SUPPORT and case is at Teslim Alındı stage */}
                     {canDeleteCase(returnCase) && (
                       <button
@@ -376,6 +397,18 @@ export function CasesCards({
       <ViewReturnCaseModal
         returnCase={viewModal.case}
         onClose={() => setViewModal({ isOpen: false, case: null })}
+      />
+    )}
+
+    {/* Email Customer Modal */}
+    {emailCustomerModal.isOpen && emailCustomerModal.case && (
+      <EmailCustomerModal
+        returnCase={emailCustomerModal.case}
+        onClose={() => setEmailCustomerModal({ isOpen: false, case: null })}
+        onSuccess={() => {
+          setEmailCustomerModal({ isOpen: false, case: null });
+          onRefresh();
+        }}
       />
     )}
   </>
