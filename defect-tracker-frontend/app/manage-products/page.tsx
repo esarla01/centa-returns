@@ -36,6 +36,9 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
+  const limitParam = searchParams.get('limit');
+  // Limit coming from middleware, fallback to 5 if missing
+  const limit = limitParam ? Number(limitParam) : 5;     
 
   const [products, setProducts] = useState<ProductModel[]>([]);
   const [totalPages, setTotalPages] = useState(1);
@@ -55,7 +58,7 @@ function ProductsContent() {
     setIsLoading(true);
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: '4',
+      limit: limit.toString(),
       ...(filters.search ? { search: filters.search } : {}),
       ...(filters.typeFilter ? { type: filters.typeFilter } : {}),
     });
@@ -99,7 +102,8 @@ function ProductsContent() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_PRODUCT_LIST">
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Remove min-h-screen and add proper mobile scrolling */}
+      <div className="bg-gradient-to-b from-blue-50 to-white pb-20 md:pb-0">
         <Header onLogout={() => {}} />
 
         {isAddModalOpen && <AddProductModal onClose={() => setIsAddModalOpen(false)} onSuccess={handleSuccess} />}
@@ -117,21 +121,14 @@ function ProductsContent() {
               </p>
             </div>
             
-            {/* Floating Action Button for Mobile */}
+            {/* Add Product Button - Show on both mobile and desktop */}
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-3 py-2 text-sm md:px-4 md:text-base"
             >
-              <Plus className="h-6 w-6" />
-            </button>
-
-            {/* Desktop Add Product Button */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="hidden md:flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Yeni Model Ekle</span>
+              <Plus className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">Yeni Model Ekle</span>
+              <span className="sm:hidden">Ekle</span>
             </button>
           </div>
 
@@ -255,8 +252,8 @@ function ProductsContent() {
             </div>
           </div>
 
-          {/* Mobile Card Layout */}
-          <div className="md:hidden space-y-3">
+          {/* Mobile Card Layout - Add bottom padding */}
+          <div className="md:hidden space-y-3 pb-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
@@ -376,8 +373,8 @@ function ProductsContent() {
             </div>
           </div>
 
-          {/* Pagination */}
-          <div className="mt-6">
+          {/* Pagination - Add bottom padding */}
+          <div className="mt-6 pb-6 md:pb-0">
             <Pagination currentPage={currentPage} totalPages={totalPages} />
           </div>
         </div>

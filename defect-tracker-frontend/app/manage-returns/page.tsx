@@ -16,6 +16,11 @@ import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import TeslimAlindiModal from '../components/returns/TeslimAlindiModal';
+import TeknikIncelemeModal from '../components/returns/TeknikIncelemeModal';
+import OdemeTahsilatiModal from '../components/returns/OdemeTahsilatiModal';
+import KargoyaVerildiModal from '../components/returns/KargoyaVerildiModal';
+import TamamlandiModal from '../components/returns/TamamlandiModal';
 
 const initialFilters: Filters = {
   search: '',
@@ -38,21 +43,6 @@ const getStatusClass = (status: string) => {
   }
 };
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return '—';
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  } catch (error) {
-    return '—';
-  }
-};
-
 function ReturnsDashboardContent() {
   // Loading state for the ]=
   const { loading, user } = useAuth();
@@ -61,6 +51,9 @@ function ReturnsDashboardContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
+  const limitParam = searchParams.get('limit');
+  // Limit coming from middleware, fallback to 5 if missing
+  const limit = limitParam ? Number(limitParam) : 5;
 
   // Data
   const [cases, setCases] = useState<FullReturnCase[]>([]);
@@ -74,58 +67,66 @@ function ReturnsDashboardContent() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [caseToEdit, setCaseToEdit] = useState<FullReturnCase | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<FullReturnCase | null>(null);
+  const [teslimAlindiModal, setTeslimAlindiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+  const [teknikIncelemeModal, setTeknikIncelemeModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+  const [odemeTahsilatiModal, setOdemeTahsilatiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+  const [kargoyaVerildiModal, setKargoyaVerildiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
+  const [tamamlandiModal, setTamamlandiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
 
   // Mobile filter state
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Helper function to check if a stage can be edited by the current user role
+  // Helper function: a stage is editable only if the user has permission to edit the return case at that stage.
   const canEditStage = (currentStatus: string, stage: string): boolean => {
-    const stageMapping = {
-      'teslim_alindi': 'Teslim Alındı',
-      'teknik_inceleme': 'Teknik İnceleme',
-      'odeme_tahsilati': 'Ödeme Tahsilatı',
-      'kargoya_verildi': 'Kargoya Veriliyor',
-      'tamamlandi': 'Tamamlandı'
+
+    const editableStages = ['teslim_alindi', 'teknik_inceleme', 'odeme_tahsilati', 'kargoya_verildi'];
+    if (!editableStages.includes(stage)) return false;
+
+    // Map stage to status and required role
+    const stageRoleMap: { [key: string]: { status: string, role: string } } = {
+      'teslim_alindi': { status: 'Teslim Alındı', role: 'SUPPORT' },
+      'teknik_inceleme': { status: 'Teknik İnceleme', role: 'TECHNICIAN' },
+      'odeme_tahsilati': { status: 'Ödeme Tahsilatı', role: 'SALES' },
+      'kargoya_verildi': { status: 'Kargoya Veriliyor', role: 'LOGISTICS' }
     };
 
-    // Define which roles can edit which stages
-    const stageEditPermissions: { [key: string]: string[] } = {
-      'teslim_alindi': ['SUPPORT'],
-      'teknik_inceleme': ['TECHNICIAN'],
-      'odeme_tahsilati': ['SALES'],
-      'kargoya_verildi': ['LOGISTICS'],
-      'tamamlandi': ['MANAGER']
-    };
+    const mapping = stageRoleMap[stage];
+    if (!mapping) return false;
 
-    // Get the mapped stage name
-    const mappedStage = stageMapping[stage as keyof typeof stageMapping];
-    if (!mappedStage) return false;
-
-    // Only allow editing if the current status is at or beyond this stage
-    const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
-    const currentIndex = stageOrder.indexOf(currentStatus);
-    const stageIndex = stageOrder.indexOf(mappedStage);
-
-    if (currentIndex === -1 || stageIndex === -1) return false;
-    if (currentIndex < stageIndex) return false;
-
-    // Check if the user's role is allowed to edit this stage
+    // User must have the required role and the case must be at the exact stage
     if (!user?.role) return false;
-    const allowedRoles = stageEditPermissions[stage];
-    if (!allowedRoles) return false;
+    if (user.role !== mapping.role) return false;
+    if (currentStatus !== mapping.status) return false;
 
-    return allowedRoles.includes(user.role);
+    return true;
   };
 
-  // Check if user can edit any stage of a case
+  // Check if user can edit the current stage of a case
   const canEditCase = (returnCase: FullReturnCase): boolean => {
-    const stages = ['teslim_alindi', 'teknik_inceleme', 'odeme_tahsilati', 'kargoya_verildi', 'tamamlandi'];
-    return stages.some(stage => canEditStage(returnCase.status, stage));
+    const stageMapping = {
+      'Teslim Alındı': 'teslim_alindi',
+      'Teknik İnceleme': 'teknik_inceleme',
+      'Ödeme Tahsilatı': 'odeme_tahsilati',
+      'Kargoya Veriliyor': 'kargoya_verildi',
+      'Tamamlandı': 'tamamlandi'
+    };
+
+    const currentStage = stageMapping[returnCase.status as keyof typeof stageMapping];
+    if (!currentStage) return false;
+
+    // Check if user can edit this specific current stage
+    return canEditStage(returnCase.status, currentStage);
   };
 
-  // Check if user can delete a case
+  // Update the canDeleteCase function to be more explicit
   const canDeleteCase = (returnCase: FullReturnCase): boolean => {
-    return returnCase.status === 'Teslim Alındı' && user?.role === 'SUPPORT';
+    // Only SUPPORT users can delete cases
+    if (user?.role !== 'SUPPORT') return false;
+    
+    // Only cases at "Teslim Alındı" stage can be deleted
+    if (returnCase.status !== 'Teslim Alındı') return false;
+    
+    return true;
   };
 
   // Fetch return cases
@@ -134,7 +135,7 @@ function ReturnsDashboardContent() {
 
     const params = new URLSearchParams({
       page: String(currentPage),
-      limit: '4',
+      limit: limit.toString(),
     });
 
     (Object.keys(filters) as Array<keyof Filters>).forEach((key) => {
@@ -182,9 +183,47 @@ function ReturnsDashboardContent() {
   // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some(value => value);
 
+  const openStageSpecificModal = (returnCase: FullReturnCase) => {
+    const stageMapping = {
+      'Teslim Alındı': 'teslim_alindi',
+      'Teknik İnceleme': 'teknik_inceleme',
+      'Ödeme Tahsilatı': 'odeme_tahsilati',
+      'Kargoya Veriliyor': 'kargoya_verildi',
+      'Tamamlandı': 'tamamlandi'
+    };
+
+    const currentStage = stageMapping[returnCase.status as keyof typeof stageMapping];
+    if (!currentStage) return;
+
+    // Check if user can edit this specific stage
+    if (!canEditStage(returnCase.status, currentStage)) return;
+
+    // Open the appropriate modal based on the current stage
+    switch (currentStage) {
+      case 'teslim_alindi':
+        setTeslimAlindiModal({ isOpen: true, case: returnCase });
+        break;
+      case 'teknik_inceleme':
+        setTeknikIncelemeModal({ isOpen: true, case: returnCase });
+        break;
+      case 'odeme_tahsilati':
+        setOdemeTahsilatiModal({ isOpen: true, case: returnCase });
+        break;
+      case 'kargoya_verildi':
+        setKargoyaVerildiModal({ isOpen: true, case: returnCase });
+        break;
+      case 'tamamlandi':
+        setTamamlandiModal({ isOpen: true, case: returnCase });
+        break;
+      default:
+        // Fallback to the general edit modal
+        setCaseToEdit(returnCase);
+    }
+  };
+
   return (
     <RequirePermission permission="PAGE_VIEW_CASE_TRACKING" >
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="bg-gradient-to-b from-blue-50 to-white pb-20 md:pb-0">
       <Header onLogout={() => {}} />
 
       {isAddModalOpen && (
@@ -194,13 +233,6 @@ function ReturnsDashboardContent() {
         />
       )}
 
-      {caseToEdit && (
-        <EditReturnCaseModal
-          returnCase={caseToEdit}
-          onClose={() => setCaseToEdit(null)}
-          onSuccess={handleSuccess}
-        />
-      )}
       {caseToDelete && (
         <DeleteReturnCaseModal
           returnCase={caseToDelete}
@@ -358,7 +390,7 @@ function ReturnsDashboardContent() {
         </div>
 
         {/* Mobile Card Layout */}
-        <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-3 pb-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
@@ -402,7 +434,7 @@ function ReturnsDashboardContent() {
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       <p className="text-sm text-gray-600">
-                        Geliş: {formatDate(returnCase.arrival_date)}
+                        Geliş: {returnCase.arrival_date}
                       </p>
                     </div>
                     
@@ -432,38 +464,38 @@ function ReturnsDashboardContent() {
                   
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-2 ml-3">
-                    <button 
-                      onClick={() => setCaseToEdit(returnCase)}
-                      disabled={!canEditCase(returnCase)}
-                      className={`p-2 rounded-full transition-colors ${
-                        canEditCase(returnCase)
-                          ? 'text-blue-500 hover:text-blue-700 hover:bg-blue-50'
-                          : 'text-gray-400 cursor-not-allowed'
-                      }`}
-                      title={
-                        canEditCase(returnCase)
-                          ? "Vakayı Düzenle"
-                          : "Bu vakayı düzenleme yetkiniz yok"
-                      }
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setCaseToDelete(returnCase)}
-                      disabled={!canDeleteCase(returnCase)}
-                      className={`p-2 rounded-full transition-colors ${
-                        canDeleteCase(returnCase)
-                          ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                          : 'text-gray-400 cursor-not-allowed'
-                      }`}
-                      title="Vakayı Sil"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                    {/* Edit Button - Only show if user has permission */}
+                    {canEditCase(returnCase) && (
+                      <button 
+                        onClick={() => openStageSpecificModal(returnCase)}
+                        className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Vakayı Düzenle"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    )}
+                    
+                    {/* Delete Button - Only show if user is SUPPORT and case is at Teslim Alındı stage */}
+                    {canDeleteCase(returnCase) && (
+                      <button
+                        onClick={() => setCaseToDelete(returnCase)}
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                        title="Vakayı Sil"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                    
+                    {/* Optional: Show message when no actions are available */}
+                    {!canEditCase(returnCase) && !canDeleteCase(returnCase) && (
+                      <div className="text-xs text-gray-400 text-center px-2 py-1">
+                        Eylem yok
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -476,6 +508,61 @@ function ReturnsDashboardContent() {
           <Pagination currentPage={currentPage} totalPages={totalPages} />
         </div>
       </div>
+
+      {teslimAlindiModal.isOpen && teslimAlindiModal.case && (
+        <TeslimAlindiModal
+          returnCase={teslimAlindiModal.case}
+          onClose={() => setTeslimAlindiModal({ isOpen: false, case: null })}
+          onSuccess={() => {
+            setTeslimAlindiModal({ isOpen: false, case: null });
+            fetchData();
+          }}
+        />
+      )}
+
+      {teknikIncelemeModal.isOpen && teknikIncelemeModal.case && (
+        <TeknikIncelemeModal
+          returnCase={teknikIncelemeModal.case}
+          onClose={() => setTeknikIncelemeModal({ isOpen: false, case: null })}
+          onSuccess={() => {
+            setTeknikIncelemeModal({ isOpen: false, case: null });
+            fetchData();
+          }}
+        />
+      )}
+
+      {odemeTahsilatiModal.isOpen && odemeTahsilatiModal.case && (
+        <OdemeTahsilatiModal
+          returnCase={odemeTahsilatiModal.case}
+          onClose={() => setOdemeTahsilatiModal({ isOpen: false, case: null })}
+          onSuccess={() => {
+            setOdemeTahsilatiModal({ isOpen: false, case: null });
+            fetchData();
+          }}
+        />
+      )}
+
+      {kargoyaVerildiModal.isOpen && kargoyaVerildiModal.case && (
+        <KargoyaVerildiModal
+          returnCase={kargoyaVerildiModal.case}
+          onClose={() => setKargoyaVerildiModal({ isOpen: false, case: null })}
+          onSuccess={() => {
+            setKargoyaVerildiModal({ isOpen: false, case: null });
+            fetchData();
+          }}
+        />
+      )}
+
+      {tamamlandiModal.isOpen && tamamlandiModal.case && (
+        <TamamlandiModal
+          returnCase={tamamlandiModal.case}
+          onClose={() => setTamamlandiModal({ isOpen: false, case: null })}
+          onSuccess={() => {
+            setTamamlandiModal({ isOpen: false, case: null });
+            fetchData();
+          }}
+        />
+      )}
     </div>
     </RequirePermission>
   );

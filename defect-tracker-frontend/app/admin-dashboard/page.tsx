@@ -32,6 +32,9 @@ function AdminDashboardContent() {
 
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
+  const limitParam = searchParams.get('limit');
+  // Limit coming from middleware, fallback to 5 if missing
+  const limit = limitParam ? Number(limitParam) : 5;
 
   // Current page
   const currentPage = Number(pageParam) || 1;
@@ -62,7 +65,7 @@ function AdminDashboardContent() {
 
     const params = new URLSearchParams();
     params.append('page', String(currentPage));
-    params.append('limit', '4');
+    params.append('limit', limit.toString());
     if (filters.search) params.append('search', filters.search);
     if (filters.role) params.append('role', filters.role);
 
@@ -82,19 +85,19 @@ function AdminDashboardContent() {
       setUsers(data.users);
       setTotalPages(data.totalPages);
     } catch (error) {
-      console.error('Kullanıcılar getirilirken bir hata oluştu:', error);
+      // console.error('Kullanıcılar getirilirken bir hata oluştu:', error);
       setUsers([]);
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filters.search, filters.role]);
+  }, [currentPage, filters.search, filters.role, limit]);
 
   // Fetch users when the component mounts or when dependencies change
   useEffect(() => {
     if (!loading) {
       fetchUsers();
     }
-  }, [currentPage, filters.search, filters.role, loading]);
+  }, [currentPage, filters.search, filters.role, loading, limit]);
 
   // Handler for when a new user is added
   const handleUserAdded = () => {
@@ -149,21 +152,14 @@ function AdminDashboardContent() {
             </p>
           </div>
           
-          {/* Floating Action Button for Mobile */}
+          {/* Add User Button - Show on both mobile and desktop */}
           <button 
             onClick={() => setUserAddModal(true)}
-            className="md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+            className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-3 py-2 text-sm md:px-4 md:text-base"
           >
-            <Plus className="h-6 w-6" />
-          </button>
-
-          {/* Desktop Add User Button */}
-          <button 
-            onClick={() => setUserAddModal(true)}
-            className="hidden md:flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Kullanıcı Ekle</span>
+            <Plus className="h-4 w-4 md:h-5 md:w-5" />
+            <span className="hidden sm:inline">Kullanıcı Ekle</span>
+            <span className="sm:hidden">Ekle</span>
           </button>
         </div>
 
@@ -455,10 +451,11 @@ function AdminDashboardContent() {
           </div>
         </div>
 
-        {/* Pagination */}
-        <div className="mt-6">
+        {/* Pagination with bottom padding */}
+        <div className="mt-6 pb-20 md:pb-0">
           <Pagination currentPage={currentPage} totalPages={totalPages} />
         </div>
+
       </div>
     </div>
     </RequirePermission>
