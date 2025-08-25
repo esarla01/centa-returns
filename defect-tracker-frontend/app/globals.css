@@ -52,3 +52,131 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Mobile Input Contrast Fixes */
+/* Ensure proper contrast on mobile devices, especially iOS */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="month"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="week"],
+textarea,
+select {
+  /* Force dark text color for better contrast */
+  color: #1f2937 !important; /* gray-800 */
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #1f2937 !important; /* iOS specific */
+  -webkit-appearance: none; /* Remove iOS default styling */
+  appearance: none;
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="month"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="week"],
+  textarea,
+  select {
+    /* iOS Safari specific overrides */
+    -webkit-text-fill-color: #1f2937 !important;
+    color: #1f2937 !important;
+    background-color: #ffffff !important;
+  }
+}
+
+/* Focus states for better visibility */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="month"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus,
+input[type="week"]:focus,
+textarea:focus,
+select:focus {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  background-color: #ffffff !important;
+}
+
+/* Placeholder text contrast */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important; /* gray-500 */
+  opacity: 1 !important; /* Firefox */
+  -webkit-text-fill-color: #6b7280 !important; /* iOS */
+}
+
+/* Disabled state styling */
+input:disabled,
+textarea:disabled,
+select:disabled {
+  color: #9ca3af !important; /* gray-400 */
+  -webkit-text-fill-color: #9ca3af !important;
+  background-color: #f3f4f6 !important; /* gray-100 */
+}
+
+/* Autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #1f2937 !important;
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Select dropdown styling */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Mobile-specific input sizing */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="month"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="week"],
+  textarea,
+  select {
+    /* Prevent zoom on iOS */
+    font-size: 16px !important;
+    /* Ensure proper touch targets */
+    min-height: 44px;
+    /* Better mobile spacing */
+    padding: 0.75rem 1rem !important;
+  }
+}
