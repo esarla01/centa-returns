@@ -7,7 +7,7 @@ interface StageCompletionModalProps {
   onClose: () => void;
   stage: string;
   caseId: number;
-  onSuccess?: () => void; // Optional callback for when stage is completed successfully
+  onSuccess?: () => void; 
 }
 
 const STAGE_CONFIGS = {

@@ -58,3 +58,13 @@ export const getRoleNameInTurkish: Record<string, string> = {
   MANAGER: 'Yönetici',
   ADMIN: 'Yönetici'
 };
+
+export const formatCurrency = (amount: number | null | undefined): string => {
+  if (amount === null || amount === undefined) return "—";
+  return new Intl.NumberFormat('tr-TR', {
+    style: 'currency',
+    currency: 'TRY',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+};

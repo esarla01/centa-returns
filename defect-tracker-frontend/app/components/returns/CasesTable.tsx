@@ -12,6 +12,7 @@ import KargoyaVerildiModal from './KargoyaVerildiModal';
 import TamamlandiModal from './TamamlandiModal';
 import ViewReturnCaseModal from './ViewReturnCaseModal';
 import EmailCustomerModal from './EmailCustomerModal';
+import { truncateTextWithEllipsis, formatCurrency } from "@/lib/utils";
 
 
 interface CasesTableProps {
@@ -131,24 +132,6 @@ const formatTurkishDate = (dateString: string) => {
   ];
   
   return `${day} ${months[month]} ${year}`;
-};
-
-const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount === null || amount === undefined) return "—";
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(amount);
-};
-
-// Truncate long text values and append an ellipsis. Keeps UI compact in table cells.
-const truncateTextWithEllipsis = (text: string | null | undefined, maxCharacters: number): string => {
-  if (!text) return "—";
-  const normalized = text.trim();
-  if (normalized.length <= maxCharacters) return normalized;
-  return normalized.slice(0, maxCharacters) + '…';
 };
 
 export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefresh }: CasesTableProps) {
