@@ -10,7 +10,6 @@ import Pagination from '@/app/components/Pagination';
 import FilterSidebar, { Filters } from '../components/returns/FilterSidebar';
 import CasesTable from '../components/returns/CasesTable';
 import AddReturnCaseModal from '../components/returns/AddReturnCaseModal';
-import EditReturnCaseModal from '../components/returns/EditReturnCaseModal';
 import DeleteReturnCaseModal from '../components/returns/DeleteReturnCaseModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
