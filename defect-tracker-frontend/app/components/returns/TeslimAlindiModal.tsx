@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import SearchableSelect from '../SearchableSelect';
 
 interface TeslimAlindiModalProps {
   returnCase: FullReturnCase;
@@ -117,24 +118,16 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
             )}
 
             {/* Customer Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Müşteri *
-              </label>
-              <select
-                value={formData.customerId}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerId: parseInt(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
-                required
-              >
-                <option value="">Müşteri seçiniz</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              options={customers}
+              value={formData.customerId}
+              onChange={(value) => setFormData(prev => ({ ...prev, customerId: parseInt(value.toString()) }))}
+              placeholder="Müşteri seçiniz"
+              label="Müşteri"
+              required
+              searchPlaceholder="Müşteri adı ile ara..."
+              className="space-y-2"
+            />
 
             {/* Arrival Date */}
             <div className="space-y-2">

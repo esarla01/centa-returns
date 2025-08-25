@@ -4,6 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { FullReturnCase, FullReturnCaseItem, ProductModel } from '@/lib/types';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import SearchableSelect from '../SearchableSelect';
 
 interface TeknikIncelemeModalProps {
   returnCase: FullReturnCase;
@@ -308,31 +309,27 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                     {/* First row: Product Model, Product Count */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Product Model */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          Ürün Modeli *
-                        </label>
-                        <select
-                          value={product.product_model.id}
-                          onChange={(e) => {
-                            const selectedModel = productModels.find(m => m.id === parseInt(e.target.value));
-                            handleProductChange(product.id, 'product_model', {
-                              id: parseInt(e.target.value),
-                              name: selectedModel?.name || '',
-                              product_type: selectedModel?.product_type || ''
-                            });
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          required
-                        >
-                          <option value="">Ürün seçiniz</option>
-                          {productModels.map((model) => (
-                            <option key={model.id} value={model.id}>
-                              {model.name} ({model.product_type})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <SearchableSelect
+                        options={productModels.map(model => ({
+                          ...model,
+                          displayName: `${model.name} (${model.product_type})`
+                        }))}
+                        value={product.product_model.id}
+                        onChange={(value) => {
+                          const selectedModel = productModels.find(m => m.id === parseInt(value.toString()));
+                          handleProductChange(product.id, 'product_model', {
+                            id: parseInt(value.toString()),
+                            name: selectedModel?.name || '',
+                            product_type: selectedModel?.product_type || ''
+                          });
+                        }}
+                        placeholder="Ürün seçiniz"
+                        label="Ürün Modeli"
+                        required
+                        searchPlaceholder="Ürün adı ile ara..."
+                        displayKey="displayName"
+                        className="space-y-2"
+                      />
 
                       {/* Product Count */}
                       <div className="space-y-2">

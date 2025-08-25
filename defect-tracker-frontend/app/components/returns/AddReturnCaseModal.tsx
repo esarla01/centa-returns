@@ -8,6 +8,7 @@ import { useState, useEffect, FormEvent, use } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { Customer, User, ProductModel } from '@/lib/types';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import SearchableSelect from '../SearchableSelect';
 
 interface AddReturnCaseModalProps {
   onClose: () => void;
@@ -109,11 +110,16 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
             <h3 className="text-base font-semibold text-gray-700 mb-2">Vaka Detayları</h3>
             <div className="flex flex-col gap-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Müşteri</label>
-                    <select value={caseDetails.customerId} onChange={e => handleCaseDetailChange('customerId', e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-200">
-                        <option value="" disabled>Müşteri Seçin...</option>
-                        {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <SearchableSelect
+                        options={customers}
+                        value={caseDetails.customerId}
+                        onChange={(value) => handleCaseDetailChange('customerId', value.toString())}
+                        placeholder="Müşteri Seçin..."
+                        label="Müşteri"
+                        required
+                        searchPlaceholder="Müşteri adı ile ara..."
+                        className="mt-1"
+                    />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Geliş Tarihi</label>
