@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Calendar, User, Building2 } from 'lucide-react';
+import { Package, Calendar, User, Building2, Eye, Pencil, CheckCircle, Trash2 } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import TeslimAlindiModal from './TeslimAlindiModal';
@@ -10,6 +10,7 @@ import OdemeTahsilatiModal from './OdemeTahsilatiModal';
 import KargoyaVerildiModal from './KargoyaVerildiModal';
 import TamamlandiModal from './TamamlandiModal';
 import StageCompletionModal from './StageCompletionModal';
+import ViewReturnCaseModal from './ViewReturnCaseModal';
 
 interface CasesCardsProps {
   cases: FullReturnCase[];
@@ -46,6 +47,7 @@ export function CasesCards({
   const [kargoyaVerildiModal, setKargoyaVerildiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
   const [tamamlandiModal, setTamamlandiModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
   const [stageCompletionModal, setStageCompletionModal] = useState<{ isOpen: boolean; case: FullReturnCase | null; stage: string }>({ isOpen: false, case: null, stage: '' });
+  const [viewModal, setViewModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
 
   // Helper function: a stage is editable only if the user has permission to edit the return case at that stage.
   const canEditStage = (currentStatus: string, stage: string): boolean => {
@@ -122,6 +124,10 @@ export function CasesCards({
     if (stageKey && canCompleteStage(returnCase)) {
       setStageCompletionModal({ isOpen: true, case: returnCase, stage: stageKey });
     }
+  };
+
+  const openViewModal = (returnCase: FullReturnCase) => {
+    setViewModal({ isOpen: true, case: returnCase });
   };
 
   const openStageSpecificModal = (returnCase: FullReturnCase) => {
@@ -246,8 +252,17 @@ export function CasesCards({
               </div>
             </div>
             
-                              {/* Action Buttons */}
+                                                {/* Action Buttons */}
                   <div className="flex flex-col gap-2 ml-3">
+                    {/* View Button - Available to everyone */}
+                    <button 
+                      onClick={() => openViewModal(returnCase)}
+                      className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full transition-colors"
+                      title="Vakayı Görüntüle"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+
                     {/* Edit Button - Only show if user has permission */}
                     {canEditCase(returnCase) && (
                       <button 
@@ -255,9 +270,7 @@ export function CasesCards({
                         className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full transition-colors"
                         title="Vakayı Düzenle"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                        <Pencil className="h-4 w-4" />
                       </button>
                     )}
                     
@@ -268,9 +281,7 @@ export function CasesCards({
                         className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-full transition-colors"
                         title="Aşamayı Tamamla"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <CheckCircle className="h-4 w-4" />
                       </button>
                     )}
                     
@@ -281,17 +292,8 @@ export function CasesCards({
                         className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
                         title="Vakayı Sil"
                       >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                        <Trash2 className="h-4 w-4" />
                       </button>
-                    )}
-                    
-                    {/* Optional: Show message when no actions are available */}
-                    {!canEditCase(returnCase) && !canDeleteCase(returnCase) && !canCompleteStage(returnCase) && (
-                      <div className="text-xs text-gray-400 text-center px-2 py-1">
-                        Eylem yok
-                      </div>
                     )}
                   </div>
           </div>
@@ -366,6 +368,14 @@ export function CasesCards({
           setStageCompletionModal({ isOpen: false, case: null, stage: '' });
           onRefresh();
         }}
+      />
+    )}
+
+    {/* View Return Case Modal */}
+    {viewModal.isOpen && viewModal.case && (
+      <ViewReturnCaseModal
+        returnCase={viewModal.case}
+        onClose={() => setViewModal({ isOpen: false, case: null })}
       />
     )}
   </>
