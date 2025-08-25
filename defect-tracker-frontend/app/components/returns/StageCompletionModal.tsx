@@ -90,11 +90,11 @@ export default function StageCompletionModal({ isOpen, onClose, stage, caseId, o
   if (!isOpen || !stageConfig) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
-      <div className={`relative w-full max-w-5xl max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden ${getColorClasses(stageConfig.color)}`}>
+      <div className={`relative w-full max-w-5xl max-h-[98vh] sm:max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden ${getColorClasses(stageConfig.color)}`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">{stageConfig.icon}</span>
             <h2 className="text-lg font-semibold">{stageConfig.title} Aşaması</h2>

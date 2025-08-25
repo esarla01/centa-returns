@@ -84,14 +84,14 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-2xl max-h-[98vh] sm:max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-orange-50 to-red-50">
+        <div className="p-3 sm:p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-orange-50 to-red-50">
           <div>
-            <h2 className="text-2xl font-bold text-orange-800">Teslim Alındı Aşaması Düzenle</h2>
-            <p className="text-sm text-orange-600 mt-1">Vaka #{returnCase.id} - {returnCase.customer.name}</p>
+            <h2 className="text-lg sm:text-2xl font-bold text-orange-800">Teslim Alındı Aşaması Düzenle</h2>
+            <p className="text-xs sm:text-sm text-orange-600 mt-1">Vaka #{returnCase.id} - {returnCase.customer.name}</p>
           </div>
           <button 
             onClick={onClose} 

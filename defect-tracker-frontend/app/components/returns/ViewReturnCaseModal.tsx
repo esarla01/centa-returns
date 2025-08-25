@@ -10,9 +10,9 @@ interface ViewReturnCaseModalProps {
 
 export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnCaseModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
-      <div className="relative w-full max-w-5xl max-h-[95vh] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-5xl max-h-[98vh] sm:max-h-[95vh] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100">
           <div>
@@ -25,14 +25,14 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-8">
           {/* Case Information Section */}
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
               Vaka Bilgileri
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
               <div>
                 <span className="text-gray-500 text-xs uppercase tracking-wide">Müşteri</span>
                 <p className="font-medium text-gray-900">{returnCase.customer?.name || "—"}</p>
@@ -53,12 +53,12 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
           </div>
 
           {/* Cost Information Section */}
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <span className="w-2 h-2 bg-blue-600 rounded-full mr-3"></span>
               Maliyet Bilgileri
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
                               <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide">Yedek Parça</span>
                   <p className="font-medium text-gray-900">
@@ -88,12 +88,12 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
 
           {/* Shipping Information Section */}
           {(returnCase.shipping_info || returnCase.tracking_number || returnCase.shipping_date) && (
-            <div className="bg-green-50 rounded-lg p-6">
+            <div className="bg-green-50 rounded-lg p-3 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
                 Kargo Bilgileri
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 text-sm">
                 <div>
                   <span className="text-gray-500 text-xs uppercase tracking-wide">Kargo Bilgisi</span>
                   <p className="font-medium text-gray-900">{returnCase.shipping_info || "—"}</p>
@@ -112,7 +112,7 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
 
           {/* Notes Section */}
           {(returnCase.notes || returnCase.performed_services) && (
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <span className="w-2 h-2 bg-yellow-500 rounded-full mr-3"></span>
                 Notlar ve Açıklamalar
