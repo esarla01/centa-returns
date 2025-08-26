@@ -281,3 +281,54 @@ class ReturnCaseItem(db.Model):
 
     def __repr__(self):
         return f'<ReturnCaseItem id={self.id} product_model_id={self.product_model_id} case_id={self.return_case_id}>'
+
+class ActionType(Enum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"
+    STAGE_COMPLETE = "STAGE_COMPLETE"
+    FIELD_EDIT_AFTER_COMPLETION = "FIELD_EDIT_AFTER_COMPLETION"
+
+class UserActionLog(db.Model):
+    __tablename__ = 'user_action_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # User who performed the action
+    user_email = db.Column(db.String(254), db.ForeignKey('users.email'), nullable=False)
+    user = db.relationship('User')
+    
+    # Return case this action relates to
+    return_case_id = db.Column(db.Integer, db.ForeignKey('return_cases.id'), nullable=False)
+    return_case = db.relationship('ReturnCase')
+    
+    # Action details
+    action_type = db.Column(db.Enum(ActionType), nullable=False)
+    
+    # Field-level tracking
+    field_name = db.Column(db.String(100), nullable=True)  # Which field was changed
+    old_value = db.Column(db.Text, nullable=True)  # Previous value
+    new_value = db.Column(db.Text, nullable=True)  # New value
+    
+    # Additional context
+    description = db.Column(db.Text, nullable=False)  # Human-readable description
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+        
+    def __repr__(self):
+        return f'<UserActionLog id={self.id} user={self.user_email} action={self.action_type.value} case={self.return_case_id}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_email': self.user_email,
+            'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else self.user_email,
+            'return_case_id': self.return_case_id,
+            'action_type': self.action_type.value,
+            'field_name': self.field_name,
+            'old_value': self.old_value,
+            'new_value': self.new_value,
+            'description': self.description,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
