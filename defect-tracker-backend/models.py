@@ -306,9 +306,10 @@ class UserActionLog(db.Model):
     action_type = db.Column(db.Enum(ActionType), nullable=False)
     
     # Field-level tracking
-    field_name = db.Column(db.String(100), nullable=True)  # Which field was changed
-    old_value = db.Column(db.Text, nullable=True)  # Previous value
-    new_value = db.Column(db.Text, nullable=True)  # New value
+    field_name = db.Column(db.Text, nullable=True)  # JSON string for multiple fields
+    old_value = db.Column(db.Text, nullable=True)  # JSON string for multiple old values
+    new_value = db.Column(db.Text, nullable=True)  # JSON string for multiple new values
+    
     
     # Additional context
     description = db.Column(db.Text, nullable=False)  # Human-readable description
