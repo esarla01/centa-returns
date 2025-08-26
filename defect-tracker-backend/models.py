@@ -180,43 +180,54 @@ class ReturnCase(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    # SUPPORT will fill out the customer_id, arrival_date, receipt_method
+    # --- 1. Stage: DELIVERED ---
+    # Fields to be filled by Support:
+    #   - customer_id
+    #   - arrival_date
+    #   - receipt_method
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False, index=True)
     arrival_date = db.Column(db.Date, nullable=False, default=datetime.utcnow, index=True)
     receipt_method = db.Column(db.Enum(ReceiptMethodEnum), nullable=False, default=ReceiptMethodEnum.shipment)
     notes = db.Column(db.Text, nullable=True)
 
-    # TECHNICIAN will fill out the items (product_type, product_model_id, product_count, serial_number, warranty_status, fault_responsibility)
+    # --- 2. Stage: TECHNICAL_REVIEW ---
+    # Fields to be filled by Technician:
+    #   - items (product_type, product_model_id, product_count, serial_number, 
+    #           warranty_status, fault_responsibility, production_date)
+    #   - yedek_parca
+    #   - bakim
+    #   - iscilik
+    #   - cost
+    #   - performed_services
     items = db.relationship('ReturnCaseItem', back_populates='return_case', cascade='all, delete-orphan')
+    yedek_parca = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    bakim = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    iscilik = db.Column(db.Numeric(10, 2), nullable=True, default=0)
+    cost = db.Column(db.Numeric(10, 2), nullable=True, default=0)     
+    performed_services = db.Column(db.Text, nullable=True)
 
-    # LOGISTICS will fill out the shipping information
+    # --- 3. Stage: PAYMENT_COLLECTION ---
+    # Fields to be filled by Sales:
+    #   - payment_status
+    payment_status = db.Column(db.Enum(PaymentStatusEnum), nullable=True)
+
+    # --- 4. Stage: SHIPPING ---
+    # Fields to be filled by Logistics:
+    #   - shipping_info
+    #   - tracking_number
+    #   - shipping_date
     shipping_info = db.Column(db.String(255), nullable=True)
     tracking_number = db.Column(db.String(100), nullable=True)
     shipping_date = db.Column(db.Date, nullable=True)
 
-    # SALES will fill out the payment_status
-    payment_status = db.Column(db.Enum(PaymentStatusEnum), nullable=True)
-
-    # Cost fields for the return case
-    yedek_parca = db.Column(db.Numeric(10, 2), nullable=True, default=0)
-    bakim = db.Column(db.Numeric(10, 2), nullable=True, default=0)
-    iscilik = db.Column(db.Numeric(10, 2), nullable=True, default=0)
-    cost = db.Column(db.Numeric(10, 2), nullable=True, default=0)
-    
-    # Teknik Servis Notu - moved from ReturnCaseItem to ReturnCase level
-    performed_services = db.Column(db.Text, nullable=True)
-
-    # Current workflow status of the return case - automatically filled out by the system
+    # Current workflow status of the return case
     workflow_status = db.Column(db.Enum(CaseStatusEnum), nullable=False, default=CaseStatusEnum.DELIVERED, index=True)
 
-    # The following line creates a relationship attribute 'customer' on the ReturnCase model,
-    # allowing access to the related Customers object for each return case.
-    # It also adds a 'return_cases' attribute to the Customers model for accessing all related return cases.
+    # RELATIONSHIPS
+    # Relationship to Customers; adds 'return_cases' to Customers for reverse access
     customer = db.relationship('Customers', backref=db.backref('return_cases', lazy=True))
 
-    # The following line creates a relationship attribute 'items' on the ReturnCase model,
-    # allowing access to all related ReturnCaseItem objects for each return case.
-    # The 'back_populates' argument links this relationship to the 'return_case' relationship on ReturnCaseItem.
+    # Relationship to ReturnCaseItem; allows access to all items for a return case
     # The 'cascade' option ensures that when a ReturnCase is deleted, all its associated items are also deleted.
     items = db.relationship('ReturnCaseItem', back_populates='return_case', cascade='all, delete-orphan')
 
@@ -249,7 +260,6 @@ class ReturnCaseItem(db.Model):
 
     # Indicates whether this product has an attached control unit
     has_control_unit = db.Column(db.Boolean, default=False, nullable=True)
-
 
     
     # New fields for Teknik İnceleme stage

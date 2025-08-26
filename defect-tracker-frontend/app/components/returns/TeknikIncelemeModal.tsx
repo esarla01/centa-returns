@@ -4,7 +4,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { FullReturnCase, FullReturnCaseItem, ProductModel } from '@/lib/types';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
-import SearchableSelect from '../SearchableSelect';
+import SimpleSelect from '../SimpleSelect';
 
 interface TeknikIncelemeModalProps {
   returnCase: FullReturnCase;
@@ -308,29 +308,18 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                   <div className="space-y-6 pt-2">
                     {/* First row: Product Model, Product Count */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Product Model */}
-                      <SearchableSelect
-                        options={productModels.map(model => ({
-                          ...model,
-                          displayName: `${model.name} (${model.product_type})`
-                        }))}
+                      {/* Product Model */}          
+                      <SimpleSelect
+                        options={productModels}
                         value={product.product_model.id}
-                        onChange={(value) => {
-                          const selectedModel = productModels.find(m => m.id === parseInt(value.toString()));
-                          handleProductChange(product.id, 'product_model', {
-                            id: parseInt(value.toString()),
-                            name: selectedModel?.name || '',
-                            product_type: selectedModel?.product_type || ''
-                          });
-                        }}
+                        onChange={(value) => handleProductChange(product.id, 'product_model', {
+                          id: value,
+                          name: productModels.find(m => m.id === value)?.name || '',
+                          product_type: productModels.find(m => m.id === value)?.product_type || ''
+                        })}
                         placeholder="Ürün seçiniz"
                         label="Ürün Modeli"
-                        required
-                        searchPlaceholder="Ürün adı ile ara..."
-                        displayKey="displayName"
-                        className="space-y-2"
                       />
-
                       {/* Product Count */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">

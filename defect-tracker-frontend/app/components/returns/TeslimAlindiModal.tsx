@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
-import SearchableSelect from '../SearchableSelect';
+import SimpleSelect from '../SimpleSelect';
 
 interface TeslimAlindiModalProps {
   returnCase: FullReturnCase;
@@ -118,17 +118,13 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
             )}
 
             {/* Customer Selection */}
-            <SearchableSelect
+            <SimpleSelect
               options={customers}
               value={formData.customerId}
-              onChange={(value) => setFormData(prev => ({ ...prev, customerId: parseInt(value.toString()) }))}
-              placeholder="Müşteri seçiniz"
+              onChange={(value) => setFormData(prev => ({ ...prev, customerId: Number(value) }))} 
+              placeholder="Müşteri Seçin..."
               label="Müşteri"
-              required
-              searchPlaceholder="Müşteri adı ile ara..."
-              className="space-y-2"
             />
-
             {/* Arrival Date */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">

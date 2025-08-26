@@ -8,23 +8,29 @@ import { useState, useEffect, FormEvent, use } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { Customer, User, ProductModel } from '@/lib/types';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
-import SearchableSelect from '../SearchableSelect';
+import SimpleSelect from '../SimpleSelect';
 
 interface AddReturnCaseModalProps {
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface CaseDetails {
+    customerId: number;
+    arrivalDate: string;
+    receiptMethod: string;
+    notes: string;
 }
   
 export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCaseModalProps) {
 
     // Dropdown data states
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
 
     // Form state for case details
-    const [caseDetails, setCaseDetails] = useState({
-        customerId: '',
-        arrivalDate: new Date().toISOString().split('T')[0], // Default to today
+    const [caseDetails, setCaseDetails] = useState<CaseDetails>({
+        customerId: 0,
+        arrivalDate: new Date().toISOString().split('T')[0],
         receiptMethod: '',
         notes: '',
     });
@@ -38,15 +44,10 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         const fetchDropdownData = async () => {
             try {
                 // Fetch all data in parallel
-                const [custRes, userRes] = await Promise.all([
-                    fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', { method: 'GET', credentials: 'include' }),
-                    fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', { method: 'GET', credentials: 'include' })
-                ]);
+                const custRes = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', { method: 'GET', credentials: 'include' });
                 const custData = await custRes.json();
-                const userData = await userRes.json();
 
                 setCustomers(custData.customers || []);
-                setUsers(userData.users || []);
 
             } catch (err) {
                 setError("Dropdown verileri yüklenemedi.");
@@ -55,8 +56,11 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         fetchDropdownData();
     }, []);
 
-    const handleCaseDetailChange = (field: keyof typeof caseDetails, value: string) => {
-        setCaseDetails(prev => ({...prev, [field]: value}));
+    const handleCaseDetailChange = (field: keyof typeof caseDetails, value: string | number) => {
+        setCaseDetails(prev => ({
+            ...prev, 
+            [field]: field === 'customerId' ? Number(value) : value
+        }));
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -110,15 +114,12 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
             <h3 className="text-base font-semibold text-gray-700 mb-2">Vaka Detayları</h3>
             <div className="flex flex-col gap-4">
                 <div>
-                    <SearchableSelect
+                    <SimpleSelect
                         options={customers}
                         value={caseDetails.customerId}
-                        onChange={(value) => handleCaseDetailChange('customerId', value.toString())}
+                        onChange={(value) => handleCaseDetailChange('customerId', Number(value))} // Convert to number
                         placeholder="Müşteri Seçin..."
                         label="Müşteri"
-                        required
-                        searchPlaceholder="Müşteri adı ile ara..."
-                        className="mt-1"
                     />
                 </div>
                 <div>
