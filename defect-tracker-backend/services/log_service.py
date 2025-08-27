@@ -39,7 +39,7 @@ class LogService:
             raise e
     
     @staticmethod
-    def log_customer_creation(user_email, customer_id, additional_info=None):
+    def log_customer_creation(user_email, customer_id):
         """
         Log customer creation actions
         
@@ -56,9 +56,9 @@ class LogService:
         # Create the log entry (using return_case_id=0 to indicate it's not a return case action)
         log_entry = UserActionLog(
             user_email=user_email,
-            return_case_id=0,  # 0 indicates this is not a return case action
-            action_type=ActionType.NEW_CUSTOMER_CREATED,
-            additional_info=additional_info
+            return_case_id=None,
+            action_type=ActionType.CUSTOMER_CREATED,
+            additional_info=f"Müşteri Adı: {customer.name}"
         )
         
         try:
@@ -70,7 +70,7 @@ class LogService:
             raise e
     
     @staticmethod
-    def log_product_model_creation(user_email, product_model_id, additional_info=None):
+    def log_product_model_creation(user_email, product_model_id):
         """
         Log product model creation actions
 
@@ -83,13 +83,15 @@ class LogService:
         product_model = ProductModel.query.get(product_model_id)
         if not product_model:
             raise ValueError(f"ProductModel with id {product_model_id} not found")
+
+        product_model_name = product_model.name
         
         # Create the log entry (using return_case_id=0 to indicate it's not a return case action)
         log_entry = UserActionLog(
             user_email=user_email,
-            return_case_id=0,  # 0 indicates this is not a return case action
-            action_type=ActionType.NEW_PRODUCT_MODEL_CREATED,
-            additional_info=additional_info
+            return_case_id=None,
+            action_type=ActionType.PRODUCT_CREATED,
+            additional_info=f"Ürün Modeli Adı: {product_model_name}"
         )
         
         try:

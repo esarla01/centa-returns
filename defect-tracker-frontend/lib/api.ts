@@ -46,4 +46,5 @@ export const API_ENDPOINTS = {
     PRODUCT_TYPE_STATS: '/reports/product-type-stats',
     FAULT_RESPONSIBILITY_STATS: '/reports/fault-responsibility-stats',
   },
+  USER_ACTION_LOGS: '/user-action-logs',
 };

@@ -115,4 +115,14 @@ export interface User {
   isActive: boolean;
 };
 
+export interface UserActionLog {
+  id: number;
+  user_email: string;
+  user_name: string;
+  return_case_id: number;
+  action_type: string;
+  additional_info: string | null;
+  created_at: string;
+}
+
 

@@ -21,6 +21,7 @@ from endpoints.products import product_bp
 from endpoints.returns import return_case_bp  
 from endpoints.admin import admin_bp  
 from endpoints.reports import reports_bp  
+from endpoints.user_action_logs import user_action_logs_bp
 
 # Seed functions
 from seed import seed_roles_permissions
@@ -114,6 +115,7 @@ def create_app():
     app.register_blueprint(return_case_bp)  
     app.register_blueprint(admin_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(user_action_logs_bp)
     
     app.url_map.strict_slashes = False
 

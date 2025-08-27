@@ -79,11 +79,11 @@ def create_product():
 
     try:
         email = g.user.email
-        LogService.log_product_action(
+        LogService.log_product_model_creation(
             user_email=email,
-            product_id=new_product.id,
-            action_type=ActionType.PRODUCT_CREATED
+            product_model_id=new_product.id,
         )
+        print(f"Product model creation logged for {new_product.id}")
     except Exception as e:
         logging.error(f"Error logging action for product {new_product.id}: {e}")
 

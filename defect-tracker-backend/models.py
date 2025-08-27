@@ -285,8 +285,8 @@ class ReturnCaseItem(db.Model):
 
 class ActionType(Enum):
     CASE_CREATED = "CASE_CREATED"
-    NEW_CUSTOMER_CREATED = "NEW_CUSTOMER_CREATED"
-    NEW_PRODUCT_MODEL_CREATED = "NEW_PRODUCT_MODEL_CREATED"
+    PRODUCT_CREATED = "PRODUCT_CREATED"
+    CUSTOMER_CREATED = "CUSTOMER_CREATED"
     STAGE_DELIVERED_COMPLETED = "STAGE_DELIVERED_COMPLETED"
     STAGE_TECHNICAL_REVIEW_COMPLETED = "STAGE_TECHNICAL_REVIEW_COMPLETED"
     STAGE_PAYMENT_COLLECTION_COMPLETED = "STAGE_PAYMENT_COLLECTION_COMPLETED"
@@ -303,15 +303,15 @@ class UserActionLog(db.Model):
     user_email = db.Column(db.String(254), db.ForeignKey('users.email'), nullable=False)
     user = db.relationship('User')
     
-    # Return case this action relates to
-    return_case_id = db.Column(db.Integer, db.ForeignKey('return_cases.id'), nullable=False)
+    # Return case this action relates to - make it nullable
+    return_case_id = db.Column(db.Integer, db.ForeignKey('return_cases.id'), nullable=True)  # Changed to nullable=True
     return_case = db.relationship('ReturnCase')
     
     # Action details
     action_type = db.Column(db.Enum(ActionType), nullable=False)
     
     # Additional context (for email address, etc.)
-    additional_info = db.Column(db.String(255), nullable=True)  # e.g., "customer@email.com"
+    additional_info = db.Column(db.String(255), nullable=True)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

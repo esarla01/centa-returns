@@ -69,11 +69,13 @@ def create_customer():
 
         try:
             email = g.user.email
-            LogService.log_customer_action(
+            LogService.log_customer_creation(
                 user_email=email,
                 customer_id=new_customer.id,
-                action_type=ActionType.CUSTOMER_CREATED
+               
             )
+            print(f"Customer creation logged for {new_customer.id}")
+            
         except Exception as e:
             logging.error(f"Error logging action for customer {new_customer.id}: {e}")
 

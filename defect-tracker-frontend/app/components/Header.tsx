@@ -61,6 +61,11 @@ export default function Header({ onLogout }: HeaderProps) {
       text: 'Yönetici Paneli'
     },
     { 
+      permission: 'PAGE_VIEW_CASE_TRACKING', 
+      href: '/user-action-logs', 
+      text: 'İşlem Geçmişi'
+    },
+    { 
       permission: 'PAGE_VIEW_CUSTOMER_LIST', 
       href: '/manage-customers', 
       text: 'Müşteriler'
@@ -85,7 +90,7 @@ export default function Header({ onLogout }: HeaderProps) {
   // Filter nav links based on user permissions
   const filteredNavLinks = navLinks.filter(link => {
     if (!user) return false;
-    if (['TECHNICIAN', 'SUPPORT', "LOGISTICS"].includes(user.role)) return false;
+    // if (['TECHNICIAN', 'SUPPORT', "LOGISTICS"].includes(user.role)) return false;
     return user.permissions.includes(link.permission);
   });
 
