@@ -61,11 +61,6 @@ export default function Header({ onLogout }: HeaderProps) {
       text: 'Yönetici Paneli'
     },
     { 
-      permission: 'PAGE_VIEW_CASE_TRACKING', 
-      href: '/user-action-logs', 
-      text: 'İşlem Geçmişi'
-    },
-    { 
       permission: 'PAGE_VIEW_CUSTOMER_LIST', 
       href: '/manage-customers', 
       text: 'Müşteriler'
@@ -74,6 +69,11 @@ export default function Header({ onLogout }: HeaderProps) {
       permission: 'PAGE_VIEW_PRODUCT_LIST', 
       href: '/manage-products', 
       text: 'Ürünler'
+    },
+    { 
+      permission: 'PAGE_VIEW_CASE_TRACKING', 
+      href: '/user-action-logs', 
+      text: 'İşlem Geçmişi'
     },
     { 
       permission: 'PAGE_VIEW_CASE_TRACKING', 
