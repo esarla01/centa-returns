@@ -67,7 +67,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startDate?.getTime(), endDate?.getTime(), refreshKey]);
 
-  const isEmpty = !loading && (!data || data.length === 0) && !showPlaceholder;
+  const isEmpty = !loading && (!data || data.length === 0 || data.every(item => item.defect_count === 0)) && !showPlaceholder;
 
   // Format month labels for better display
   const formatMonthLabel = (month: string) => {
@@ -105,6 +105,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
             <span className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</span>
           </div>
         )}
+        {!isEmpty && (
         <ResponsiveContainer>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -132,6 +133,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

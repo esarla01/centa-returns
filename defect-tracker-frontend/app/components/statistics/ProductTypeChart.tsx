@@ -68,6 +68,9 @@ export default function ProductTypeChart({
     fetchData();
   }, [startDate, endDate, refreshKey]);
 
+  // Update the isEmpty check to also consider items with zero counts
+  const isEmpty = !loading && (!data || data.length === 0 || data.every(item => item.item_count === 0));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -84,7 +87,7 @@ export default function ProductTypeChart({
     );
   }
 
-  if (data.length === 0) {
+  if (isEmpty) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</div>
