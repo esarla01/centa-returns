@@ -147,22 +147,15 @@ function ReturnsDashboardContent() {
             </p>
           </div>
           
-          {/* Floating Action Button for Mobile */}
+          {/* Add Case Button - Show on both mobile and desktop */}
           <PermissionGate permission="CASE_CREATE">
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-3 py-2 text-sm md:px-4 md:text-base"
             >
-              <Plus className="h-6 w-6" />
-            </button>
-
-            {/* Desktop Add Case Button */}
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="hidden md:flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-4 py-2"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Yeni Vaka Oluştur</span>
+              <Plus className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="hidden sm:inline">Yeni Vaka Oluştur</span>
+              <span className="sm:hidden">Ekle</span>
             </button>
           </PermissionGate>
         </div>
