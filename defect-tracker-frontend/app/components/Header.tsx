@@ -85,7 +85,7 @@ export default function Header({ onLogout }: HeaderProps) {
   // Filter nav links based on user permissions
   const filteredNavLinks = navLinks.filter(link => {
     if (!user) return false;
-    if (['TECHNICIAN', 'SUPPORT'].includes(user.role)) return false;
+    if (['TECHNICIAN', 'SUPPORT', "LOGISTICS"].includes(user.role)) return false;
     return user.permissions.includes(link.permission);
   });
 

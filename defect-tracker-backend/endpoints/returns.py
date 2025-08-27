@@ -1,11 +1,14 @@
 import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models import AppPermissions, Role, User, UserRole, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum
+from models import AppPermissions, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum, ActionType
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from permissions import permission_required
 from services.email_service import CentaEmailService
+from services.log_service import LogService
+from flask import Blueprint, g
+
 
 def get_current_user():
     """Get current user from JWT token"""
@@ -194,6 +197,7 @@ def get_return_cases():
         return jsonify({"error": f"Failed to fetch return cases: {str(e)}"}), 500
 
 @return_case_bp.route('/simple', methods=['POST'])
+@permission_required(AppPermissions.CASE_CREATE)
 def create_simple_return_case():
     data = request.get_json()
     customer_id = data.get('customerId')
@@ -220,10 +224,25 @@ def create_simple_return_case():
         db.session.add(case)
         db.session.commit()
 
+        try:
+            email = g.user.email
+            # Log the action
+            LogService.log_return_case_action(
+            user_email=email,
+                return_case_id=case.id,
+                action_type=ActionType.CASE_CREATED
+            )
+        except Exception as e:
+            logging.error(f"Error logging action for case {case.id}: {e}")
+
+        try:
         # Send notification to all users
-        CentaEmailService.new_return_case_notification(case.id)
+            CentaEmailService.new_return_case_notification(case.id)
+        except Exception as e:
+            logging.error(f"Error sending notification for case {case.id}: {e}")
 
         return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -296,6 +315,19 @@ def complete_teslim_alindi(return_case_id):
             return jsonify({"error": "Teslim alma yöntemi eksik. Lütfen teslim alma yöntemini seçin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.TECHNICAL_REVIEW
+
+        # Log the action
+        try:        
+            email = g.user.email
+
+            LogService.log_return_case_action(
+                user_email=email,
+                    return_case_id=return_case.id,
+                    action_type=ActionType.STAGE_DELIVERED_COMPLETED
+                )
+        except Exception as e:
+            logging.error(f"Error logging action for case {return_case.id}: {e}")
+
         # Send email notification
         try:
             CentaEmailService.send_stage_completion_notification(
@@ -483,6 +515,15 @@ def complete_teknik_inceleme(return_case_id):
 
         return_case.workflow_status = CaseStatusEnum.PAYMENT_COLLECTION
         try:
+            email = g.user.email
+            LogService.log_return_case_action(
+                user_email=email,
+                return_case_id=return_case.id,
+                action_type=ActionType.STAGE_TECHNICAL_REVIEW_COMPLETED
+            )
+        except Exception as e:
+            logging.error(f"Error logging action for case {return_case.id}: {e}")
+        try:
             CentaEmailService.send_stage_completion_notification(
                 case_id=return_case.id,
                 completed_stage="Teknik İnceleme",
@@ -550,6 +591,17 @@ def complete_odeme_tahsilati(return_case_id):
             return jsonify({"error": "Ödeme tahsilatı aşaması tamamlanamaz. Ödeme durumu 'Ücretsiz' veya 'Ödendi' olmalıdır."}), 400
 
         return_case.workflow_status = CaseStatusEnum.SHIPPING
+        # Log the action
+        try:
+            email = g.user.email
+            LogService.log_return_case_action(
+                user_email=email,
+                return_case_id=return_case.id,
+                action_type=ActionType.STAGE_PAYMENT_COLLECTION_COMPLETED
+            )
+        except Exception as e:
+            logging.error(f"Error logging action for case {return_case.id}: {e}")
+
         try:
             CentaEmailService.send_stage_completion_notification(
                 case_id=return_case.id,
@@ -627,6 +679,17 @@ def complete_kargoya_verildi(return_case_id):
             return jsonify({"error": "Kargo tarihi eksik. Lütfen kargo tarihini belirtin."}), 400
 
         return_case.workflow_status = CaseStatusEnum.COMPLETED
+        # Log the action
+        try:
+            email = g.user.email
+            LogService.log_return_case_action(
+                user_email=email,
+                return_case_id=return_case.id,
+                action_type=ActionType.STAGE_SHIPPING_COMPLETED
+            )
+        except Exception as e:
+            logging.error(f"Error logging action for case {return_case.id}: {e}")
+
         try:
             CentaEmailService.send_stage_completion_notification(
                 case_id=return_case.id,

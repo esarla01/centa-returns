@@ -1,6 +1,9 @@
-from flask import Blueprint, request, jsonify
+import logging
+from flask import Blueprint, request, jsonify, g
 from flask_jwt_extended import jwt_required
 from permissions import permission_required
+from services.log_service import LogService
+from models import ActionType
 
 # Import your db instance and models
 from models import AppPermissions, db, ProductModel, ProductTypeEnum, ReturnCaseItem
@@ -73,6 +76,16 @@ def create_product():
     )
     db.session.add(new_product)
     db.session.commit()
+
+    try:
+        email = g.user.email
+        LogService.log_product_action(
+            user_email=email,
+            product_id=new_product.id,
+            action_type=ActionType.PRODUCT_CREATED
+        )
+    except Exception as e:
+        logging.error(f"Error logging action for product {new_product.id}: {e}")
 
     return jsonify({ "msg": "Ürün modeli başarıyla oluşturuldu" }), 201
 

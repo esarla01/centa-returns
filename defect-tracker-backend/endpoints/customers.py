@@ -1,11 +1,12 @@
 
+import logging
 import re
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from flask_jwt_extended import jwt_required 
 from sqlalchemy import or_
-
-from models import db, Customers, AppPermissions
+from models import db, Customers, AppPermissions, ActionType
 from permissions import permission_required
+from services.log_service import LogService
 
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/customers")
@@ -65,6 +66,17 @@ def create_customer():
     try:
         db.session.add(new_customer)
         db.session.commit()
+
+        try:
+            email = g.user.email
+            LogService.log_customer_action(
+                user_email=email,
+                customer_id=new_customer.id,
+                action_type=ActionType.CUSTOMER_CREATED
+            )
+        except Exception as e:
+            logging.error(f"Error logging action for customer {new_customer.id}: {e}")
+
         # Return the newly created customer's data
         return jsonify({
             "msg": "Müşteri başarıyla oluşturuldu",

@@ -282,12 +282,17 @@ class ReturnCaseItem(db.Model):
     def __repr__(self):
         return f'<ReturnCaseItem id={self.id} product_model_id={self.product_model_id} case_id={self.return_case_id}>'
 
+
 class ActionType(Enum):
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
-    STAGE_COMPLETE = "STAGE_COMPLETE"
-    FIELD_EDIT_AFTER_COMPLETION = "FIELD_EDIT_AFTER_COMPLETION"
+    CASE_CREATED = "CASE_CREATED"
+    NEW_CUSTOMER_CREATED = "NEW_CUSTOMER_CREATED"
+    NEW_PRODUCT_MODEL_CREATED = "NEW_PRODUCT_MODEL_CREATED"
+    STAGE_DELIVERED_COMPLETED = "STAGE_DELIVERED_COMPLETED"
+    STAGE_TECHNICAL_REVIEW_COMPLETED = "STAGE_TECHNICAL_REVIEW_COMPLETED"
+    STAGE_PAYMENT_COLLECTION_COMPLETED = "STAGE_PAYMENT_COLLECTION_COMPLETED"
+    STAGE_SHIPPING_COMPLETED = "STAGE_SHIPPING_COMPLETED"
+    CASE_COMPLETED = "CASE_COMPLETED"
+    EMAIL_SENT = "EMAIL_SENT"
 
 class UserActionLog(db.Model):
     __tablename__ = 'user_action_logs'
@@ -305,18 +310,12 @@ class UserActionLog(db.Model):
     # Action details
     action_type = db.Column(db.Enum(ActionType), nullable=False)
     
-    # Field-level tracking
-    field_name = db.Column(db.Text, nullable=True)  # JSON string for multiple fields
-    old_value = db.Column(db.Text, nullable=True)  # JSON string for multiple old values
-    new_value = db.Column(db.Text, nullable=True)  # JSON string for multiple new values
-    
-    
-    # Additional context
-    description = db.Column(db.Text, nullable=False)  # Human-readable description
+    # Additional context (for email address, etc.)
+    additional_info = db.Column(db.String(255), nullable=True)  # e.g., "customer@email.com"
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-        
+    
     def __repr__(self):
         return f'<UserActionLog id={self.id} user={self.user_email} action={self.action_type.value} case={self.return_case_id}>'
     
@@ -327,9 +326,6 @@ class UserActionLog(db.Model):
             'user_name': f"{self.user.first_name} {self.user.last_name}" if self.user else self.user_email,
             'return_case_id': self.return_case_id,
             'action_type': self.action_type.value,
-            'field_name': self.field_name,
-            'old_value': self.old_value,
-            'new_value': self.new_value,
-            'description': self.description,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'additional_info': self.additional_info,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
