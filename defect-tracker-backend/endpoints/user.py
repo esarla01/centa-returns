@@ -69,7 +69,7 @@ def accept_invitation():
         #     print(f"Error sending welcome email: {e}")
         #     # Don't fail the account activation if email fails
 
-        # return jsonify({"msg": "Hesabınız başarıyla aktifleştirildi. Artık giriş yapabilirsiniz."}), 200
+        return jsonify({"msg": "Hesabınız başarıyla aktifleştirildi. Artık giriş yapabilirsiniz."}), 200
 
     except Exception as e:
         db.session.rollback()
