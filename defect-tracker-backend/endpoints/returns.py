@@ -235,11 +235,11 @@ def create_simple_return_case():
         except Exception as e:
             logging.error(f"Error logging action for case {case.id}: {e}")
 
-        try:
-        # Send notification to all users
-            CentaEmailService.new_return_case_notification(case.id)
-        except Exception as e:
-            logging.error(f"Error sending notification for case {case.id}: {e}")
+        # try:
+        # # Send notification to all users
+        #     CentaEmailService.new_return_case_notification(case.id)
+        # except Exception as e:
+        #     logging.error(f"Error sending notification for case {case.id}: {e}")
 
         return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
 
