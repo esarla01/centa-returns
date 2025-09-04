@@ -235,11 +235,11 @@ def create_simple_return_case():
         except Exception as e:
             logging.error(f"Error logging action for case {case.id}: {e}")
 
-        # try:
-        # # Send notification to all users
-        #     CentaEmailService.new_return_case_notification(case.id)
-        # except Exception as e:
-        #     logging.error(f"Error sending notification for case {case.id}: {e}")
+        try:
+            # Send notification to all users
+            CentaEmailService.new_return_case_notification(case.id)
+        except Exception as e:
+            logging.error(f"Error sending notification for case {case.id}: {e}")
 
         return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
 
@@ -329,15 +329,15 @@ def complete_teslim_alindi(return_case_id):
             logging.error(f"Error logging action for case {return_case.id}: {e}")
 
         # Send email notification
-        # try:
-        #     CentaEmailService.send_stage_completion_notification(
-        #         case_id=return_case.id,
-        #         completed_stage="Teslim Alındı",
-        #         next_stage="Teknik İnceleme",
-        #         updated_by=current_user_name
-        #     )
-        # except Exception as e:
-        #     logging.error(f"Email notification error for case {return_case.id}: {e}")
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Teslim Alındı",
+                next_stage="Teknik İnceleme",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
         
         db.session.commit()
         return jsonify({"message": "Teslim Alındı aşaması tamamlandı, durum Teknik İnceleme olarak güncellendi"}), 200
@@ -523,15 +523,15 @@ def complete_teknik_inceleme(return_case_id):
             )
         except Exception as e:
             logging.error(f"Error logging action for case {return_case.id}: {e}")
-        # try:
-        #     CentaEmailService.send_stage_completion_notification(
-        #         case_id=return_case.id,
-        #         completed_stage="Teknik İnceleme",
-        #         next_stage="Ödeme Tahsilatı",
-        #         updated_by=current_user_name
-        #     )
-        # except Exception as e:
-        #     logging.error(f"Email notification error for case {return_case.id}: {e}")
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Teknik İnceleme",
+                next_stage="Ödeme Tahsilatı",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
 
         db.session.commit()
         return jsonify({"message": "Teknik İnceleme aşaması tamamlandı, durum Ödeme Tahsilatı olarak güncellendi"}), 200
@@ -602,15 +602,15 @@ def complete_odeme_tahsilati(return_case_id):
         except Exception as e:
             logging.error(f"Error logging action for case {return_case.id}: {e}")
 
-        # try:
-        #     CentaEmailService.send_stage_completion_notification(
-        #         case_id=return_case.id,
-        #         completed_stage="Ödeme Tahsilatı",
-        #         next_stage="Kargoya Verildi",
-        #         updated_by=current_user_name
-        #     )
-        # except Exception as e:
-        #     logging.error(f"Email notification error for case {return_case.id}: {e}")
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Ödeme Tahsilatı",
+                next_stage="Kargoya Verildi",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
         db.session.commit()
         return jsonify({"message": "Ödeme tahsilatı aşaması tamamlandı, durum Kargoya Veriliyor olarak güncellendi"}), 200
 
@@ -690,15 +690,15 @@ def complete_kargoya_verildi(return_case_id):
         except Exception as e:
             logging.error(f"Error logging action for case {return_case.id}: {e}")
 
-        # try:
-        #     CentaEmailService.send_stage_completion_notification(
-        #         case_id=return_case.id,
-        #         completed_stage="Kargoya Verildi",
-        #         next_stage="Tamamlandı",
-        #         updated_by=current_user_name
-        #     )
-        # except Exception as e:
-        #     logging.error(f"Email notification error for case {return_case.id}: {e}")
+        try:
+            CentaEmailService.send_stage_completion_notification(
+                case_id=return_case.id,
+                completed_stage="Kargoya Verildi",
+                next_stage="Tamamlandı",
+                updated_by=current_user_name
+            )
+        except Exception as e:
+            logging.error(f"Email notification error for case {return_case.id}: {e}")
 
         db.session.commit()
         return jsonify({"message": "Kargoya Verildi aşaması tamamlandı, durum Tamamlandı olarak güncellendi"}), 200
