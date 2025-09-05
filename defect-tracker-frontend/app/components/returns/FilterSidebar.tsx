@@ -4,6 +4,7 @@ import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { User } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Define the shape of the filters state object
 export interface Filters {
@@ -39,6 +40,8 @@ const initialFilters: Filters = {
 
 export default function FilterSidebar({ filters, setFilters }: FilterSidebarProps) {
   const [productModels, setProductModels] = useState<ProductModel[]>([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   
   // Fetch product models for the filter
   useEffect(() => {
@@ -60,6 +63,13 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
   const handleFilterChange = (field: keyof Filters, value: string) => {
     console.log(`Filter changed: ${field} = ${value}`);
     setFilters(prev => ({ ...prev, [field]: value }));
+    
+    // Reset pagination to page 1 when search filter changes
+    if (field === 'search') {
+      const params = new URLSearchParams(searchParams);
+      params.set('page', '1');
+      router.push(`?${params.toString()}`);
+    }
   };
 
   // Helper function to check if a filter is active (has a value)
