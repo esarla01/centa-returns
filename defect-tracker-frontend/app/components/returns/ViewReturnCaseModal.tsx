@@ -205,7 +205,7 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
                           </span>
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Profil Kontrol:</span>
+                          <span className="text-gray-500">Mekanik Kontrol:</span>
                           <span className={`font-medium ${item.profile_check ? 'text-green-600' : 'text-red-600'}`}>
                             {item.profile_check ? "✓ Tamamlandı" : "✗ Yapılmadı"}
                           </span>

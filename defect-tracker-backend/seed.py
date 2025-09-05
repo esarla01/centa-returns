@@ -16,6 +16,7 @@ ROLE_PERMISSIONS = {
         AppPermissions.PAGE_VIEW_STATISTICS,
     ],
     UserRole.SUPPORT: [
+        AppPermissions.PAGE_VIEW_CUSTOMER_LIST,
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
         AppPermissions.CASE_CREATE,
         AppPermissions.CASE_EDIT_DELIVERED,

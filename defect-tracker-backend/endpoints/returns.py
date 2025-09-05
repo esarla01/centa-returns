@@ -491,7 +491,7 @@ def complete_teknik_inceleme(return_case_id):
                 return jsonify({"error": "Kablo kontrol eksik. Lütfen tüm ürünler için kablo kontrolünü tamamlayın."}), 400
             
             if not item.profile_check:
-                return jsonify({"error": "Profil kontrol eksik. Lütfen tüm ürünler için profil kontrolünü tamamlayın."}), 400
+                return jsonify({"error": "Mekanik kontrol eksik. Lütfen tüm ürünler için profil kontrolünü tamamlayın."}), 400
             
             if not item.packaging:
                 return jsonify({"error": "Paketleme eksik. Lütfen tüm ürünler için paketlemeyi tamamlayın."}), 400
