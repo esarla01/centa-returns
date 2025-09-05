@@ -72,6 +72,20 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
     }
   };
 
+  // Handle date filter changes with validation
+  const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    // Validate date range
+    if (field === 'startDate' && filters.endDate && value > filters.endDate) {
+      // If start date is after end date, clear end date
+      setFilters(prev => ({ ...prev, [field]: value, endDate: '' }));
+    } else if (field === 'endDate' && filters.startDate && value < filters.startDate) {
+      // If end date is before start date, clear start date
+      setFilters(prev => ({ ...prev, [field]: value, startDate: '' }));
+    } else {
+      setFilters(prev => ({ ...prev, [field]: value }));
+    }
+  };
+
   // Helper function to check if a filter is active (has a value)
   const isFilterActive = (value: string) => {
     return value && value !== '';
@@ -82,7 +96,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
     ? productModels.filter(model => {
         const productTypeMap = {
           'overload': 'Aşırı Yük Sensörü',
-          'door_detector': 'Kapı Dedektörü',
+          'door_detector': 'Fotosel',
           'control_unit': 'Kontrol Ünitesi'
         };
         return model.product_type === productTypeMap[filters.productType as keyof typeof productTypeMap];
@@ -144,7 +158,7 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
             >
               <option value="">Tüm Ürün Tipleri</option>
               <option value="overload">Aşırı Yük Sensörü</option>
-              <option value="door_detector">Kapı Dedektörü</option>
+              <option value="door_detector">Fotosel</option>
               <option value="control_unit">Kontrol Ünitesi</option>
             </select>
           </div>
@@ -202,18 +216,23 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
                     <input 
                         type="date" 
                         value={filters.startDate} 
-                        onChange={(e) => handleFilterChange('startDate', e.target.value)} 
+                        onChange={(e) => handleDateChange('startDate', e.target.value)} 
                         className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-transparent"
                         placeholder="Başlangıç"
+                        title="Başlangıç tarihi seçin"
+                        max={filters.endDate || new Date().toISOString().split('T')[0]}
                     />
                 </div>
                 <div className="w-1/2">
                     <input 
                         type="date" 
                         value={filters.endDate} 
-                        onChange={(e) => handleFilterChange('endDate', e.target.value)} 
+                        onChange={(e) => handleDateChange('endDate', e.target.value)} 
                         className="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-transparent"
                         placeholder="Bitiş"
+                        title="Bitiş tarihi seçin"
+                        min={filters.startDate || undefined}
+                        max={new Date().toISOString().split('T')[0]}
                     />
                 </div>
             </div>

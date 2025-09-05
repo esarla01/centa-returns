@@ -339,8 +339,8 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
 
                       {/* Control Unit and Serial Number - Same Row */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        {/* Has Control Unit Checkbox - Only show for door detector or overload sensor */}
-                        {(product.product_model.product_type === 'Kapı Dedektörü' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
+                        {/* Has Control Unit Checkbox - Only show for fotosel or overload sensor */}
+                        {(product.product_model.product_type === 'Fotosel' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
                           <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                               <input
@@ -495,7 +495,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                           />
                           <label htmlFor={`profile-check-${product.id}`} className="text-sm text-gray-700 font-medium">
-                            Profil Kontrol
+                            Mekanik Kontrol
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">

@@ -85,7 +85,7 @@ export interface FullReturnCase {
     shipping_date: string | null;
 }
 
-export type ProductType = 'Aşırı Yük Sensörü' | 'Kapı Dedektörü' | 'Kontrol Ünitesi';
+export type ProductType = 'Aşırı Yük Sensörü' | 'Fotosel' | 'Kontrol Ünitesi';
 
 export interface ProductModel {
   id: number;

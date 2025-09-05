@@ -54,7 +54,7 @@ export default function AddProductModal({ onClose, onSuccess }: AddProductModalP
             <label htmlFor="productType" className="block text-sm font-medium text-gray-700">Ürün Tipi</label>
             <select id="productType" value={productType} onChange={(e) => setProductType(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
               <option value="overload">Aşırı Yük Sensörü</option>
-              <option value="door_detector">Kapı Dedektörü</option>
+              <option value="door_detector">Fotosel</option>
               <option value="control_unit">Kontrol Ünitesi</option>
             </select>
           </div>

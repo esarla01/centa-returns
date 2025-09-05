@@ -17,7 +17,7 @@ import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 const getTypeClass = (type: ProductType) => {
   switch (type) {
     case 'Aşırı Yük Sensörü': return 'bg-red-100 text-red-800';
-    case 'Kapı Dedektörü': return 'bg-green-100 text-green-800';
+    case 'Fotosel': return 'bg-green-100 text-green-800';
     case 'Kontrol Ünitesi': return 'bg-indigo-100 text-indigo-800';
     default: return 'bg-gray-100 text-gray-800';
   }
@@ -179,7 +179,7 @@ function ProductsContent() {
                   className="pl-10 w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Tüm Tipler</option>
-                  <option value="door_detector">Kapı Dedektörü</option>
+                  <option value="door_detector">Fotosel</option>
                   <option value="overload">Aşırı Yük Sensörü</option>
                   <option value="control_unit">Kontrol Ünitesi</option>
                 </select>
@@ -233,7 +233,7 @@ function ProductsContent() {
                     className="pl-10 border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Tüm Tipler</option>
-                    <option value="door_detector">Kapı Dedektörü</option>
+                    <option value="door_detector">Fotosel</option>
                     <option value="overload">Aşırı Yük Sensörü</option>
                     <option value="control_unit">Kontrol Ünitesi</option>
                   </select>
