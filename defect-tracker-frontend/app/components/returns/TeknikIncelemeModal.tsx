@@ -1,6 +1,5 @@
 'use client';
 import { DatePicker } from 'antd';
-import 'antd/dist/reset.css';
 import dayjs from 'dayjs';
 import trTR from 'antd/locale/tr_TR';
 import { useState, useEffect, FormEvent } from 'react';
