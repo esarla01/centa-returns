@@ -1,4 +1,4 @@
-from models import User, db, UserRole, AppPermissions, Role, Permission, RolePermission
+from models import ProductTypeEnum, ServiceDefinition, User, db, UserRole, AppPermissions, Role, Permission, RolePermission
 from datetime import datetime
 
 
@@ -98,3 +98,67 @@ def seed_users():
             user.invited_at = user_data['invited_at']
         db.session.add(user)
     db.session.commit()
+
+
+def seed_services():
+    services = {
+        ProductTypeEnum.overload: [
+            "Kullanıcı hatası (garanti dışı)",
+            "Üretim hatası (garanti kapsamında)",
+            "Kablo kopması",
+            "Kablo içten kopuk",
+            "Mekanik darbe hasarı",
+            "Gövde hatası (sensör/gauge arızası)",
+        ],
+        ProductTypeEnum.door_detector: [
+            "Kablo kopması",
+            "Kablo içten kopuk",
+            "LED hatası",
+            "Yamuk veya eksik LED",
+            "Profil hasarı",
+            "Soket ayrılması",
+            "Oksitlenme",
+            "Ara kart hasarı",
+            "Ana kart hasarı",
+            "Eski ürün (DT17 ve öncesi)",
+            "İlk parti SMPS hatası",
+            "Yay kopuk veya eksik",
+            "Yeşil/kırmızı kablo bağlantı hatası",
+            "Ring montaj hatası",
+            "Kontrol ünitesi arızalı",
+            "Sorun görülmedi",
+        ],
+        ProductTypeEnum.control_unit: [
+            "Kullanıcı hatası (garanti dışı)",
+            "Üretim hatası (garanti kapsamında)",
+            "Oksitlenme",
+            "OpAmp hatası",
+            "Trafo yanması",
+            "Regülatör yanması",
+            "Varistör yanması",
+            "Aşırı gerilim",
+            "Hatalı bağlantı",
+            "Aşırı nem / toz",
+            "İşlemci hatası",
+            "Switch konum hatası",
+            "Röle hatası",
+            "Eksik komponent",
+            "Arızalı komponent",
+        ],
+    }
+
+    for product_type, service_list in services.items():
+        for service_name in service_list:
+            # Check if it already exists
+            existing = ServiceDefinition.query.filter_by(
+                product_type=product_type,
+                service_name=service_name
+            ).first()
+            if not existing:
+                db.session.add(ServiceDefinition(
+                    product_type=product_type,
+                    service_name=service_name
+                ))
+
+    db.session.commit()
+    print("✅ Services seeded successfully")

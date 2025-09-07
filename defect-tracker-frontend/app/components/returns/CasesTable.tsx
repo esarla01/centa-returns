@@ -327,8 +327,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               <th className="p-4 text-blue-800">Garanti Durumu</th>
               <th className="p-4 text-blue-800">Hata Sorumluluğu</th>
               <th className="p-4 text-blue-800">Çözüm Yöntemi</th>
-              <th className="p-4 text-blue-800">Hizmet</th>
-              <th className="p-4 text-blue-800 min-w-[300px]">Yapılan İşlemler</th>
+              <th className="p-4 text-blue-800 min-w-[200px]">Arza Tespiti/Hizmetleri</th>
               <th className="p-4 text-blue-800">Teknik İnceleme Eylemler</th>
               
               {/* Ödeme Tahsilatı Stage - Yellow */}
@@ -531,31 +530,34 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                         <div className="text-xs text-gray-500">—</div>
                       )}
                     </td>
-                    {/* Hizmet */}
-                    <td className="p-4">
+
+                    {/* Arza Tespiti/Hizmetleri */}
+                    <td className="p-4 min-w-[200px]">
                       {c.items.length > 0 ? (
                         <ul className="space-y-1">
                           {c.items.map(item => (
                             <li key={item.id} className="border-b last:border-b-0 pb-1">
                               <div className="text-xs">
-                                {item.service_type || "—"}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
-                    </td>
-
-                    {/* Teknik İnceleme Stage - Yapılan İşlemler */}
-                    <td className="p-4 min-w-[300px]">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
-                              <div className="text-xs" title={item.yapilan_islemler || undefined}>
-                                {truncateTextWithEllipsis(item.yapilan_islemler, 80)}
+                                {item.services && item.services.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {item.services.filter(service => service.is_performed).slice(0, 2).map(service => (
+                                      <div key={service.id} className="flex items-center space-x-1">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                        <span className="text-gray-700">{service.service_name}</span>
+                                      </div>
+                                    ))}
+                                    {item.services.filter(service => service.is_performed).length > 2 && (
+                                      <div className="text-gray-500 text-xs">
+                                        +{item.services.filter(service => service.is_performed).length - 2} daha...
+                                      </div>
+                                    )}
+                                    {item.services.filter(service => service.is_performed).length === 0 && (
+                                      <span className="text-gray-500">Hizmet seçilmemiş</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-500">Hizmet bilgisi yok</span>
+                                )}
                               </div>
                             </li>
                           ))}
@@ -1177,11 +1179,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                               {item.service_type || "—"}
                             </span>
                           </div>
-                          {item.yapilan_islemler && (
-                            <div className="text-gray-400 mt-1">
-                              <strong>Yapılan İşlemler:</strong> {item.yapilan_islemler.length > 50 ? `${item.yapilan_islemler.substring(0, 50)}...` : item.yapilan_islemler}
-                            </div>
-                          )}
+                         
                         </div>
                       ))}
                       {c.items.length > 2 && (

@@ -24,7 +24,7 @@ from endpoints.reports import reports_bp
 from endpoints.user_action_logs import user_action_logs_bp
 
 # Seed functions
-from seed import seed_roles_permissions
+from seed import seed_roles_permissions, seed_services
 from seed import seed_users
 
 load_dotenv()
@@ -129,6 +129,7 @@ with app.app_context():
     try:
         seed_roles_permissions()
         seed_users()
+        seed_services()
         print("✅ Database seeded successfully")
     except Exception as e:
         print(f"⚠️  Seeding failed (this is normal if data already exists): {e}")

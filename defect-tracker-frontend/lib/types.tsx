@@ -8,12 +8,12 @@ export type ReturnCase = {
   arrival_date: string;
   receipt_method: string;
   notes: string | null;
-      performed_services: string | null;
-    yedek_parca: number;
-    bakim: number;
-    iscilik: number;
-    cost: number;
-    shipping_info: string | null;
+  performed_services: string | null;
+  yedek_parca: number;
+  bakim: number;
+  iscilik: number;
+  cost: number;
+  shipping_info: string | null;
   tracking_number: string | null;
   shipping_date: string | null;
   payment_status: string | null;
@@ -40,6 +40,21 @@ export interface ReturnCaseItemSummary {
   is_main_product: boolean;
 }
 
+// New interface for service definitions
+export interface ServiceDefinition {
+  id: number;
+  service_name: string;
+  product_type: string;
+}
+
+// New interface for return case item services
+export interface ReturnCaseItemService {
+  id: number;
+  service_definition_id: number;
+  service_name: string;
+  is_performed: boolean;
+}
+
 export interface FullReturnCaseItem {
     id: number;
     product_model: { 
@@ -57,7 +72,8 @@ export interface FullReturnCaseItem {
     cable_check: boolean;
     profile_check: boolean;
     packaging: boolean;
-    yapilan_islemler: string | null;
+    // Remove yapilan_islemler and add services
+    services: ReturnCaseItemService[];
 }
 
 export interface FullReturnCase {
@@ -123,6 +139,31 @@ export interface UserActionLog {
   action_type: string;
   additional_info: string | null;
   created_at: string;
+}
+
+// New interface for service selection in forms
+export interface ServiceSelection {
+  service_definition_id: number;
+  is_performed: boolean;
+}
+
+// New interface for editable product with services
+export interface EditableProduct {
+  id: number;
+  product_model: ProductModel;
+  product_count: number;
+  production_date: string;
+  warranty_status: string;
+  fault_responsibility: string;
+  resolution_method: string;
+  has_control_unit: boolean;
+  service_type: string;
+  cable_check: boolean;
+  profile_check: boolean;
+  packaging: boolean;
+  // Replace yapilan_islemler with services
+  services: ServiceSelection[];
+  isNew?: boolean;
 }
 
 

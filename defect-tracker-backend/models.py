@@ -267,7 +267,6 @@ class ReturnCaseItem(db.Model):
     cable_check = db.Column(db.Boolean, default=False, nullable=False)
     profile_check = db.Column(db.Boolean, default=False, nullable=False)
     packaging = db.Column(db.Boolean, default=False, nullable=False)
-    yapilan_islemler = db.Column(db.Text, nullable=True)  # Yapılan İşlemler field
 
     
     # Relationship to the parent ReturnCase. This allows each ReturnCaseItem to access its associated ReturnCase object.
@@ -278,6 +277,12 @@ class ReturnCaseItem(db.Model):
     # Relationship to the ProductModel. This allows each ReturnCaseItem to access its associated ProductModel object.
     # This is useful for retrieving detailed information about the specific product model for this item.
     product_model = db.relationship('ProductModel')
+
+    ## ADDED NEW: THE RELATIONSHIP FOR SERVICES
+    # Relationship to the ReturnCaseItemService. This allows each ReturnCaseItem to access its associated ReturnCaseItemService object.
+    # The 'cascade' option ensures that when a ReturnCaseItem is deleted, all its associated ReturnCaseItemServices are also deleted.
+    services = db.relationship('ReturnCaseItemService', back_populates='return_case_item', cascade='all, delete-orphan')
+
 
     def __repr__(self):
         return f'<ReturnCaseItem id={self.id} product_model_id={self.product_model_id} case_id={self.return_case_id}>'
@@ -329,3 +334,22 @@ class UserActionLog(db.Model):
             'additional_info': self.additional_info,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
+        
+## ADDED NEW: THESE NEW MODELS FOR SERVICES
+class ServiceDefinition(db.Model):
+    __tablename__ = 'service_definitions'
+    id = db.Column(db.Integer, primary_key=True)
+    product_type = db.Column(db.Enum(ProductTypeEnum), nullable=False)
+    service_name = db.Column(db.String(100), nullable=False)
+
+class ReturnCaseItemService(db.Model):
+    __tablename__ = 'return_case_item_services'
+    id = db.Column(db.Integer, primary_key=True)
+    return_case_item_id = db.Column(db.Integer, db.ForeignKey('return_case_items.id'), nullable=False)
+    service_definition_id = db.Column(db.Integer, db.ForeignKey('service_definitions.id'), nullable=False)
+    is_performed = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Relationships
+    return_case_item = db.relationship('ReturnCaseItem', back_populates='services')
+    service_definition = db.relationship('ServiceDefinition')
+

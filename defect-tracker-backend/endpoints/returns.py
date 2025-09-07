@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models import AppPermissions, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum, ActionType
+from models import AppPermissions, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum, ActionType, ServiceDefinition, ReturnCaseItemService
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from permissions import permission_required
@@ -140,6 +140,16 @@ def get_return_cases():
         cases = query.offset(offset).limit(limit).all()
 
         def serialize_item(item):
+            # Get services for this item
+            services = []
+            for service in item.services:
+                services.append({
+                    "id": service.id,
+                    "service_definition_id": service.service_definition_id,
+                    "service_name": service.service_definition.service_name,
+                    "is_performed": service.is_performed
+                })
+            
             return {
                 "id": item.id,
                 "product_model": {
@@ -153,12 +163,11 @@ def get_return_cases():
                 "warranty_status": item.warranty_status.value if item.warranty_status else None,
                 "fault_responsibility": item.fault_responsibility.value if item.fault_responsibility else None,
                 "resolution_method": item.resolution_method.value if item.resolution_method else None,
-
                 "service_type": item.service_type.value if item.service_type else None,
                 "cable_check": item.cable_check,
                 "profile_check": item.profile_check,
                 "packaging": item.packaging,
-                "yapilan_islemler": item.yapilan_islemler
+                "services": services
             }
 
         data = [{
@@ -381,7 +390,10 @@ def update_teknik_inceleme(return_case_id):
             return_case.performed_services = data['performed_services']
         
         if 'items' in data:
-            # Clear existing items
+            # Clear existing items and their services
+            for existing_item in return_case.items:
+                # Delete associated services first
+                ReturnCaseItemService.query.filter_by(return_case_item_id=existing_item.id).delete()
             ReturnCaseItem.query.filter_by(return_case_id=return_case_id).delete()
             
             # Add new items
@@ -424,10 +436,20 @@ def update_teknik_inceleme(return_case_id):
                     service_type=service_type,
                     cable_check=item_data.get('cable_check', False),
                     profile_check=item_data.get('profile_check', False),
-                    packaging=item_data.get('packaging', False),
-                    yapilan_islemler=item_data.get('yapilan_islemler')
+                    packaging=item_data.get('packaging', False)
                 )
                 db.session.add(new_item)
+                db.session.flush()  # Get the ID of the new item
+                
+                # Add services for this item
+                if 'services' in item_data:
+                    for service_data in item_data['services']:
+                        service_item = ReturnCaseItemService(
+                            return_case_item_id=new_item.id,
+                            service_definition_id=service_data['service_definition_id'],
+                            is_performed=service_data.get('is_performed', False)
+                        )
+                        db.session.add(service_item)
         
         db.session.commit()
         return jsonify({"message": "Teknik İnceleme bilgileri güncellendi"}), 200
@@ -496,8 +518,10 @@ def complete_teknik_inceleme(return_case_id):
             if not item.packaging:
                 return jsonify({"error": "Paketleme eksik. Lütfen tüm ürünler için paketlemeyi tamamlayın."}), 400
             
-            if not item.yapilan_islemler or not item.yapilan_islemler.strip():
-                return jsonify({"error": "Yapılan İşlemler eksik. Lütfen tüm ürünler için yapılan işlemleri belirtin."}), 400
+            # Check if at least one service is performed for this item
+            performed_services = [s for s in item.services if s.is_performed]
+            if not performed_services:
+                return jsonify({"error": f"En az bir hizmet seçilmelidir. Ürün: {item.product_model.name if item.product_model else 'Bilinmeyen'}"}), 400
 
         # Validate cost fields for Teknik İnceleme completion
         if return_case.yedek_parca is None or return_case.yedek_parca < 0:
@@ -842,3 +866,29 @@ def send_customer_email(return_case_id):
     except Exception as e:
         logging.error(f"Error sending customer email for case {return_case_id}: {str(e)}")
         return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500
+
+# Add this new endpoint after the existing ones
+@return_case_bp.route('/service-definitions/<product_type>', methods=['GET'])
+@permission_required(AppPermissions.CASE_EDIT_TECHNICAL_REVIEW)
+def get_service_definitions(product_type):
+    """Get available service definitions for a product type"""
+    try:
+        # Convert string to enum
+        if product_type not in ProductTypeEnum._member_map_:
+            return jsonify({"error": "Invalid product type"}), 400
+        
+        product_type_enum = ProductTypeEnum[product_type]
+        
+        # Get service definitions for this product type
+        service_definitions = ServiceDefinition.query.filter_by(product_type=product_type_enum).all()
+        
+        services = [{
+            "id": sd.id,
+            "service_name": sd.service_name,
+            "product_type": sd.product_type.value
+        } for sd in service_definitions]
+        
+        return jsonify({"services": services}), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch service definitions: {str(e)}"}), 500
