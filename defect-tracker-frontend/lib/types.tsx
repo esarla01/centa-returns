@@ -68,7 +68,6 @@ export interface FullReturnCaseItem {
     warranty_status: string;
     fault_responsibility: string;
     resolution_method: string;
-    service_type: string | null;
     cable_check: boolean;
     profile_check: boolean;
     packaging: boolean;
@@ -157,7 +156,6 @@ export interface EditableProduct {
   fault_responsibility: string;
   resolution_method: string;
   has_control_unit: boolean;
-  service_type: string;
   cable_check: boolean;
   profile_check: boolean;
   packaging: boolean;

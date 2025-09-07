@@ -290,64 +290,23 @@ def fault_responsibility_stats():
 def service_type_stats():
     """Get statistics of return items by service type within the given timeframe"""
     try:
-        start_date = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d")
-        end_date = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d")
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    # Query service type statistics
-    query = (
-        db.session.query(
-            ReturnCaseItem.service_type,
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItem.service_type.isnot(None))
-        .group_by(ReturnCaseItem.service_type)
-        .all()
-    )
-
-    # Calculate total items - get all items in the date range, not just those with service_type
-    total_query = (
-        db.session.query(
-            func.sum(ReturnCaseItem.product_count).label("total_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .scalar()
-    )
-    total_items = total_query or 0
-
-    # Create results with all service types, including zero counts
-    from models import ServiceTypeEnum
-    
-    service_stats = {
-        service_type.value: {
-            "service_type": service_type.value,
-            "item_count": 0,
-            "percentage": 0
-        }
-        for service_type in ServiceTypeEnum
-    }
-
-    # Update with actual data
-    for row in query:
-        if row.service_type:
-            service_stats[row.service_type.value] = {
-                "service_type": row.service_type.value,
-                "item_count": row.item_count,
-                "percentage": round((row.item_count / total_items) * 100, 2) if total_items > 0 else 0
-            }
-
-    results = list(service_stats.values())
-
-    return jsonify({
-        "total_items": total_items,
-        "data": results
-    })
+        start_date_str = request.args.get('startDate')
+        end_date_str = request.args.get('endDate')
+        
+        if not start_date_str or not end_date_str:
+            return jsonify({"error": "startDate and endDate are required"}), 400
+        
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Since we removed service_type, return empty stats
+        return jsonify({
+            "service_stats": {},
+            "total_items": 0
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch service type statistics: {str(e)}"}), 500
 
 @reports_bp.route("/reports/resolution-method-stats", methods=["GET"])
 def resolution_method_stats():

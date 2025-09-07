@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from models import AppPermissions, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ServiceTypeEnum, ActionType, ServiceDefinition, ReturnCaseItemService
+from models import AppPermissions, WarrantyStatusEnum, PaymentStatusEnum, db, ReturnCase, ReturnCaseItem, ProductTypeEnum, ReceiptMethodEnum, CaseStatusEnum, Customers, ProductModel, FaultResponsibilityEnum, ResolutionMethodEnum, ActionType, ServiceDefinition, ReturnCaseItemService
 from datetime import datetime
 from sqlalchemy.orm import joinedload
 from permissions import permission_required
@@ -163,7 +163,6 @@ def get_return_cases():
                 "warranty_status": item.warranty_status.value if item.warranty_status else None,
                 "fault_responsibility": item.fault_responsibility.value if item.fault_responsibility else None,
                 "resolution_method": item.resolution_method.value if item.resolution_method else None,
-                "service_type": item.service_type.value if item.service_type else None,
                 "cable_check": item.cable_check,
                 "profile_check": item.profile_check,
                 "packaging": item.packaging,
@@ -418,12 +417,6 @@ def update_teknik_inceleme(return_case_id):
                     if resolution_key:
                         resolution_method = ResolutionMethodEnum[resolution_key]
                 
-                service_type = None
-                if item_data.get('service_type') and item_data['service_type'].strip():
-                    service_type_key = convert_turkish_to_enum(item_data['service_type'], ServiceTypeEnum)
-                    if service_type_key:
-                        service_type = ServiceTypeEnum[service_type_key]
-
                 new_item = ReturnCaseItem(
                     return_case_id=return_case_id,
                     product_model_id=item_data['product_model_id'],
@@ -433,7 +426,6 @@ def update_teknik_inceleme(return_case_id):
                     fault_responsibility=fault_responsibility,
                     resolution_method=resolution_method,
                     has_control_unit=item_data.get('has_control_unit', False),
-                    service_type=service_type,
                     cable_check=item_data.get('cable_check', False),
                     profile_check=item_data.get('profile_check', False),
                     packaging=item_data.get('packaging', False)
@@ -505,18 +497,6 @@ def complete_teknik_inceleme(return_case_id):
             
             if not item.resolution_method:
                 return jsonify({"error": "Çözüm yöntemi eksik. Lütfen tüm ürünler için çözüm yöntemini belirtin."}), 400
-            
-            if not item.service_type:
-                return jsonify({"error": "Hizmet türü eksik. Lütfen tüm ürünler için hizmet türünü belirtin."}), 400
-              
-            if not item.cable_check:
-                return jsonify({"error": "Kablo kontrol eksik. Lütfen tüm ürünler için kablo kontrolünü tamamlayın."}), 400
-            
-            if not item.profile_check:
-                return jsonify({"error": "Mekanik kontrol eksik. Lütfen tüm ürünler için profil kontrolünü tamamlayın."}), 400
-            
-            if not item.packaging:
-                return jsonify({"error": "Paketleme eksik. Lütfen tüm ürünler için paketlemeyi tamamlayın."}), 400
             
             # Check if at least one service is performed for this item
             performed_services = [s for s in item.services if s.is_performed]

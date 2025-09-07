@@ -1175,9 +1175,6 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                               {item.resolution_method === 'Tamir' ? '🔨 Tamir' :
                                item.resolution_method === 'Değişim' ? '🔄 Değişim' : "—"}
                             </span>
-                            <span>
-                              {item.service_type || "—"}
-                            </span>
                           </div>
                          
                         </div>

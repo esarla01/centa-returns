@@ -137,10 +137,6 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
                       <p className="text-sm text-gray-900">{item.resolution_method || 'Belirtilmemiş'}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-600">Hizmet Tipi</label>
-                      <p className="text-sm text-gray-900">{item.service_type || 'Belirtilmemiş'}</p>
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-gray-600">Kontrol Ünitesi</label>
                       <p className="text-sm text-gray-900">{item.has_control_unit ? 'Var' : 'Yok'}</p>
                     </div>
@@ -168,7 +164,7 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
                   {/* Services Section - Replace yapilan_islemler */}
                   {item.services && item.services.length > 0 && (
                     <div className="mt-6 pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Arza Tespiti/Hizmetleri</h4>
+                      <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Arza Tespiti</h4>
                       <div className="bg-gray-50 p-4 rounded border border-gray-200">
                         <div className="space-y-2">
                           {item.services.map((service) => (

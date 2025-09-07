@@ -48,12 +48,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     'unknown': 'Bilinmiyor'
   };
 
-  const serviceTypeMap = {
-    'maintenance': 'Bakım',
-    'repair': 'Onarım',
-    'calibration': 'Kalibrasyon'
-  };
-
   // Initialize products with services instead of yapilan_islemler
   const [products, setProducts] = useState<EditableProduct[]>(
     (returnCase.items || []).map(item => ({
@@ -69,7 +63,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       fault_responsibility: item.fault_responsibility ? convertToEnumKey(item.fault_responsibility, faultResponsibilityMap) : '',
       resolution_method: item.resolution_method ? convertToEnumKey(item.resolution_method, resolutionMethodMap) : '',
       has_control_unit: item.has_control_unit,
-      service_type: item.service_type ? convertToEnumKey(item.service_type, serviceTypeMap) : '',
       cable_check: item.cable_check || false,
       profile_check: item.profile_check || false,
       packaging: item.packaging || false,
@@ -156,7 +149,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       fault_responsibility: '',
       resolution_method: '',
       has_control_unit: false,
-      service_type: '',
       cable_check: false,
       profile_check: false,
       packaging: false,
@@ -273,7 +265,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
           fault_responsibility: p.fault_responsibility,
           resolution_method: p.resolution_method,
           has_control_unit: p.has_control_unit,
-          service_type: p.service_type,
           cable_check: p.cable_check,
           profile_check: p.profile_check,
           packaging: p.packaging,
@@ -282,7 +273,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
         }))
       };
       
-      console.log('TeknikIncelemeModal: Sending data to backend:', requestBody);
       
       const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/teknik-inceleme', {
         method: 'PUT',
@@ -292,7 +282,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       });
 
       const data = await response.json();
-      console.log('TeknikIncelemeModal: Backend response:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Sunucu hatası');
@@ -503,29 +492,12 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
 
                       {/* Right Column: Service and Actions */}
                       <div className="space-y-4">
-                        {/* Service Type */}
-                        <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                            Hizmet
-                          </label>
-                          <select
-                            value={product.service_type}
-                            onChange={(e) => handleProductChange(product.id, 'service_type', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            <option value="">Seçiniz</option>
-                            <option value="maintenance">Bakım</option>
-                            <option value="repair">Onarım</option>
-                            <option value="calibration">Kalibrasyon</option>
-                          </select>
-                        </div>
-
                         {/* Services Selection - Replace yapilan_islemler */}
                         <div className="space-y-2">
                           <label className="block text-sm font-medium text-gray-700">
-                            Arza Tespiti/Hizmetleri *
+                            Arza Tespiti
                           </label>
-                          <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
+                          <div className="h-53.5 overflow-y-auto border border-gray-300 rounded-md p-3 bg-gray-50">
                             {getServicesForProductType(product.product_model.product_type).map((service) => {
                               const isSelected = product.services.some(s => 
                                 s.service_definition_id === service.id && s.is_performed

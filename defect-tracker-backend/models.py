@@ -170,11 +170,6 @@ class ResolutionMethodEnum(Enum):
     replacement = 'Değişim'
     unknown = 'Bilinmiyor'
 
-class ServiceTypeEnum(Enum):
-    maintenance = 'Bakım'
-    repair = 'Onarım'
-    calibration = 'Kalibrasyon'
-
 class ReturnCase(db.Model):
     __tablename__ = 'return_cases'
 
@@ -263,7 +258,6 @@ class ReturnCaseItem(db.Model):
 
     
     # New fields for Teknik İnceleme stage
-    service_type = db.Column(db.Enum(ServiceTypeEnum), nullable=True)
     cable_check = db.Column(db.Boolean, default=False, nullable=False)
     profile_check = db.Column(db.Boolean, default=False, nullable=False)
     packaging = db.Column(db.Boolean, default=False, nullable=False)
