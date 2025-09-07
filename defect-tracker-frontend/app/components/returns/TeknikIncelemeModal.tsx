@@ -186,7 +186,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     setProducts(prev => prev.map(p => {
       if (p.id === productId) {
         const existingServiceIndex = p.services.findIndex(s => s.service_definition_id === serviceDefinitionId);
-        let newServices = [...p.services];
+        const newServices = [...p.services];
         
         if (existingServiceIndex >= 0) {
           // Update existing service
