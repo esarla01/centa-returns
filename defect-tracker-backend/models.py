@@ -129,7 +129,7 @@ class Customers(db.Model):
 
 class ProductTypeEnum(Enum):
     overload = 'Aşırı Yük Sensörü'
-    door_detector = 'Kapı Dedektörü'
+    door_detector = 'Fotosel'
     control_unit = 'Kontrol Ünitesi'
 
 class ProductModel(db.Model):

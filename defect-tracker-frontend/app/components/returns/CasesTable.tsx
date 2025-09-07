@@ -327,7 +327,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
               <th className="p-4 text-blue-800">Garanti Durumu</th>
               <th className="p-4 text-blue-800">Hata Sorumluluğu</th>
               <th className="p-4 text-blue-800">Çözüm Yöntemi</th>
-              <th className="p-4 text-blue-800 min-w-[200px]">Arza Tespiti/Hizmetleri</th>
+              <th className="p-4 text-blue-800 min-w-[200px]">Arza Tespiti</th>
+              <th className="p-4 text-blue-800">Toplam Tutar</th>
               <th className="p-4 text-blue-800">Teknik İnceleme Eylemler</th>
               
               {/* Ödeme Tahsilatı Stage - Yellow */}
@@ -349,12 +350,12 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
             {isLoading ? (
               <tr>
                 <td colSpan={10} className="p-4 text-start pl-125">Yükleniyor...</td>
-                <td colSpan={13} className="p-4 text-start pl-150">Yükleniyor...</td>
+                <td colSpan={14} className="p-4 text-start pl-150">Yükleniyor...</td>
               </tr>
             ) : cases.length === 0 ? (
               <tr>
                 <td colSpan={10} className="p-4 text-start pl-125">Vaka bulunamadı.</td>
-                <td colSpan={13} className="p-4 text-start pl-150">Vaka bulunamadı.</td>
+                <td colSpan={14} className="p-4 text-start pl-150">Vaka bulunamadı.</td>
                 </tr>
             ) : (
               cases.map((c) => {
@@ -565,6 +566,13 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                       ) : (
                         <div className="text-xs text-gray-500">—</div>
                       )}
+                    </td>
+
+                    {/* Toplam Tutar */}
+                    <td className="p-4">
+                      <div className="text-sm font-semibold text-blue-600">
+                        {formatCurrency(c.cost)}
+                      </div>
                     </td>
 
                     {/* Teknik İnceleme Eylemler */}

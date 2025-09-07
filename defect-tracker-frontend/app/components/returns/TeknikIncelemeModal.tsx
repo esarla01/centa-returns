@@ -199,7 +199,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     // Map Turkish product type names to enum keys
     const typeMap: Record<string, string> = {
       'Aşırı Yük Sensörü': 'overload',
-      'Kapı Dedektörü': 'door_detector',
+      'Fotosel': 'door_detector',
       'Kontrol Ünitesi': 'control_unit'
     };
     
@@ -350,10 +350,12 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                 </button>
               </div>
 
-              {products.map((product, index) => (
+              {products.slice(0).reverse().map((product, index) => (
                 <div key={product.id} className="border border-gray-200 rounded-lg p-6 space-y-6 bg-white shadow-sm">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-md font-medium text-gray-700">Ürün {index + 1}</h4>
+                    <h4 className="text-md font-medium text-gray-700">
+                      Ürün {products.length - index}
+                    </h4>
                     <button
                       type="button"
                       onClick={() => handleRemoveProduct(product.id)}
@@ -423,7 +425,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                       {/* Production Date (Month Picker) */}
                       <div className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
-                          Üretim Tarihi *
+                          Üretim Tarihi 
                         </label>
                         <input
                           type="month"

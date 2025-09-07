@@ -221,7 +221,7 @@ function ReturnsDashboardContent() {
                         {hasActiveFilters ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
                       </h2>
                       {!hasActiveFilters && (
-                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
+                        <div className="flex flex-wrap items-center gap-1 lg:gap-2 text-xs lg:text-sm">
                           <span className="text-gray-600 font-medium">İş Akışı:</span>
                           <div className="flex items-center gap-1 lg:gap-2">
                             <div className="w-2 h-2 lg:w-3 lg:h-3 bg-orange-100 border border-orange-300 rounded-full"></div>
