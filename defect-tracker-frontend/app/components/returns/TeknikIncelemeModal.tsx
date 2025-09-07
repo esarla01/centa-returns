@@ -1,5 +1,8 @@
 'use client';
-
+import { DatePicker } from 'antd';
+import 'antd/dist/reset.css';
+import dayjs from 'dayjs';
+import trTR from 'antd/locale/tr_TR';
 import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { EditableProduct, FullReturnCase, FullReturnCaseItem, ProductModel, ProductType, ServiceDefinition, ServiceSelection } from '@/lib/types';
@@ -427,13 +430,21 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                         <label className="block text-sm font-medium text-gray-700">
                           Üretim Tarihi 
                         </label>
-                        <input
+                        {/* <input
                           type="month"
                           value={product.production_date}
                           onChange={(e) => handleProductChange(product.id, 'production_date', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                           placeholder="YYYY-MM"
                           required
+                        /> */}
+                                                <DatePicker
+                          picker="month"
+                          value={product.production_date ? dayjs(product.production_date) : null}
+                          onChange={(date) => handleProductChange(product.id, 'production_date', date?.format('YYYY-MM') || '')}
+                          placeholder="Ay seçin"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          locale={trTR.DatePicker}
                         />
                       </div>
                     </div>

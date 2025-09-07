@@ -41,7 +41,6 @@ def get_return_cases():
         # Get pagination parameters
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 10))
-        offset = (page - 1) * limit
 
         # Get filter parameters
         search = request.args.get('search', '').strip()
@@ -101,8 +100,6 @@ def get_return_cases():
             except ValueError:
                 pass  # Invalid date format, ignore filter
 
-
-
         # Apply receipt method filter
         if receipt_method:
             try:
@@ -133,11 +130,8 @@ def get_return_cases():
         # Order by arrival date descending, then by id descending as tie-breaker
         query = query.order_by(ReturnCase.arrival_date.desc(), ReturnCase.id.desc())
 
-        # Get total count before pagination
-        total_cases = query.count()
-        
-        # Apply pagination
-        cases = query.offset(offset).limit(limit).all()
+        # Use built-in pagination
+        paginated_cases = query.paginate(page=page, per_page=limit, error_out=False)
 
         def serialize_item(item):
             # Get services for this item
@@ -191,11 +185,15 @@ def get_return_cases():
             "cost": float(c.cost) if c.cost is not None else 0,
             "performed_services": c.performed_services,
             "items": [serialize_item(i) for i in c.items]
-        } for c in cases]
+        } for c in paginated_cases.items]
 
         return jsonify({
             "cases": data,
-            "totalPages": (total_cases + limit - 1) // limit
+            "totalPages": paginated_cases.pages,
+            "currentPage": paginated_cases.page,
+            "totalItems": paginated_cases.total,
+            "hasNext": paginated_cases.has_next,
+            "hasPrev": paginated_cases.has_prev
         })
 
     except Exception as e:
