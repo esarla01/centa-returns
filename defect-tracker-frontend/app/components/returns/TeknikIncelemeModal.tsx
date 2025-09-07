@@ -409,7 +409,7 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                     {/* Control Unit and Production Date - Same Row */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                       {/* Has Control Unit Checkbox - Only show for fotosel or overload sensor */}
-                      {(product.product_model.product_type === 'Kapı Dedektörü' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
+                      {(product.product_model.product_type === 'Fotosel' || product.product_model.product_type === 'Aşırı Yük Sensörü') && (
                         <div className="space-y-2">
                           <div className="flex items-center space-x-2">
                             <input
