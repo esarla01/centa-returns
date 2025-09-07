@@ -48,7 +48,7 @@ def get_user_action_logs():
                     'return_case_id': log.return_case_id,
                     'action_type': log.action_type.value if hasattr(log.action_type, 'value') else str(log.action_type),
                     'additional_info': log.additional_info,
-                    'created_at': log.created_at.isoformat() if log.created_at else None
+                    'created_at': log.created_at.isoformat() + 'Z' if log.created_at else None
                 }
                 logs_data.append(log_dict)
             except Exception as log_error:

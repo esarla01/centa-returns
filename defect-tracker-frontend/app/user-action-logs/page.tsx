@@ -97,7 +97,20 @@ function UserActionLogsContent() {
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
+      // Ensure the date string is properly formatted for parsing
+      let dateStr = dateString;
+      if (!dateStr.endsWith('Z') && !dateStr.includes('+') && !dateStr.includes('-', 10)) {
+        // If no timezone info, assume it's UTC
+        dateStr = dateStr + 'Z';
+      }
+      
+      const date = new Date(dateStr);
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      
       return date.toLocaleString('tr-TR', {
         year: 'numeric',
         month: '2-digit',

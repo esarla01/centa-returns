@@ -2,7 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum, auto
 
 db = SQLAlchemy()
@@ -317,7 +317,7 @@ class UserActionLog(db.Model):
     additional_info = db.Column(db.String(255), nullable=True)
     
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     
     def __repr__(self):
         return f'<UserActionLog id={self.id} user={self.user_email} action={self.action_type.value} case={self.return_case_id}>'
