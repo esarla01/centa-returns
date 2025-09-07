@@ -1,4 +1,4 @@
-from models import UserActionLog, ActionType, ReturnCase, Customers, ProductModel, db
+from models import UserActionLog, ActionType, ReturnCase, Customers, ProductModel, ServiceDefinition, db
 import json
 from datetime import datetime
 
@@ -255,3 +255,110 @@ class LogService:
         
         else:
             return f"Action {log_entry.action_type.value} performed by {user_name} on case #{log_entry.return_case_id}. ({log_entry.created_at.strftime('%Y-%m-%d %H:%M:%S')})"
+
+    @staticmethod
+    def log_service_creation(user_email, service_id):
+        """
+        Log service creation action
+        """
+        # Validate required parameters
+        if not user_email or not service_id:
+            raise ValueError("Missing required parameters: user_email and service_id are required")
+        
+        # Validate that the service exists
+        service = ServiceDefinition.query.get(service_id)
+        if not service:
+            raise ValueError(f"ServiceDefinition with id {service_id} not found")
+
+        service_name = service.service_name
+        
+        # Create the log entry (using return_case_id=None to indicate it's not a return case action)
+        log_entry = UserActionLog(
+            user_email=user_email,
+            return_case_id=None,
+            action_type=ActionType.SERVICE_CREATED,
+            additional_info=f"Arıza Tipi: {service_name}"
+        )
+        
+        try:
+            db.session.add(log_entry)
+            db.session.commit()
+            return log_entry
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def log_service_deletion(user_email, service_id, service_name):
+        """
+        Log service deletion action
+        """
+        # Validate required parameters
+        if not user_email or not service_id or not service_name:
+            raise ValueError("Missing required parameters: user_email, service_id, and service_name are required")
+        
+        # Create the log entry (using return_case_id=None to indicate it's not a return case action)
+        log_entry = UserActionLog(
+            user_email=user_email,
+            return_case_id=None,
+            action_type=ActionType.SERVICE_DELETED,
+            additional_info=f"Arıza Tipi: {service_name})"
+        )
+        
+        try:
+            db.session.add(log_entry)
+            db.session.commit()
+            return log_entry
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def log_product_deletion(user_email, product_id, product_name):
+        """
+        Log product deletion action
+        """
+        # Validate required parameters
+        if not user_email or not product_id or not product_name:
+            raise ValueError("Missing required parameters: user_email, product_id, and product_name are required")
+        
+        # Create the log entry (using return_case_id=None to indicate it's not a return case action)
+        log_entry = UserActionLog(
+            user_email=user_email,
+            return_case_id=None,
+            action_type=ActionType.PRODUCT_DELETED,
+            additional_info=f"Ürün Modeli Adı: {product_name}"
+        )
+        
+        try:
+            db.session.add(log_entry)
+            db.session.commit()
+            return log_entry
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @staticmethod
+    def log_customer_deletion(user_email, customer_id, customer_name):
+        """
+        Log customer deletion action
+        """
+        # Validate required parameters
+        if not user_email or not customer_id or not customer_name:
+            raise ValueError("Missing required parameters: user_email, customer_id, and customer_name are required")
+        
+        # Create the log entry (using return_case_id=None to indicate it's not a return case action)
+        log_entry = UserActionLog(
+            user_email=user_email,
+            return_case_id=None,
+            action_type=ActionType.CUSTOMER_DELETED,
+            additional_info=f"Müşteri Adı: {customer_name}"
+        )
+        
+        try:
+            db.session.add(log_entry)
+            db.session.commit()
+            return log_entry
+        except Exception as e:
+            db.session.rollback()
+            raise e

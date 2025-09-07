@@ -47,6 +47,13 @@ export interface ServiceDefinition {
   product_type: string;
 }
 
+// Service management interface
+export interface ServiceModel {
+  id: number;
+  service_name: string;
+  product_type: string;
+}
+
 // New interface for return case item services
 export interface ReturnCaseItemService {
   id: number;

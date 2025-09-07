@@ -18,6 +18,7 @@ from models import User, db, bcrypt, mail
 from endpoints.user import user_bp  
 from endpoints.customers import customer_bp  
 from endpoints.products import product_bp  
+from endpoints.services import service_bp
 from endpoints.returns import return_case_bp  
 from endpoints.admin import admin_bp  
 from endpoints.reports import reports_bp  
@@ -112,6 +113,7 @@ def create_app():
     app.register_blueprint(user_bp)
     app.register_blueprint(customer_bp)
     app.register_blueprint(product_bp)  
+    app.register_blueprint(service_bp)
     app.register_blueprint(return_case_bp)  
     app.register_blueprint(admin_bp)
     app.register_blueprint(reports_bp)

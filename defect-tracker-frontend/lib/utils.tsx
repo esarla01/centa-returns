@@ -55,7 +55,7 @@ export const getRoleNameInTurkish: Record<string, string> = {
   LOGISTICS: 'Lojistik',
   SUPPORT: 'Destek',
   TECHNICIAN: 'Teknisyen',
-  MANAGER: 'Yönetici',
+  MANAGER: 'Şef',
   ADMIN: 'Yönetici'
 };
 

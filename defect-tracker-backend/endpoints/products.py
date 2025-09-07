@@ -137,6 +137,14 @@ def delete_product(product_id):
         }), 400
 
     try:
+        # Log the deletion before actually deleting
+        email = g.user.email
+        LogService.log_product_deletion(
+            user_email=email,
+            product_id=product.id,
+            product_name=product.name
+        )
+        
         db.session.delete(product)
         db.session.commit()
         return jsonify({"msg": "Ürün modeli başarıyla silindi."}), 200

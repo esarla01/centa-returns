@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   },
   CUSTOMERS: '/customers',
   PRODUCTS: '/products',
+  SERVICES: '/services',
   RETURNS: {
     BASE: '/returns',
     SIMPLE: '/returns/simple',

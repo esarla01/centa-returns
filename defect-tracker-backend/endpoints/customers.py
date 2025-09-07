@@ -71,8 +71,7 @@ def create_customer():
             email = g.user.email
             LogService.log_customer_creation(
                 user_email=email,
-                customer_id=new_customer.id,
-               
+                customer_id=new_customer.id
             )
             print(f"Customer creation logged for {new_customer.id}")
             
@@ -111,6 +110,14 @@ def delete_customer(customer_id):
         }), 400
 
     try:
+        # Log the deletion before actually deleting
+        email = g.user.email
+        LogService.log_customer_deletion(
+            user_email=email,
+            customer_id=customer.id,
+            customer_name=customer.name
+        )
+        
         db.session.delete(customer)
         db.session.commit()
         return jsonify({"msg": "Müşteri başarıyla silindi."}), 200

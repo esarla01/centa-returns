@@ -85,7 +85,11 @@ function UserActionLogsContent() {
       'STAGE_PAYMENT_COLLECTION_COMPLETED': 'Ödeme Tahsilatı Tamamlandı',
       'STAGE_SHIPPING_COMPLETED': 'Kargoya Veriliyor Tamamlandı',
       'CASE_COMPLETED': 'Vaka Tamamlandı',
-      'EMAIL_SENT': 'E-posta Gönderildi'
+      'EMAIL_SENT': 'E-posta Gönderildi',
+      'SERVICE_CREATED': 'Arıza Tipi Oluşturuldu',
+      'SERVICE_DELETED': 'Arıza Tipi Silindi',
+      'PRODUCT_DELETED': 'Ürün Modeli Silindi',
+      'CUSTOMER_DELETED': 'Müşteri Silindi'
     };
     return actionTypeMap[actionType] || actionType;
   };
