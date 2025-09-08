@@ -247,7 +247,7 @@ def create_simple_return_case():
         except Exception as e:
             logging.error(f"Error sending notification for case {case.id}: {e}")
 
-        return jsonify({'message': 'İade vakası oluşturuldu', 'caseId': case.id}), 201
+        return jsonify({'message': 'Arıza vakası oluşturuldu', 'caseId': case.id}), 201
 
     except Exception as e:
         db.session.rollback()

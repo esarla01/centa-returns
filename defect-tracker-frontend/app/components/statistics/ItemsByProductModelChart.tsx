@@ -99,7 +99,7 @@ export default function ItemsByProductModelChart({ startDate, endDate, refreshKe
           <Tooltip
             formatter={(value: any, name: any) => [
               `${value} adet`,
-              'İade Adedi'
+              'Arıza Adedi'
             ]}
             labelFormatter={(label: string) => `Ürün Modeli: ${label}`}
             contentStyle={{

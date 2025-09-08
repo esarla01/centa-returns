@@ -128,7 +128,7 @@ export default function FaultResponsibilityChart({
           <Tooltip
             formatter={(value: any, name: any) => [
               `${value} adet`,
-              'İade Adedi'
+              'Arıza Adedi'
             ]}
             labelFormatter={(label: string) => `Hata Sorumluluğu: ${label}`}
             contentStyle={{

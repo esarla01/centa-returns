@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Centa İade Takip Sistemi",
-  description: "Centa İade Takip Sistemi",
+  title: "Centa Arıza Takip Sistemi",
+  description: "Centa Arıza Takip Sistemi",
   manifest: '/manifest.json',
   icons: {
     icon: [

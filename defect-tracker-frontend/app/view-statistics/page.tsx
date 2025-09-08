@@ -63,7 +63,7 @@ export default function StatisticsPage() {
           {/* First row: Three charts side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Müşteriye Göre İade Adedi</h2>
+              <h2 className="font-semibold mb-3">Müşteriye Göre Arıza Adedi</h2>
               <ItemsByCustomerChart
                 startDate={startDate}
                 endDate={endDate}
@@ -71,7 +71,7 @@ export default function StatisticsPage() {
               />
             </div>
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Hata Sorumluluğuna Göre İade Dağılımı</h2>
+              <h2 className="font-semibold mb-3">Hata Sorumluluğuna Göre Arıza Dağılımı</h2>
               <FaultResponsibilityChart
                 startDate={startDate}
                 endDate={endDate}
@@ -83,7 +83,7 @@ export default function StatisticsPage() {
           {/* Second row: Full-width bar chart */}
           <div className="bg-white rounded shadow p-4">
             <div className="mb-3">
-              <h2 className="font-semibold mb-1">Periyoda Göre İade Dağılımı</h2>
+              <h2 className="font-semibold mb-1">Periyoda Göre Arıza Dağılımı</h2>
               <p className="text-sm text-gray-600">(Teslim Alındı Aşamasındaki Ürünler Dahil Edilir)</p>
             </div>
             <ReturnsBreakdownBarChart
@@ -106,7 +106,7 @@ export default function StatisticsPage() {
           {/* Fourth row: Three pie charts side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Hizmet Türüne Göre İade Dağılımı</h2>
+              <h2 className="font-semibold mb-3">Hizmet Türüne Göre Arıza Dağılımı</h2>
               <ServiceTypeChart
                 startDate={startDate}
                 endDate={endDate}
@@ -114,7 +114,7 @@ export default function StatisticsPage() {
               />
             </div>
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Çözüm Yöntemine Göre İade Dağılımı</h2>
+              <h2 className="font-semibold mb-3">Çözüm Yöntemine Göre Arıza Dağılımı</h2>
               <ResolutionMethodChart
                 startDate={startDate}
                 endDate={endDate}
@@ -125,7 +125,7 @@ export default function StatisticsPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Ürün Türüne Göre İade Dağılımı</h2>
+              <h2 className="font-semibold mb-3">Ürün Türüne Göre Arıza Dağılımı</h2>
               <ProductTypeChart
                 startDate={startDate}
                 endDate={endDate}
@@ -133,7 +133,7 @@ export default function StatisticsPage() {
               />
             </div>
             <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Ürün Modeline İade Adedi</h2>
+              <h2 className="font-semibold mb-3">Ürün Modeline Arıza Adedi</h2>
               <ItemsByProductModelChart
                 startDate={startDate}
                 endDate={endDate}

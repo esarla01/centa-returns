@@ -132,7 +132,7 @@ def delete_product(product_id):
         # Count all associated items
         item_count = ReturnCaseItem.query.filter_by(product_model_id=product_id).count()
         return jsonify({
-            "msg": "Bu ürün modeli silinemez çünkü iade vakalarında kullanılmaktadır. Önce ilgili iade vakalarını silin.",
+            "msg": "Bu ürün modeli silinemez çünkü arıza vakalarında kullanılmaktadır. Önce ilgili arıza vakalarını silin.",
             "return_case_item_count": item_count
         }), 400
 

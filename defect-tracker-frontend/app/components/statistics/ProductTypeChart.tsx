@@ -128,7 +128,7 @@ export default function ProductTypeChart({
           <Tooltip
             formatter={(value: any, name: any) => [
               `${value} adet`,
-              'İade Adedi'
+              'Arıza Adedi'
             ]}
             labelFormatter={(label: string) => `Ürün Türü: ${label}`}
             contentStyle={{

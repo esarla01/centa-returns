@@ -24,7 +24,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
     const replacedItems = returnCase.items.filter(item => item.resolution_method === 'Değişim');
     
     let content = `Merhaba ${returnCase.customer.name},\n\n`;
-    content += `İade vakanız (#${returnCase.id}) ile ilgili bilgilendirme:\n\n`;
+    content += `Arıza vakanız (#${returnCase.id}) ile ilgili bilgilendirme:\n\n`;
     
     if (repairedItems.length > 0) {
       content += `Tamir edilen ürünler:\n`;
@@ -197,7 +197,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
               <h3 className="text-lg font-bold text-green-800 mb-3 flex items-center">
                 <Package className="h-5 w-5 text-green-600 mr-2" />
-                İade Vakası Özeti
+                Arıza Vakası Özeti
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">

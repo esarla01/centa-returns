@@ -99,7 +99,7 @@ export default function ItemsByCustomerChart({ startDate, endDate, refreshKey }:
           <Tooltip
             formatter={(value: any, name: any) => [
               `${value} adet`,
-              'İade Adedi'
+              'Arıza Adedi'
             ]}
             labelFormatter={(label: string) => `Müşteri: ${label}`}
             contentStyle={{

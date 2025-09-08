@@ -105,7 +105,7 @@ def delete_customer(customer_id):
     # Check if customer has associated return cases
     if customer.return_cases:
         return jsonify({
-            "msg": "Bu müşteri silinemez çünkü iade vakaları bulunmaktadır. Önce tüm iade vakalarını silin.",
+            "msg": "Bu müşteri silinemez çünkü arıza vakaları bulunmaktadır. Önce tüm arıza vakalarını silin.",
             "return_case_count": len(customer.return_cases)
         }), 400
 

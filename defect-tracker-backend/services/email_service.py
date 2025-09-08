@@ -182,10 +182,10 @@ class CentaEmailService:
             params = {
                 "from": "Centa Arıza Takip Sistemi <centa-ariza@centa.com.tr>",
                 "to": [customer_email],
-                "subject": f"Centa - İade Vakası #{case_id} Bilgilendirmesi",
+                "subject": f"Centa - Arıza Vakası #{case_id} Bilgilendirmesi",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #2c3e50;">İade Vakası #{case_id}</h2>
+                    <h2 style="color: #2c3e50;">Arıza Vakası #{case_id}</h2>
                     
                     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
                         {email_content}
@@ -247,12 +247,12 @@ class CentaEmailService:
             params = {
                 "from": "Centa Arıza Takip Sistemi <centa-ariza@centa.com.tr>",
                 "to": user_emails,
-                "subject": f"Centa - İade Vakası #{case_id} - {customer_name} Bildirimi",
+                "subject": f"Centa - Arıza Vakası #{case_id} - {customer_name} Bildirimi",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #2c3e50;">Yeni İade Vakası Bildirimi</h2>
+                    <h2 style="color: #2c3e50;">Yeni Arıza Vakası Bildirimi</h2>
                     
-                    <p>Centa Arıza Takip Sistemi'nde yeni bir iade vakası oluşturuldu.</p>
+                    <p>Centa Arıza Takip Sistemi'nde yeni bir arıza vakası oluşturuldu.</p>
                     
                     <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
                         <h3 style="margin-top: 0; color: #856404;">Vaka Detayları</h3>
@@ -262,7 +262,7 @@ class CentaEmailService:
                         <p><strong>Müşteri İletişim Bilgileri:</strong> {customer_contact_info}</p>
                     </div>
                     
-                    <p>En yakın zamanda iade vakasının durumunu güncelleyiniz.</p>
+                    <p>En yakın zamanda arıza vakasının durumunu güncelleyiniz.</p>
                     
                     <p>Detaylı bilgi için sistemimize giriş yapabilirsiniz.</p>
                     
@@ -280,11 +280,11 @@ class CentaEmailService:
             email = resend.Emails.send(params)
             email_id = email.get("id", "unknown")  # safer than email.id
             logging.info(
-                f"İade vakası #{case_id} bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
+                f"Arıza vakası #{case_id} bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
             )
             return True
         except Exception as e:
-            logging.error(f"İade vakası bildirimi tüm kullanıcılara gönderilemedi: {e}")
+            logging.error(f"Arıza vakası bildirimi tüm kullanıcılara gönderilemedi: {e}")
             logging.error(f"Exception type: {type(e)}")
             logging.error(f"Exception args: {e.args}")
             return False
@@ -354,12 +354,12 @@ class CentaEmailService:
             params = {
                 "from": "Centa Arıza Takip Sistemi <centa-ariza@centa.com.tr>",
                 "to": user_emails,
-                "subject": f"Centa - İade Vakası #{case_id} - {customer_name} Aşama Tamamlandı",
+                "subject": f"Centa - Arıza Vakası #{case_id} - {customer_name} Aşama Tamamlandı",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2c3e50;">Aşama Tamamlandı Bildirimi</h2>
                     
-                    <p>İade vakası #{case_id} için aşama tamamlandı.</p>
+                    <p>Arıza vakası #{case_id} için aşama tamamlandı.</p>
                     
                     <div style="background-color: #d1ecf1; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;">
                         <h3 style="margin-top: 0; color: #0c5460;">Vaka Bilgileri</h3>
@@ -395,11 +395,11 @@ class CentaEmailService:
             email = resend.Emails.send(params)
             email_id = email.get("id", "unknown")  # safer than email.id
             logging.info(
-                f"İade vakası #{case_id} aşama tamamlama bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
+                f"Arıza vakası #{case_id} aşama tamamlama bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
             )
             return True
         except Exception as e:
-            logging.error(f"İade vakası aşama tamamlama bildirimi gönderilemedi: {e}")
+            logging.error(f"Arıza vakası aşama tamamlama bildirimi gönderilemedi: {e}")
             logging.error(f"Exception type: {type(e)}")
             logging.error(f"Exception args: {e.args}")
             return False
@@ -429,12 +429,12 @@ class CentaEmailService:
             params = {
                 "from": "Centa Arıza Takip Sistemi <centa-ariza@centa.com.tr>",
                 "to": user_emails,
-                "subject": f"Centa - İade Vakası #{case_id} Tamamlandı",
+                "subject": f"Centa - Arıza Vakası #{case_id} Tamamlandı",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #2c3e50;">Vaka Tamamlandı</h2>
                     
-                    <p>İade vakası #{case_id} başarıyla tamamlandı.</p>
+                    <p>Arıza vakası #{case_id} başarıyla tamamlandı.</p>
                     
                     <div style="background-color: #d4edda; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
                         <h3 style="margin-top: 0; color: #155724;">Vaka Bilgileri</h3>
@@ -462,11 +462,11 @@ class CentaEmailService:
             email = resend.Emails.send(params)
             email_id = email.get("id", "unknown")  # safer than email.id
             logging.info(
-                f"İade vakası #{case_id} tamamlama bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
+                f"Arıza vakası #{case_id} tamamlama bildirimi {len(user_emails)} kullanıcıya gönderildi. ID: {email_id}"
             )
             return True
         except Exception as e:
-            logging.error(f"İade vakası tamamlama bildirimi gönderilemedi: {e}")
+            logging.error(f"Arıza vakası tamamlama bildirimi gönderilemedi: {e}")
             logging.error(f"Exception type: {type(e)}")
             logging.error(f"Exception args: {e.args}")
             return False

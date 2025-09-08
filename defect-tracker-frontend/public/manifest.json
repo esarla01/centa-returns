@@ -1,7 +1,7 @@
 {
-  "name": "Centa İade Takip Sistemi",
-  "short_name": "Centa İade",
-  "description": "Centa İade Takip Sistemi",
+  "name": "Centa Arıza Takip Sistemi",
+  "short_name": "Centa Arıza",
+  "description": "Centa Arıza Takip Sistemi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

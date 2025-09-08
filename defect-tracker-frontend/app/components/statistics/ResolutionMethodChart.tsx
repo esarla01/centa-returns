@@ -127,7 +127,7 @@ export default function ResolutionMethodChart({
           <Tooltip
             formatter={(value: any, name: any) => [
               `${value} adet`,
-              'İade Adedi'
+              'Arıza Adedi'
             ]}
             labelFormatter={(label: string) => `Çözüm Yöntemi: ${label}`}
             contentStyle={{

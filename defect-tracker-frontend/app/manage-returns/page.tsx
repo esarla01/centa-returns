@@ -140,10 +140,10 @@ function ReturnsDashboardContent() {
         <div className="flex items-center justify-between mt-6 mb-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-              İade Vakaları Yönetimi
+              Arıza Vakaları Yönetimi
             </h1>
             <p className="text-sm text-gray-500 mt-1 hidden md:block">
-              İade vakalarını görüntüleme, arama ve yönetim
+              Arıza vakalarını görüntüleme, arama ve yönetim
             </p>
           </div>
           
