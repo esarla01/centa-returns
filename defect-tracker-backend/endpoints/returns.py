@@ -794,6 +794,11 @@ def delete_return_case(return_case_id):
         return jsonify({'msg': 'Bu durumdaki vakalar silinemez.'}), 403
 
     try:
+        # First, delete all related user action logs for this return case
+        from models import UserActionLog
+        UserActionLog.query.filter_by(return_case_id=return_case_id).delete()
+        
+        # Then delete the return case
         db.session.delete(return_case)
         db.session.commit()
         return jsonify({'msg': f'Vaka {return_case_id} başarıyla silindi.'}), 200
