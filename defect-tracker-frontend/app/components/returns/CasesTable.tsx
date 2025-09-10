@@ -677,7 +677,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     </td>
                     
                     {/* Kargoya Verildi Stage */}
-                    <td className="p-4">{c.shipping_info ?? "—"}</td>
+                    <td className="p-4">{truncateTextWithEllipsis(c.shipping_info, 30) || "—"}</td>
                     <td className="p-4">{c.tracking_number ?? "—"}</td>
                     <td className="p-4">{c.shipping_date ? formatTurkishDate(c.shipping_date) : "—"}</td>
                     <td className="p-4">
@@ -1145,7 +1145,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                   </div>
                   <div>
                     <span className="text-gray-500">Kargo Bilgisi:</span>
-                    <p>{c.shipping_info ?? "—"}</p>
+                    <p>{truncateTextWithEllipsis(c.shipping_info, 40) || "—"}</p>
                   </div>
                   <div>
                     <span className="text-gray-500">Kargo Numarası:</span>

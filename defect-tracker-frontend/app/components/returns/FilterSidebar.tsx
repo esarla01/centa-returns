@@ -67,12 +67,10 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
     console.log(`Filter changed: ${field} = ${value}`);
     setFilters(prev => ({ ...prev, [field]: value }));
     
-    // Reset pagination to page 1 when search filter changes
-    if (field === 'search') {
-      const params = new URLSearchParams(searchParams);
-      params.set('page', '1');
-      router.push(`?${params.toString()}`);
-    }
+    // Reset pagination to page 1 when any filter changes
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    router.push(`?${params.toString()}`);
   };
 
   // Handle date filter changes with validation
@@ -87,6 +85,11 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
     } else {
       setFilters(prev => ({ ...prev, [field]: value }));
     }
+    
+    // Reset pagination to page 1 when date filter changes
+    const params = new URLSearchParams(searchParams);
+    params.set('page', '1');
+    router.push(`?${params.toString()}`);
   };
 
   // Helper function to check if a filter is active (has a value)
@@ -241,7 +244,13 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
 
         {/* Clear Filters Button */}
         <button 
-            onClick={() => setFilters(initialFilters)}
+            onClick={() => {
+                setFilters(initialFilters);
+                // Reset pagination to page 1 when clearing filters
+                const params = new URLSearchParams(searchParams);
+                params.set('page', '1');
+                router.push(`?${params.toString()}`);
+            }}
             className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 border border-gray-300"
         >
             Filtreleri Temizle
