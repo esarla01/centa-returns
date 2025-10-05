@@ -74,7 +74,7 @@ export default function ItemsByProductModelChart({ startDate, endDate, refreshKe
   const smallItems = filteredData.filter(item => parseFloat(item.percentage) < 3);
   
   // Group small items into "Other" if there are any
-  let chartData = [...significantItems];
+  const chartData = [...significantItems];
   if (smallItems.length > 0) {
     const otherItemCount = smallItems.reduce((sum, item) => sum + item.item_count, 0);
     const otherPercentage = smallItems.reduce((sum, item) => sum + parseFloat(item.percentage), 0);

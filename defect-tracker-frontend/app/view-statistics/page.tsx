@@ -43,7 +43,7 @@ export default function StatisticsPage() {
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
               Başlangıç ve bitiş tarihlerini seçerek istediğiniz zaman aralığındaki verileri görüntüleyebilirsiniz. 
-              Tarihleri girdikten sonra <span className="font-semibold text-blue-700">"Uygula"</span> butonuna tıkladığınızda, 
+              Tarihleri girdikten sonra <span className="font-semibold text-blue-700">&quot;Uygula&quot;</span> butonuna tıkladığınızda, 
               tüm grafikler seçtiğiniz tarih aralığına göre yeniden hesaplanacak ve güncellenecektir.
             </p>
           </div>
