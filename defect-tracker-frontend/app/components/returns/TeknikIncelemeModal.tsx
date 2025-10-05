@@ -46,7 +46,9 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
 
   const resolutionMethodMap = {
     'repair': 'Tamir',
-    'replacement': 'Değişim',
+    'paid_replacement': 'Bedelli Değişim',
+    'free_replacement': 'Bedelsiz Değişim',
+    'old_product_none': 'Eski Ürün (Yok)',
     'unknown': 'Bilinmiyor'
   };
 
@@ -497,7 +499,9 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                           >
                             <option value="">Seçiniz</option> 
                             <option value="repair">Tamir</option>
-                            <option value="replacement">Değişim</option>
+                            <option value="paid_replacement">Bedelli Değişim</option>
+                            <option value="free_replacement">Bedelsiz Değişim</option>
+                            <option value="old_product_none">Eski Ürün (Yok)</option>
                           </select>
                         </div>
                       </div>

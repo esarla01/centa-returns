@@ -21,7 +21,9 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
   // Generate default email content based on return case
   const generateDefaultEmail = () => {
     const repairedItems = returnCase.items.filter(item => item.resolution_method === 'Tamir');
-    const replacedItems = returnCase.items.filter(item => item.resolution_method === 'Değişim');
+    const paidReplacementItems = returnCase.items.filter(item => item.resolution_method === 'Bedelli Değişim');
+    const freeReplacementItems = returnCase.items.filter(item => item.resolution_method === 'Bedelsiz Değişim');
+    const oldProductItems = returnCase.items.filter(item => item.resolution_method === 'Eski Ürün (Yok)');
     
     let content = `Merhaba ${returnCase.customer.name},\n\n`;
     content += `Arıza vakanız (#${returnCase.id}) ile ilgili bilgilendirme:\n\n`;
@@ -34,9 +36,25 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
       content += '\n';
     }
     
-    if (replacedItems.length > 0) {
-      content += `Değiştirilen ürünler:\n`;
-      replacedItems.forEach(item => {
+    if (paidReplacementItems.length > 0) {
+      content += `Bedelli olarak değiştirilen ürünler:\n`;
+      paidReplacementItems.forEach(item => {
+        content += `• ${item.product_model.name} (${item.product_count} adet)\n`;
+      });
+      content += '\n';
+    }
+    
+    if (freeReplacementItems.length > 0) {
+      content += `Bedelsiz olarak değiştirilen ürünler:\n`;
+      freeReplacementItems.forEach(item => {
+        content += `• ${item.product_model.name} (${item.product_count} adet)\n`;
+      });
+      content += '\n';
+    }
+    
+    if (oldProductItems.length > 0) {
+      content += `Eski ürün teslim alınmayan ürünler:\n`;
+      oldProductItems.forEach(item => {
         content += `• ${item.product_model.name} (${item.product_count} adet)\n`;
       });
       content += '\n';
@@ -233,23 +251,44 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
                   Ürünler
                 </h4>
                 <div className="space-y-1">
-                  {returnCase.items.map((item, index) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">{item.product_model.name}</p>
-                        <p className="text-xs text-gray-600">
-                          {item.product_count} adet • {item.resolution_method === 'Tamir' ? '🔨 Tamir Edildi' : '🔄 Değiştirildi'}
-                        </p>
+                  {returnCase.items.map((item, index) => {
+                    // Define resolution method icon and label
+                    const getResolutionIcon = (method: string) => {
+                      switch(method) {
+                        case 'Tamir': return '🔨';
+                        case 'Bedelli Değişim': return '💰';
+                        case 'Bedelsiz Değişim': return '🎁';
+                        case 'Eski Ürün (Yok)': return '❌';
+                        case 'Bilinmiyor': return '❓';
+                        default: return '❓';
+                      }
+                    };
+                    
+                    const getBadgeColor = (method: string) => {
+                      switch(method) {
+                        case 'Tamir': return 'bg-green-100 text-green-800';
+                        case 'Bedelli Değişim': return 'bg-blue-100 text-blue-800';
+                        case 'Bedelsiz Değişim': return 'bg-purple-100 text-purple-800';
+                        case 'Eski Ürün (Yok)': return 'bg-gray-100 text-gray-800';
+                        case 'Bilinmiyor': return 'bg-yellow-100 text-yellow-800';
+                        default: return 'bg-gray-100 text-gray-800';
+                      }
+                    };
+                    
+                    return (
+                      <div key={item.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900 text-sm">{item.product_model.name}</p>
+                          <p className="text-xs text-gray-600">
+                            {item.product_count} adet • {getResolutionIcon(item.resolution_method)} {item.resolution_method}
+                          </p>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBadgeColor(item.resolution_method)}`}>
+                          {item.resolution_method}
+                        </span>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        item.resolution_method === 'Tamir' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {item.resolution_method}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

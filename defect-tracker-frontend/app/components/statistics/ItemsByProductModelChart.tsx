@@ -66,7 +66,25 @@ export default function ItemsByProductModelChart({ startDate, endDate, refreshKe
     );
   }
 
-  const chartData = data.filter(item => item.item_count > 0);
+  // Filter out items with 0 count
+  const filteredData = data.filter(item => item.item_count > 0);
+  
+  // Separate items into those >= 1% and those < 1%
+  const significantItems = filteredData.filter(item => parseFloat(item.percentage) >= 3);
+  const smallItems = filteredData.filter(item => parseFloat(item.percentage) < 3);
+  
+  // Group small items into "Other" if there are any
+  let chartData = [...significantItems];
+  if (smallItems.length > 0) {
+    const otherItemCount = smallItems.reduce((sum, item) => sum + item.item_count, 0);
+    const otherPercentage = smallItems.reduce((sum, item) => sum + parseFloat(item.percentage), 0);
+    
+    chartData.push({
+      product_model_name: 'Diğer',
+      item_count: otherItemCount,
+      percentage: otherPercentage.toFixed(2)
+    });
+  }
 
   return (
     <div className="w-full">

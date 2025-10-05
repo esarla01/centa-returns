@@ -167,7 +167,9 @@ class FaultResponsibilityEnum(Enum):
 
 class ResolutionMethodEnum(Enum):
     repair = 'Tamir'
-    replacement = 'Değişim'
+    paid_replacement = 'Bedelli Değişim'
+    free_replacement = 'Bedelsiz Değişim'
+    old_product_none = 'Eski Ürün (Yok)'
     unknown = 'Bilinmiyor'
 
 class ReturnCase(db.Model):

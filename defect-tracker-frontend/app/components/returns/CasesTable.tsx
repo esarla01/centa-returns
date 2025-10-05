@@ -521,8 +521,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           {c.items.map(item => (
                             <li key={item.id} className="border-b last:border-b-0  pb-1">
                               <div className="text-xs">
-                                {item.resolution_method === 'Tamir' ? 'Tamir' :
-                                 item.resolution_method === 'Değişim' ? 'Değişim' : "—"}
+                                {item.resolution_method || "—"}
                               </div>
                             </li>
                           ))}
@@ -1181,7 +1180,10 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                             </span>
                             <span className="mr-2">
                               {item.resolution_method === 'Tamir' ? '🔨 Tamir' :
-                               item.resolution_method === 'Değişim' ? '🔄 Değişim' : "—"}
+                               item.resolution_method === 'Bedelli Değişim' ? '💰 Bedelli Değişim' :
+                               item.resolution_method === 'Bedelsiz Değişim' ? '🎁 Bedelsiz Değişim' :
+                               item.resolution_method === 'Eski Ürün (Yok)' ? '❌ Eski Ürün (Yok)' :
+                               item.resolution_method === 'Bilinmiyor' ? '❓ Bilinmiyor' : "—"}
                             </span>
                           </div>
                          
