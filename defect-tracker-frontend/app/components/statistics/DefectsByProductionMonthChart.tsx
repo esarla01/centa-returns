@@ -5,9 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 import { ChevronDown, Calendar, RefreshCw } from 'lucide-react';
 
-type Props = {
-  // This component now manages its own time filter independently
-};
+type Props = Record<string, never>;
 
 type ChartData = {
   month: string;

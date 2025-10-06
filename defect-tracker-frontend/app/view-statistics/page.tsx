@@ -163,7 +163,7 @@ export default function StatisticsPage() {
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               Seçilen tarih aralığında iade edilen ürünlerin hangi üretim dönemlerinden geldiğini 
               <span className="font-medium text-gray-800"> yüzdelik dağılım</span> olarak gösterir. 
-              Örneğin: "Ocak 2024'te gelen iadelerin %40'ı Haziran 2023 üretiminden, %30'u Temmuz 2023 üretiminden" gibi. 
+              Örneğin: &quot;Ocak 2024&apos;te gelen iadelerin %40&apos;ı Haziran 2023 üretiminden, %30&apos;u Temmuz 2023 üretiminden&quot; gibi. 
               Hangi üretim partilerinin daha fazla sorun çıkardığını tespit etmek için kullanılır.
             </p>
             <ProductionDateDistributionChart
