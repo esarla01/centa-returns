@@ -172,23 +172,6 @@ export default function StatisticsPage() {
               refreshKey={refreshKey}
             />
           </div>
-
-          {/* Full-width production month chart */}
-          <div className="bg-white rounded shadow p-4">
-            <h2 className="font-semibold mb-3">Üretim Dönemi Arıza Trend Analizi</h2>
-            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-              Üretim aylarına göre arıza sayılarının 
-              <span className="font-medium text-gray-800"> zaman içindeki değişimini</span> (trend) gösterir. 
-              Her üretim ayı için kaç adet arıza geldiğini takip eder. 
-              Arıza sayılarının artış veya azalış trendlerini görerek, kalite iyileştirme çalışmalarınızın 
-              etkisini ölçebilir ve hangi dönemlerde üretim kalitesinin düştüğünü tespit edebilirsiniz.
-            </p>
-            <DefectsByProductionMonthChart
-              startDate={startDate}
-              endDate={endDate}
-              refreshKey={refreshKey}
-            />
-          </div>
           
           {/* Fault Responsibility and Resolution Method Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -257,6 +240,23 @@ export default function StatisticsPage() {
               endDate={endDate}
               refreshKey={refreshKey}
             />
+          </div>
+
+          {/* Full-width production month chart with independent time filter - AT THE BOTTOM */}
+          <div className="bg-white rounded shadow p-4">
+            <h2 className="font-semibold mb-3">Üretim Dönemi Arıza Trend Analizi</h2>
+            <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+              Üretim aylarına göre arıza sayılarının 
+              <span className="font-medium text-gray-800"> zaman içindeki değişimini</span> (trend) gösterir. 
+              Her üretim ayı için kaç adet arıza geldiğini takip eder. 
+              Arıza sayılarının artış veya azalış trendlerini görerek, kalite iyileştirme çalışmalarınızın 
+              etkisini ölçebilir ve hangi dönemlerde üretim kalitesinin düştüğünü tespit edebilirsiniz.
+              <br />
+              <span className="font-semibold text-amber-700 mt-2 inline-block">
+                ⚠️ Bu grafik yukarıdaki genel tarih filtresinden bağımsızdır ve kendi özel tarih aralığına sahiptir.
+              </span>
+            </p>
+            <DefectsByProductionMonthChart />
           </div>
         </div>
 

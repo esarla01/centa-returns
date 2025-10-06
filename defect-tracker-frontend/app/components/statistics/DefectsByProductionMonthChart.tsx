@@ -3,12 +3,10 @@
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Calendar, RefreshCw } from 'lucide-react';
 
 type Props = {
-  startDate: Date | null;
-  endDate: Date | null;
-  refreshKey?: number; // optional to force re-fetch on Apply
+  // This component now manages its own time filter independently
 };
 
 type ChartData = {
@@ -34,11 +32,24 @@ const PRODUCT_TYPE_ENUM: { [key: string]: string } = {
   'control_unit': 'Kontrol Ünitesi'
 };
 
-export default function DefectsByProductionMonthChart({ startDate, endDate, refreshKey }: Props) {
+export default function DefectsByProductionMonthChart({}: Props) {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPlaceholder, setShowPlaceholder] = useState(false);
+
+  // Independent time filter state with longer ranges
+  const [startDate, setStartDate] = useState<Date | null>(() => {
+    const start = new Date();
+    start.setFullYear(start.getFullYear() - 1); // Default to 1 year
+    return start;
+  });
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [quickSelect, setQuickSelect] = useState<string>('1'); // Default to 1 year
+
+  // Slider state for chart navigation
+  const [visibleDataRange, setVisibleDataRange] = useState<[number, number]>([0, 100]);
 
   // Filter states
   const [productType, setProductType] = useState<string>('');
@@ -48,6 +59,24 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
   const [availableServices, setAvailableServices] = useState<ServiceDefinition[]>([]);
   const [loadingProductModels, setLoadingProductModels] = useState(false);
   const [loadingServices, setLoadingServices] = useState(false);
+
+  // Handle quick date range selection
+  const handleQuickSelect = (value: string) => {
+    setQuickSelect(value);
+    
+    if (value === 'custom') {
+      return;
+    }
+    
+    const today = new Date();
+    const years = parseInt(value);
+    
+    const start = new Date();
+    start.setFullYear(start.getFullYear() - years);
+    
+    setStartDate(start);
+    setEndDate(today);
+  };
 
   // Fetch product models based on selected product type
   useEffect(() => {
@@ -205,9 +234,86 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
     }
   };
 
+  // Calculate visible data based on slider
+  const visibleData = data.slice(
+    Math.floor((data.length * visibleDataRange[0]) / 100),
+    Math.ceil((data.length * visibleDataRange[1]) / 100)
+  );
+
   if (showPlaceholder) {
     return (
       <div className="flex flex-col">
+        {/* Time Filter Section */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-100 p-4 mb-4">
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4 text-amber-600" />
+              <h4 className="text-sm font-semibold text-gray-800">Bu Grafik İçin Özel Tarih Aralığı</h4>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Bu grafik kendi bağımsız tarih filtresine sahiptir. Uzun dönem trend analizi için 1-10 yıl arası seçenekler mevcuttur.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Hızlı Seçim
+              </label>
+              <div className="relative">
+                <select
+                  value={quickSelect}
+                  onChange={(e) => handleQuickSelect(e.target.value)}
+                  className="w-full h-10 appearance-none border-2 border-gray-300 rounded-lg px-3 pr-8 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 text-sm"
+                >
+                  <option value="1">Son 1 Yıl</option>
+                  <option value="2">Son 2 Yıl</option>
+                  <option value="5">Son 5 Yıl</option>
+                  <option value="10">Son 10 Yıl</option>
+                  <option value="custom">Özel Tarih Aralığı</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Başlangıç Tarihi
+              </label>
+              <input
+                type="date"
+                value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  setStartDate(e.target.value ? new Date(e.target.value) : null);
+                  setQuickSelect('custom');
+                }}
+                disabled={quickSelect !== 'custom'}
+                className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+              />
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Bitiş Tarihi
+              </label>
+              <input
+                type="date"
+                value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  setEndDate(e.target.value ? new Date(e.target.value) : null);
+                  setQuickSelect('custom');
+                }}
+                disabled={quickSelect !== 'custom'}
+                className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+              />
+            </div>
+            <button
+              onClick={() => setRefreshKey((x) => x + 1)}
+              className="h-10 px-5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap text-sm"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Uygula
+            </button>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Product Type Filter */}
@@ -304,6 +410,77 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Time Filter Section */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-100 p-4 mb-4">
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Calendar className="w-4 h-4 text-amber-600" />
+            <h4 className="text-sm font-semibold text-gray-800">Bu Grafik İçin Özel Tarih Aralığı</h4>
+          </div>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Bu grafik kendi bağımsız tarih filtresine sahiptir. Uzun dönem trend analizi için 1-10 yıl arası seçenekler mevcuttur.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Hızlı Seçim
+            </label>
+            <div className="relative">
+              <select
+                value={quickSelect}
+                onChange={(e) => handleQuickSelect(e.target.value)}
+                className="w-full h-10 appearance-none border-2 border-gray-300 rounded-lg px-3 pr-8 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 text-sm"
+              >
+                <option value="1">Son 1 Yıl</option>
+                <option value="2">Son 2 Yıl</option>
+                <option value="5">Son 5 Yıl</option>
+                <option value="10">Son 10 Yıl</option>
+                <option value="custom">Özel Tarih Aralığı</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Başlangıç Tarihi
+            </label>
+            <input
+              type="date"
+              value={startDate ? startDate.toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                setStartDate(e.target.value ? new Date(e.target.value) : null);
+                setQuickSelect('custom');
+              }}
+              disabled={quickSelect !== 'custom'}
+              className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+            />
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Bitiş Tarihi
+            </label>
+            <input
+              type="date"
+              value={endDate ? endDate.toISOString().split('T')[0] : ''}
+              onChange={(e) => {
+                setEndDate(e.target.value ? new Date(e.target.value) : null);
+                setQuickSelect('custom');
+              }}
+              disabled={quickSelect !== 'custom'}
+              className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+            />
+          </div>
+          <button
+            onClick={() => setRefreshKey((x) => x + 1)}
+            className="h-10 px-5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap text-sm"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Uygula
+          </button>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Product Type Filter */}
@@ -391,7 +568,9 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
 
       {loading && <div className="text-sm text-gray-500">Yükleniyor...</div>}
       {error && <div className="text-sm text-red-600">{error}</div>}
-      <div style={{ width: "100%", height: "300px" }} className="relative">
+      
+      {/* Chart with increased height */}
+      <div style={{ width: "100%", height: "400px" }} className="relative">
         {isEmpty && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</span>
@@ -399,7 +578,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
         )}
         {!isEmpty && (
         <ResponsiveContainer>
-          <BarChart data={data}>
+          <BarChart data={visibleData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="month" 
@@ -415,7 +594,7 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
               formatter={(value: any, name: any) => [`${value} hata`, 'Hata Sayısı']}
               labelFormatter={(label: string) => `Üretim Tarihi: ${formatMonthLabel(label)}`}
             />
-            <Bar dataKey="defect_count" fill="#8884d8" name="Hata Sayısı">
+            <Bar dataKey="defect_count" fill="#f59e0b" name="Hata Sayısı">
               <LabelList 
                 dataKey="defect_count" 
                 position="top" 
@@ -427,6 +606,67 @@ export default function DefectsByProductionMonthChart({ startDate, endDate, refr
         </ResponsiveContainer>
         )}
       </div>
+
+      {/* Range Slider for navigating through data */}
+      {!isEmpty && data.length > 12 && (
+        <div className="mt-6 px-2">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">
+              Görünüm Aralığı ({visibleData.length} / {data.length} ay)
+            </label>
+            <button
+              onClick={() => setVisibleDataRange([0, 100])}
+              className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+            >
+              Tümünü Göster
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 whitespace-nowrap">
+              {formatMonthLabel(data[Math.floor((data.length * visibleDataRange[0]) / 100)]?.month || '')}
+            </span>
+            <div className="flex-1">
+              <input
+                type="range"
+                min="0"
+                max={Math.max(0, 100 - (visibleDataRange[1] - visibleDataRange[0]))}
+                value={visibleDataRange[0]}
+                onChange={(e) => {
+                  const newStart = parseInt(e.target.value);
+                  const range = visibleDataRange[1] - visibleDataRange[0];
+                  setVisibleDataRange([newStart, Math.min(100, newStart + range)]);
+                }}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+              />
+            </div>
+            <span className="text-xs text-gray-600 whitespace-nowrap">
+              {formatMonthLabel(data[Math.ceil((data.length * visibleDataRange[1]) / 100) - 1]?.month || '')}
+            </span>
+          </div>
+          <div className="mt-2 flex justify-center gap-2">
+            <button
+              onClick={() => {
+                const newStart = Math.max(0, visibleDataRange[0] - 10);
+                const range = visibleDataRange[1] - visibleDataRange[0];
+                setVisibleDataRange([newStart, Math.min(100, newStart + range)]);
+              }}
+              className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+            >
+              ← Önceki
+            </button>
+            <button
+              onClick={() => {
+                const newStart = Math.min(100 - (visibleDataRange[1] - visibleDataRange[0]), visibleDataRange[0] + 10);
+                const range = visibleDataRange[1] - visibleDataRange[0];
+                setVisibleDataRange([newStart, Math.min(100, newStart + range)]);
+              }}
+              className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+            >
+              Sonraki →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
