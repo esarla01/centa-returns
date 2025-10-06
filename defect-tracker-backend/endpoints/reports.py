@@ -546,3 +546,82 @@ def top_defects():
         "total_occurrences": total_occurrences,
         "data": data
     })
+
+@reports_bp.route("/reports/production-date-distribution", methods=["GET"])
+def production_date_distribution():
+    """Get distribution of returned items by their production date, with filters for product type, model and service"""
+    try:
+        start_date = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d")
+        end_date = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d")
+        product_type_filter = request.args.get("product_type", "")
+        product_model_id_filter = request.args.get("product_model_id", "")
+        service_id_filter = request.args.get("service_id", "")
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+
+    # Query items grouped by production month
+    query = (
+        db.session.query(
+            ReturnCaseItem.production_date.label("production_month"),
+            ProductModel.product_type,
+            ProductModel.name.label("product_model"),
+            func.sum(ReturnCaseItem.product_count).label("item_count")
+        )
+        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
+        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
+        .filter(ReturnCase.arrival_date >= start_date)
+        .filter(ReturnCase.arrival_date <= end_date)
+        .filter(ReturnCaseItem.production_date.isnot(None))
+    )
+
+    # Apply product type filter if provided
+    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
+        query = query.filter(ProductModel.product_type == ProductTypeEnum[product_type_filter])
+
+    # Apply product model ID filter if provided
+    if product_model_id_filter:
+        try:
+            product_model_id = int(product_model_id_filter)
+            query = query.filter(ReturnCaseItem.product_model_id == product_model_id)
+        except ValueError:
+            return jsonify({"error": "Invalid product_model_id"}), 400
+
+    # Apply service ID filter if provided - need to join with services tables
+    if service_id_filter:
+        try:
+            service_id = int(service_id_filter)
+            query = query.join(ReturnCaseItemService, ReturnCaseItemService.return_case_item_id == ReturnCaseItem.id)
+            query = query.filter(ReturnCaseItemService.service_definition_id == service_id)
+            query = query.filter(ReturnCaseItemService.is_performed == True)
+        except ValueError:
+            return jsonify({"error": "Invalid service_id"}), 400
+
+    # Group by production month, product type, and model
+    query = query.group_by(
+        ReturnCaseItem.production_date,
+        ProductModel.product_type,
+        ProductModel.name
+    )
+    query = query.order_by(ReturnCaseItem.production_date)
+    
+    results = query.all()
+
+    # Calculate total items for percentage
+    total_items = sum(row.item_count for row in results)
+
+    # Format results
+    data = [
+        {
+            "production_month": row.production_month,
+            "product_type": row.product_type.value,
+            "product_model": row.product_model,
+            "item_count": row.item_count,
+            "percentage": round((row.item_count / total_items) * 100, 2) if total_items > 0 else 0
+        }
+        for row in results
+    ]
+
+    return jsonify({
+        "total_items": total_items,
+        "data": data
+    })

@@ -21,7 +21,6 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
   // Generate default email content based on return case
   const generateDefaultEmail = () => {
     const repairedItems = returnCase.items.filter(item => item.resolution_method === 'Tamir');
-    const paidReplacementItems = returnCase.items.filter(item => item.resolution_method === 'Bedelli Değişim');
     const freeReplacementItems = returnCase.items.filter(item => item.resolution_method === 'Bedelsiz Değişim');
     const oldProductItems = returnCase.items.filter(item => item.resolution_method === 'Eski Ürün (Yok)');
     
@@ -31,14 +30,6 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
     if (repairedItems.length > 0) {
       content += `Tamir edilen ürünler:\n`;
       repairedItems.forEach(item => {
-        content += `• ${item.product_model.name} (${item.product_count} adet)\n`;
-      });
-      content += '\n';
-    }
-    
-    if (paidReplacementItems.length > 0) {
-      content += `Bedelli olarak değiştirilen ürünler:\n`;
-      paidReplacementItems.forEach(item => {
         content += `• ${item.product_model.name} (${item.product_count} adet)\n`;
       });
       content += '\n';
@@ -256,7 +247,6 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
                     const getResolutionIcon = (method: string) => {
                       switch(method) {
                         case 'Tamir': return '🔨';
-                        case 'Bedelli Değişim': return '💰';
                         case 'Bedelsiz Değişim': return '🎁';
                         case 'Eski Ürün (Yok)': return '❌';
                         case 'Bilinmiyor': return '❓';
@@ -267,7 +257,6 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
                     const getBadgeColor = (method: string) => {
                       switch(method) {
                         case 'Tamir': return 'bg-green-100 text-green-800';
-                        case 'Bedelli Değişim': return 'bg-blue-100 text-blue-800';
                         case 'Bedelsiz Değişim': return 'bg-purple-100 text-purple-800';
                         case 'Eski Ürün (Yok)': return 'bg-gray-100 text-gray-800';
                         case 'Bilinmiyor': return 'bg-yellow-100 text-yellow-800';

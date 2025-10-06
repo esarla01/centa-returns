@@ -1180,7 +1180,6 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                             </span>
                             <span className="mr-2">
                               {item.resolution_method === 'Tamir' ? '🔨 Tamir' :
-                               item.resolution_method === 'Bedelli Değişim' ? '💰 Bedelli Değişim' :
                                item.resolution_method === 'Bedelsiz Değişim' ? '🎁 Bedelsiz Değişim' :
                                item.resolution_method === 'Eski Ürün (Yok)' ? '❌ Eski Ürün (Yok)' :
                                item.resolution_method === 'Bilinmiyor' ? '❓ Bilinmiyor' : "—"}

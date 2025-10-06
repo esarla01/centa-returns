@@ -167,7 +167,6 @@ class FaultResponsibilityEnum(Enum):
 
 class ResolutionMethodEnum(Enum):
     repair = 'Tamir'
-    paid_replacement = 'Bedelli Değişim'
     free_replacement = 'Bedelsiz Değişim'
     old_product_none = 'Eski Ürün (Yok)'
     unknown = 'Bilinmiyor'
