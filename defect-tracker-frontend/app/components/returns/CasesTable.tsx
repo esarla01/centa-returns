@@ -99,10 +99,9 @@ const isCurrentStage = (currentStatus: string, stage: string): boolean => {
 };
 
 const canUserDeleteCase = (userRole: string, caseStatus: string): boolean => {
-  if (caseStatus === 'Teslim Alındı') {
-    return userRole === 'SUPPORT';
-  }
-  return false;
+  const deletableStatuses = ['Teslim Alındı', 'Teknik İnceleme'];
+  const allowedRoles = ['SUPPORT', 'MANAGER', 'ADMIN'];
+  return deletableStatuses.includes(caseStatus) && allowedRoles.includes(userRole);
 };
 
 const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => {
@@ -114,10 +113,13 @@ const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => 
 };
 
 const getDeletePermissionMessage = (userRole: string, caseStatus: string): string => {
-  if (caseStatus === 'Teslim Alındı') {
-    return userRole === 'SUPPORT' ? 'Sil' : 'Sadece DESTEK rolü silebilir';
+  const deletableStatuses = ['Teslim Alındı', 'Teknik İnceleme'];
+  if (!deletableStatuses.includes(caseStatus)) {
+    return 'Bu durumda silme yapılamaz';
   }
-  return 'Bu durumda silme yapılamaz';
+  return ['SUPPORT', 'MANAGER', 'ADMIN'].includes(userRole)
+    ? 'Sil'
+    : 'Sadece DESTEK, YÖNETİCİ veya ADMIN rolü silebilir';
 };
 
 const formatTurkishDate = (dateString: string) => {

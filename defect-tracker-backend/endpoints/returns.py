@@ -784,13 +784,13 @@ def delete_return_case(return_case_id):
     if not return_case:
         return jsonify({'msg': 'Vaka bulunamadı.'}), 404
 
-    # Check if user can delete this case
-    # Only SUPPORT role can delete cases when status is 'Teslim Alındı' or 'Teknik İnceleme'
-    if return_case.workflow_status.value in ['Teslim Alındı']:
-        if user_role != 'SUPPORT':
-            return jsonify({'msg': 'Bu vakayı silmek için SUPPORT rolüne sahip olmanız gerekiyor.'}), 403
+    # Only SUPPORT role can delete cases while they are in Teslim Alındı or Teknik İnceleme
+    deletable_statuses = {CaseStatusEnum.DELIVERED, CaseStatusEnum.TECHNICAL_REVIEW}
+    allowed_roles = {'SUPPORT', 'MANAGER', 'ADMIN'}
+    if return_case.workflow_status in deletable_statuses:
+        if user_role not in allowed_roles:
+            return jsonify({'msg': 'Bu vakayı silmek için SUPPORT, MANAGER veya ADMIN rolüne sahip olmanız gerekiyor.'}), 403
     else:
-        # For other statuses, no one can delete
         return jsonify({'msg': 'Bu durumdaki vakalar silinemez.'}), 403
 
     try:
