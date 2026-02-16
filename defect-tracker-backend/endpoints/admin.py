@@ -140,6 +140,47 @@ def deregister():
 
     return jsonify({"msg": f'{user_to_delete.first_name} {user_to_delete.last_name} kullanıcısının kaydı başarıyla silindi'}), 200
 
+@admin_bp.route('/toggle-email-notifications', methods=['PATCH'])
+@permission_required(AppPermissions.PAGE_VIEW_ADMIN)
+def toggle_email_notifications():
+    """Toggle email notifications for a specific user"""
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"msg": "Veri sağlanmadı"}), 400
+
+    target_email = data.get('email')
+    enabled = data.get('enabled')  # Boolean
+
+    if not target_email:
+        return jsonify({"msg": "E-posta adresi gereklidir"}), 400
+
+    if enabled is None:
+        return jsonify({"msg": "Bildirim durumu belirtilmelidir"}), 400
+
+    # Query user by email
+    user = User.query.filter_by(email=target_email).first()
+
+    if not user:
+        return jsonify({"msg": f'{target_email} e-posta adresine sahip kullanıcı bulunamadı'}), 404
+
+    try:
+        user.email_notifications_enabled = bool(enabled)
+        db.session.commit()
+
+        status_text = "aktifleştirildi" if enabled else "devre dışı bırakıldı"
+        return jsonify({
+            "msg": f'{user.first_name} {user.last_name} için e-posta bildirimleri {status_text}',
+            "user": user.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "msg": "Bildirim tercihi güncellenirken bir hata oluştu",
+            "error": str(e)
+        }), 500
+
 @admin_bp.route('', methods=['GET'])
 @jwt_required()
 def retrieve_users():
@@ -239,6 +280,7 @@ def retrieve_users():
         "invitedBy": user.invited_by,
         "isInvited": bool(user.invitation_token and user.invitation_expiry and user.invitation_expiry > datetime.datetime.utcnow()),
         "isActive": bool(user.password_hash),
+        "emailNotificationsEnabled": user.email_notifications_enabled
        }
 
     # Return the serialized users

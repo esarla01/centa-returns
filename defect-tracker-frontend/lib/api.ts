@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   ADMIN: {
     USERS: '/admin',
     INVITE_USER: '/admin/invite-user',
+    TOGGLE_EMAIL_NOTIFICATIONS: '/admin/toggle-email-notifications',
   },
   CUSTOMERS: '/customers',
   PRODUCTS: '/products',

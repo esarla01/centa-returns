@@ -99,6 +99,9 @@ class User(db.Model):
     invited_by = db.Column(db.String(254), db.ForeignKey('users.email'), nullable=True)
     invited_at = db.Column(db.DateTime, nullable=True)
 
+    # Email notification preferences
+    email_notifications_enabled = db.Column(db.Boolean, default=True, nullable=False)
+
     def set_password(self, pw):
         self.password_hash = bcrypt.generate_password_hash(pw).decode('utf-8')
 
@@ -115,7 +118,8 @@ class User(db.Model):
             'accepted_at': self.accepted_at.isoformat() if self.accepted_at else None,
             'invited_by': self.invited_by,
             'invited_at': self.invited_at.isoformat() if self.invited_at else None,
-            'is_active': bool(self.password_hash)  # User is active if they have a password
+            'is_active': bool(self.password_hash),  # User is active if they have a password
+            'email_notifications_enabled': self.email_notifications_enabled
         }
 
 class Customers(db.Model):

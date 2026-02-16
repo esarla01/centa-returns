@@ -10,6 +10,7 @@ import Pagination from '@/app/components/Pagination';
 import { RequirePermission } from '../components/RequirePermission';
 import AddUserModal from '../components/adminDashboard/AddUserModal';
 import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationModel';
+import EmailNotificationToggle from '../components/adminDashboard/EmailNotificationToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
 
@@ -107,8 +108,42 @@ function AdminDashboardContent() {
 
   // Handler for when a user deleted
   const handleDeletionSuccess = () => {
-    setSelectedUserForDeletion(null); 
-    fetchUsers();  
+    setSelectedUserForDeletion(null);
+    fetchUsers();
+  };
+
+  // Handler for toggling email notifications
+  const handleToggleEmailNotifications = async (email: string, enabled: boolean) => {
+    try {
+      const url = buildApiUrl(API_ENDPOINTS.ADMIN.TOGGLE_EMAIL_NOTIFICATIONS);
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, enabled }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Bildirim tercihi güncellenemedi');
+      }
+
+      // Update local state to reflect the change
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.email === email
+            ? { ...user, emailNotificationsEnabled: enabled }
+            : user
+        )
+      );
+
+      console.log(`Email notifications ${enabled ? 'enabled' : 'disabled'} for ${email}`);
+    } catch (error) {
+      console.error('Error toggling email notifications:', error);
+      throw error; // Re-throw to let the toggle component handle it
+    }
   };
 
   // Clear all filters
@@ -340,9 +375,17 @@ function AdminDashboardContent() {
                       <p className="text-xs text-gray-400 mt-1">
                         Son giriş: {user.lastLogin || '—'}
                       </p>
+                      <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-100">
+                        <span className="text-xs text-gray-500">E-posta Bildirimleri:</span>
+                        <EmailNotificationToggle
+                          email={user.email}
+                          enabled={user.emailNotificationsEnabled}
+                          onToggle={handleToggleEmailNotifications}
+                        />
+                      </div>
                     </div>
                   </div>
-                  
+
                   {/* Action Button */}
                   <button 
                     onClick={() => setSelectedUserForDeletion(user)}
@@ -370,13 +413,14 @@ function AdminDashboardContent() {
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DAVET TARİHİ</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DAVET KABUL TARİHİ</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SON GİRİŞ</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">E-POSTA BİLDİRİMLERİ</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EYLEMLER</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mr-2"></div>
                           Yükleniyor...
@@ -385,7 +429,7 @@ function AdminDashboardContent() {
                     </tr>
                   ) : users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                         {filters.search || filters.role ? 'Arama kriterlerinize uygun kullanıcı bulunamadı.' : 'Henüz kullanıcı bulunmuyor.'}
                       </td>
                     </tr>
@@ -432,6 +476,13 @@ function AdminDashboardContent() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {user.lastLogin || '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <EmailNotificationToggle
+                            email={user.email}
+                            enabled={user.emailNotificationsEnabled}
+                            onToggle={handleToggleEmailNotifications}
+                          />
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button 

@@ -125,16 +125,17 @@ export interface Customer {
 }
 
 export interface User {
-  email: string; 
+  email: string;
   firstName: string;
   lastName:string;
   role: string;
-  lastLogin: string | null; 
+  lastLogin: string | null;
   createdAt: string | null;
   invitedAt: string | null;
   invitedBy: string | null;
   isInvited: boolean;
   isActive: boolean;
+  emailNotificationsEnabled: boolean;
 };
 
 export interface UserActionLog {

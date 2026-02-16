@@ -69,17 +69,17 @@ def create_app():
     mail.init_app(app)        
 
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
-    # CORS(app, 
-    #     supports_credentials=True, 
+    # CORS(app,
+    #     supports_credentials=True,
     #     resources={r"/*": {"origins": [frontend_url]}},
-    #     methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    #     methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     #     allowed_headers=['Content-Type', 'Authorization']
     # )
     # More permissive CORS for development (remove for production)
-    CORS(app, 
-        supports_credentials=True, 
+    CORS(app,
+        supports_credentials=True,
         resources={r"/*": {"origins": "*"}},
-        methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
         allowed_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
         expose_headers=['Set-Cookie'],
         allow_credentials=True

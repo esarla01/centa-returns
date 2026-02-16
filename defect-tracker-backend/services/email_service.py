@@ -18,7 +18,7 @@ else:
     logging.info(f"ReSend API key loaded: {resend.api_key[:10]}...")
 
 # Import models for database queries
-from models import ReturnCase, User, Role
+from models import ReturnCase, User, Role, UserRole
 
 class CentaEmailService:
     @staticmethod
@@ -217,16 +217,16 @@ class CentaEmailService:
     def new_return_case_notification(case_id):
         """Send return case notification to all users"""
         try:
-            # Retrieve the list of all user emails
+            # Retrieve only the users that have email notifications enabled
             try:
-                users = User.query.all()
+                users = User.query.filter_by(email_notifications_enabled=True).all()
                 user_emails = [user.email for user in users]
             except Exception as db_error:
                 logging.error(f"Database error retrieving users: {db_error}")
                 return False
-            
+
             if not user_emails:
-                logging.warning("E-posta gönderilecek kullanıcı bulunamadı")
+                logging.warning("E-posta gönderilecek kullanıcı bulunamadı (tüm kullanıcılar bildirimleri kapatmış olabilir)")
                 return False
 
             # Retrieve the case from the database
@@ -308,12 +308,18 @@ class CentaEmailService:
                 logging.warning(f"Sonraki aşama {next_stage} için rol tanımlanmamış")
                 return False
             
-            # Get users with the appropriate roles for the next stage
-            users = User.query.join(Role).filter(Role.name.in_(next_stage_roles)).all()
+            # Get users with the appropriate roles for the next stage AND email notifications enabled
+            users = User.query.join(Role).filter(
+                Role.name.in_(next_stage_roles),
+                User.email_notifications_enabled == True
+            ).all()
             user_emails = [user.email for user in users]
-            
+
             if not user_emails:
-                logging.warning(f"Sonraki aşama {next_stage} için e-posta gönderilecek kullanıcı bulunamadı")
+                logging.warning(
+                    f"Sonraki aşama {next_stage} için e-posta gönderilecek kullanıcı bulunamadı "
+                    f"(bildirimleri etkin olan kullanıcı yok)"
+                )
                 return False
 
             # Retrieve the case from the database
@@ -408,12 +414,15 @@ class CentaEmailService:
     def send_case_completion_notification(case_id, completed_by=None):
         """Send notification when a case is fully completed"""
         try:
-            # Retrieve the list of all user emails
-            users = User.query.filter(User.role.in_(['admin', 'manager'])).all()
+            # Retrieve MANAGER and ADMIN users with email notifications enabled
+            users = User.query.join(Role).filter(
+                Role.name.in_([UserRole.MANAGER, UserRole.ADMIN]),
+                User.email_notifications_enabled == True
+            ).all()
             user_emails = [user.email for user in users]
-            
+
             if not user_emails:
-                logging.warning("E-posta gönderilecek kullanıcı bulunamadı")
+                logging.warning("E-posta gönderilecek kullanıcı bulunamadı (bildirimleri etkin olan yönetici/admin yok)")
                 return False
 
             # Retrieve the case from the database
