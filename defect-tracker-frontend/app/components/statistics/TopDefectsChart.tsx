@@ -13,7 +13,8 @@ interface TopDefectData {
 }
 
 interface TopDefectsResponse {
-  total_occurrences: number;
+  total_items: number;
+  total_service_occurrences: number;
   data: TopDefectData[];
 }
 
@@ -45,7 +46,8 @@ export default function TopDefectsChart({
   const [data, setData] = useState<TopDefectData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [totalOccurrences, setTotalOccurrences] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalServiceOccurrences, setTotalServiceOccurrences] = useState(0);
 
   // Filter states
   const [productType, setProductType] = useState<string>('');
@@ -126,7 +128,8 @@ export default function TopDefectsChart({
 
         const result: TopDefectsResponse = await response.json();
         setData(result.data);
-        setTotalOccurrences(result.total_occurrences);
+        setTotalItems(result.total_items);
+        setTotalServiceOccurrences(result.total_service_occurrences);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
       } finally {
@@ -279,11 +282,18 @@ export default function TopDefectsChart({
         </div>
       </div>
 
-      {/* Total Occurrences Display */}
+      {/* Total Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
-          Toplam Arıza Sayısı: <span className="font-semibold text-gray-900">{totalOccurrences}</span>
+          Toplam İade Ürün Adedi: <span className="font-semibold text-gray-900">{totalItems}</span>
+          {' · '}
+          Toplam Tespit Edilen Arıza: <span className="font-semibold text-gray-900">{totalServiceOccurrences}</span>
         </p>
+        {totalServiceOccurrences > totalItems && (
+          <p className="text-xs text-gray-400 mt-1">
+            Bir üründe birden fazla arıza tespit edilebileceğinden, arıza sayısı ürün adedinden yüksek olabilir.
+          </p>
+        )}
       </div>
       
       {/* Bar Chart */}

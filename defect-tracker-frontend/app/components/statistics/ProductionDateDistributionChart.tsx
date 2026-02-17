@@ -406,7 +406,7 @@ export default function ProductionDateDistributionChart({
       {/* Total Items Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
-          Toplam İade Edilen Ürün Sayısı: <span className="font-semibold text-gray-900">{totalItems}</span>
+          Toplam İade Edilen Ürün Adedi: <span className="font-semibold text-gray-900">{totalItems}</span>
         </p>
       </div>
       
