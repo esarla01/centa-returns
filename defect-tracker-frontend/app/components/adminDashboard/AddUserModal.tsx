@@ -120,6 +120,7 @@ export default function AddUserModal({ onClose, onUserInvited }: AddUserModalPro
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             >
               <option value="">Rol seçin</option>
+              <option value="ADMIN">Yönetici</option>
               <option value="MANAGER">Müdür</option>
               <option value="TECHNICIAN">Teknisyen</option>
               <option value="SUPPORT">Destek</option>
