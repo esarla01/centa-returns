@@ -91,7 +91,7 @@ export default function ItemsByProductModelChart({ startDate, endDate, refreshKe
       {/* Total Items Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
-          Toplam Ürün Adedi: <span className="font-semibold text-gray-900">{totalItems}</span>
+          Toplam İade Ürün Adedi: <span className="font-semibold text-gray-900">{totalItems}</span>
         </p>
       </div>
       
