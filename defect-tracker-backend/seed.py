@@ -30,6 +30,7 @@ ROLE_PERMISSIONS = {
     UserRole.SALES: [
         AppPermissions.PAGE_VIEW_CUSTOMER_LIST,
         AppPermissions.PAGE_VIEW_CASE_TRACKING,
+        AppPermissions.PAGE_VIEW_STATISTICS,
         AppPermissions.CASE_EDIT_PAYMENT_COLLECTION,
         AppPermissions.CASE_COMPLETE_PAYMENT_COLLECTION,
     ],
