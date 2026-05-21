@@ -78,14 +78,17 @@ def create_app():
         supports_credentials=True,
         resources={r"/*": {"origins": allowed_origins}},
         methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowed_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+        allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
         expose_headers=['Set-Cookie'],
-        allow_credentials=True
     )
 
     @app.route("/")
     def index():
         return "Hello from Flask with Gunicorn!"
+    
+    @app.route("/health")
+    def health():
+        return {"status": "ok"}, 200
 
     @app.before_request
     def force_https():
@@ -127,10 +130,14 @@ app = create_app()
 # Auto-seed on startup (optional - remove if you prefer manual seeding)
 with app.app_context():
     try:
-        seed_roles_permissions()
-        seed_users()
-        seed_services()
-        print("✅ Database seeded successfully")
+        from models import Role
+        if not Role.query.first():  # only seed if no roles exist
+            seed_roles_permissions()
+            seed_users()
+            seed_services()
+            print("✅ Database seeded successfully")
+        else:
+            print("✅ Database already seeded, skipping")
     except Exception as e:
         print(f"⚠️  Seeding failed (this is normal if data already exists): {e}")
 
