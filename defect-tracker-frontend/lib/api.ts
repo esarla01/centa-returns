@@ -41,7 +41,6 @@ export const API_ENDPOINTS = {
   REPORTS: {
     DEFECTS_BY_PRODUCTION_MONTH: '/reports/defects-by-production-month',
     ITEMS_BY_PRODUCT_MODEL: '/reports/items-by-product-model',
-    SERVICE_TYPE_STATS: '/reports/service-type-stats',
     RESOLUTION_METHOD_STATS: '/reports/resolution-method-stats',
     ITEMS_BY_CUSTOMER: '/reports/items-by-customer',
     RETURNS_BREAKDOWN: '/reports/returns-breakdown',

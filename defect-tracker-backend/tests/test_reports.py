@@ -191,10 +191,6 @@ def test_production_date_distribution(get, data):
     assert by_service["total_items"] == 4  # the unperformed "Kablo kopması" row is not counted
 
 
-def test_service_type_stats_is_an_empty_stub(get):
-    assert get("/reports/service-type-stats") == {"service_stats": {}, "total_items": 0}
-
-
 @pytest.mark.parametrize("path", [
     "items-by-customer", "items-by-product-model", "returns-breakdown", "defects-by-production-month",
     "fault-responsibility-stats", "resolution-method-stats", "product-type-stats", "top-defects",
@@ -211,3 +207,29 @@ def test_reports_require_the_statistics_permission(client_for):
     assert client_for("TECHNICIAN").get("/reports/product-type-stats" + QS).status_code == 403
     # A CORS preflight carries no cookie and must still get through.
     assert client_for(None).options("/reports/product-type-stats" + QS).status_code == 200
+
+
+@pytest.mark.parametrize("path, bad", [
+    ("items-by-customer", "customer_id=abc"),
+    ("defects-by-production-month", "product_model_id=abc"),
+    ("defects-by-production-month", "service_id=abc"),
+    ("top-defects", "service_id=abc"),
+    ("production-date-distribution", "product_model_id=abc"),
+    ("production-date-distribution", "service_id=abc"),
+])
+def test_non_numeric_id_filters_are_rejected(client_for, path, bad):
+    assert client_for("MANAGER").get(f"/reports/{path}{QS}&{bad}").status_code == 400
+
+
+def test_unknown_product_type_filter_is_ignored(get, data):
+    assert get("/reports/items-by-customer" + QS + "&product_type=bogus")["total_items"] == 7
+
+
+def test_an_empty_range_gives_zeros(get, data):
+    empty = "?start_date=2020-01-01&end_date=2020-03-01"
+    assert get("/reports/items-by-customer" + empty) == {"total_items": 0, "data": []}
+    body = get("/reports/fault-responsibility-stats" + empty)
+    assert body["total_items"] == 0
+    assert all(row["item_count"] == 0 and row["percentage"] == 0 for row in body["data"])
+    assert get("/reports/top-defects" + empty) == {
+        "total_items": 0, "total_service_occurrences": 0, "data": []}

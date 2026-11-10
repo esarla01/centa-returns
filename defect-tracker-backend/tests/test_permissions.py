@@ -61,7 +61,6 @@ MATRIX = [
     ("GET", "/reports/product-type-stats" + REPORT_QS, STATS),
     ("GET", "/reports/top-defects" + REPORT_QS, STATS),
     ("GET", "/reports/production-date-distribution" + REPORT_QS, STATS),
-    ("GET", "/reports/service-type-stats", STATS),
 ]
 
 

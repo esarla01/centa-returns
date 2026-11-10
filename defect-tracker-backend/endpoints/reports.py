@@ -1,16 +1,26 @@
-from flask import Blueprint, request, jsonify
-from sqlalchemy import func
-from models import (
-    db, ReturnCase, ReturnCaseItem, Customers, ProductModel,
-    ServiceDefinition, ReturnCaseItemService, ProductTypeEnum,
-    FaultResponsibilityEnum, ResolutionMethodEnum
-)
+"""Statistics for the reports page.
+
+Every report covers the cases that ARRIVED inside a date range and counts
+product units (an item's product_count), not rows. The shared pieces are at
+the top: reading the range, the base query, and the optional filters.
+"""
 from datetime import datetime
+from functools import wraps
+
 from dateutil.relativedelta import relativedelta
-from models import AppPermissions
+from flask import Blueprint, jsonify, request
+from sqlalchemy import func
+
+from models import (
+    AppPermissions, Customers, FaultResponsibilityEnum, ProductModel, ProductTypeEnum,
+    ResolutionMethodEnum, ReturnCase, ReturnCaseItem, ReturnCaseItemService,
+    ServiceDefinition, db,
+)
 from permissions import permission_required
 
 reports_bp = Blueprint("reports", __name__)
+
+UNITS = func.sum(ReturnCaseItem.product_count)
 
 
 @permission_required(AppPermissions.PAGE_VIEW_STATISTICS)
@@ -26,499 +36,334 @@ def require_statistics_permission():
     return _check_statistics_permission()
 
 
-def parse_date_range():
-    start_date = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d")
-    end_date = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d")
-    return start_date, end_date
+# --- Shared building blocks --------------------------------------------------
+
+class BadFilter(Exception):
+    """A query-string value that cannot be used; becomes a 400 response."""
 
 
-def date_filtered_items():
-    """Base query joining ReturnCaseItem -> ReturnCase, filtered by arrival_date."""
-    start_date, end_date = parse_date_range()
-    query = (
-        db.session.query(ReturnCaseItem)
+def report(fn):
+    """Read start_date/end_date, pass them to the report, and turn bad input
+    into a 400 response."""
+    @wraps(fn)
+    def wrapper():
+        try:
+            start = datetime.strptime(request.args.get("start_date"), "%Y-%m-%d")
+            end = datetime.strptime(request.args.get("end_date"), "%Y-%m-%d")
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+        try:
+            return fn(start, end)
+        except BadFilter as problem:
+            return jsonify({"error": str(problem)}), 400
+    return wrapper
+
+
+def items_in_range(start, end, *columns):
+    """Base query: the given columns over items whose case arrived in range."""
+    return (
+        db.session.query(*columns)
+        .select_from(ReturnCaseItem)
         .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
+        .filter(ReturnCase.arrival_date >= start)
+        .filter(ReturnCase.arrival_date <= end)
     )
-    return query, start_date, end_date
+
+
+def with_product_model(query):
+    return query.join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
+
+
+def with_customer(query):
+    return query.join(Customers, Customers.id == ReturnCase.customer_id)
+
+
+def with_performed_services(query):
+    """One row per fault type that was actually found on an item."""
+    return (
+        query
+        .join(ReturnCaseItemService, ReturnCaseItemService.return_case_item_id == ReturnCaseItem.id)
+        .filter(ReturnCaseItemService.is_performed.is_(True))
+    )
+
+
+def product_type_arg():
+    """The product_type filter, or None. An unknown value is ignored."""
+    value = request.args.get("product_type", "")
+    return ProductTypeEnum[value] if value in ProductTypeEnum.__members__ else None
+
+
+def int_arg(name):
+    """An optional whole-number filter; anything else is a 400."""
+    value = request.args.get(name, "")
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        raise BadFilter(f"Invalid {name}")
+
+
+def total_units(query):
+    return query.scalar() or 0
 
 
 def pct(count, total):
     return round((count / total) * 100, 2) if total > 0 else 0
 
 
-@reports_bp.route("/reports/items-by-customer", methods=["GET"])
-def items_by_customer():
-    try:
-        start_date, end_date = parse_date_range()
-        product_type_filter = request.args.get("product_type", "")
-        customer_id_filter = request.args.get("customer_id", "")
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    query = (
-        db.session.query(
-            Customers.id.label("customer_id"),
-            Customers.name.label("customer_name"),
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCase, ReturnCase.customer_id == Customers.id)
-        .join(ReturnCaseItem, ReturnCaseItem.return_case_id == ReturnCase.id)
-        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-    )
-
-    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
-        query = query.filter(ProductModel.product_type == ProductTypeEnum[product_type_filter])
-
-    if customer_id_filter:
-        try:
-            query = query.filter(Customers.id == int(customer_id_filter))
-        except ValueError:
-            return jsonify({"error": "Invalid customer_id"}), 400
-
-    # Total items across ALL customers (before limiting to top 5)
-    total_query = (
-        db.session.query(func.sum(ReturnCaseItem.product_count))
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-    )
-    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
-        total_query = total_query.join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id).filter(ProductModel.product_type == ProductTypeEnum[product_type_filter])
-    total_items = total_query.scalar() or 0
-
-    results_data = (
-        query.group_by(Customers.id, Customers.name)
-        .order_by(func.sum(ReturnCaseItem.product_count).desc())
-        .limit(5)
+def distribution(start, end, column, enum_class, key):
+    """Units per value of an enum column, listing every possible value (zero
+    when unused). Percentages are of all units in range, including items
+    where the column is still empty."""
+    rows = (
+        items_in_range(start, end, column, UNITS.label("item_count"))
+        .filter(column.isnot(None))
+        .group_by(column)
         .all()
     )
+    total = total_units(items_in_range(start, end, UNITS))
+    counts = {row[0]: row.item_count for row in rows}
+    return jsonify({
+        "total_items": total,
+        "data": [
+            {key: member.value,
+             "item_count": counts.get(member, 0),
+             "percentage": pct(counts[member], total) if member in counts else 0}
+            for member in enum_class
+        ],
+    })
+
+
+def production_filters(query):
+    """Filters shared by the two production-date reports. Expects the query
+    to be joined to ProductModel already."""
+    product_type = product_type_arg()
+    if product_type:
+        query = query.filter(ProductModel.product_type == product_type)
+    product_model_id = int_arg("product_model_id")
+    if product_model_id is not None:
+        query = query.filter(ReturnCaseItem.product_model_id == product_model_id)
+    service_id = int_arg("service_id")
+    if service_id is not None:
+        query = with_performed_services(query).filter(
+            ReturnCaseItemService.service_definition_id == service_id)
+    return query
+
+
+# --- Reports -----------------------------------------------------------------
+
+@reports_bp.route("/reports/items-by-customer", methods=["GET"])
+@report
+def items_by_customer(start, end):
+    """Top five customers by returned units."""
+    product_type = product_type_arg()
+    customer_id = int_arg("customer_id")
+
+    def scoped(query):
+        if product_type:
+            query = with_product_model(query).filter(ProductModel.product_type == product_type)
+        return query
+
+    # The total covers all customers, so a single customer's share stays
+    # meaningful when the list is narrowed to that customer.
+    total = total_units(scoped(items_in_range(start, end, UNITS)))
+
+    query = scoped(with_customer(items_in_range(
+        start, end,
+        Customers.id.label("customer_id"), Customers.name.label("customer_name"), UNITS.label("item_count"),
+    )))
+    if customer_id is not None:
+        query = query.filter(Customers.id == customer_id)
+    rows = query.group_by(Customers.id, Customers.name).order_by(UNITS.desc()).limit(5).all()
 
     return jsonify({
-        "total_items": total_items,
+        "total_items": total,
         "data": [
-            {
-                "customer_id": row.customer_id,
-                "customer_name": row.customer_name,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-            for row in results_data
-        ]
+            {"customer_id": row.customer_id, "customer_name": row.customer_name,
+             "item_count": row.item_count, "percentage": pct(row.item_count, total)}
+            for row in rows
+        ],
     })
 
 
 @reports_bp.route("/reports/items-by-product-model", methods=["GET"])
-def items_by_product_model():
-    try:
-        start_date, end_date = parse_date_range()
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    results = (
-        db.session.query(
-            ProductModel.name.label("product_model_name"),
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCaseItem, ReturnCaseItem.product_model_id == ProductModel.id)
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
+@report
+def items_by_product_model(start, end):
+    rows = (
+        with_product_model(items_in_range(
+            start, end, ProductModel.name.label("product_model_name"), UNITS.label("item_count")))
         .group_by(ProductModel.name)
         .all()
     )
-
-    total_items = sum(row.item_count for row in results)
+    total = sum(row.item_count for row in rows)
     return jsonify({
-        "total_items": total_items,
+        "total_items": total,
         "data": [
-            {
-                "product_model_name": row.product_model_name,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-            for row in results
-        ]
+            {"product_model_name": row.product_model_name, "item_count": row.item_count,
+             "percentage": pct(row.item_count, total)}
+            for row in rows
+        ],
     })
 
 
 @reports_bp.route("/reports/returns-breakdown", methods=["GET"])
-def returns_breakdown():
-    try:
-        start_date, end_date = parse_date_range()
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+@report
+def returns_breakdown(start, end):
+    """Units per period, for every product model / customer pair. Periods are
+    months for ranges of 30 days or more, ISO weeks otherwise."""
+    group_unit = "month" if (end - start).days >= 30 else "week"
+    period = func.to_char(ReturnCase.arrival_date, "YYYY-MM" if group_unit == "month" else "IYYY-IW")
 
-    delta_days = (end_date - start_date).days
-    group_unit = "month" if delta_days >= 30 else "week"
-    date_fmt = "YYYY-MM" if group_unit == "month" else "IYYY-IW"
-
-    results = (
-        db.session.query(
-            func.to_char(ReturnCase.arrival_date, date_fmt).label("period"),
-            ProductModel.name.label("product_model"),
-            Customers.name.label("customer_name"),
-            func.sum(ReturnCaseItem.product_count).label("return_count")
-        )
-        .join(ReturnCase, ReturnCaseItem.return_case_id == ReturnCase.id)
-        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
-        .join(Customers, Customers.id == ReturnCase.customer_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
+    rows = (
+        with_customer(with_product_model(items_in_range(
+            start, end,
+            period.label("period"), ProductModel.name.label("product_model"),
+            Customers.name.label("customer_name"), UNITS.label("return_count"),
+        )))
         .group_by("period", "product_model", "customer_name")
         .order_by("period")
         .all()
     )
 
-    customers = set()
-    product_models = set()
-    for row in results:
-        customers.add(row.customer_name)
-        product_models.add(row.product_model)
-
-    all_keys = {f"{m}|{c}" for m in product_models for c in customers}
-    period_data = {}
-    for row in results:
-        entry = period_data.setdefault(row.period, {"period": row.period, **{k: 0 for k in all_keys}})
+    customers = {row.customer_name for row in rows}
+    product_models = {row.product_model for row in rows}
+    all_keys = {f"{model}|{customer}" for model in product_models for customer in customers}
+    periods = {}
+    for row in rows:
+        entry = periods.setdefault(row.period, {"period": row.period, **{key: 0 for key in all_keys}})
         entry[f"{row.product_model}|{row.customer_name}"] = row.return_count
 
     return jsonify({
         "group_unit": group_unit,
-        "data": list(period_data.values()),
+        "data": list(periods.values()),
         "customers": list(customers),
-        "productModels": list(product_models)
+        "productModels": list(product_models),
     })
 
 
 @reports_bp.route("/reports/defects-by-production-month", methods=["GET"])
-def defects_by_production_month():
-    try:
-        start_date, end_date = parse_date_range()
-        product_type_filter = request.args.get("product_type", "")
-        product_model_id_filter = request.args.get("product_model_id", "")
-        service_id_filter = request.args.get("service_id", "")
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    if (end_date - start_date).days < 30:
+@report
+def defects_by_production_month(start, end):
+    """Units per production month, for the months inside the selected range."""
+    if (end - start).days < 30:
         return jsonify({"error": "Date range must be at least one month", "data": []}), 400
 
-    months_in_range = []
-    current_date = start_date.replace(day=1)
-    while current_date <= end_date:
-        months_in_range.append(current_date.strftime("%Y-%m"))
-        current_date += relativedelta(months=1)
+    months = []
+    month = start.replace(day=1)
+    while month <= end:
+        months.append(month.strftime("%Y-%m"))
+        month += relativedelta(months=1)
 
-    query = (
-        db.session.query(
-            func.substring(ReturnCaseItem.production_date, 1, 7).label("production_month"),
-            func.sum(ReturnCaseItem.product_count).label("defect_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItem.production_date.isnot(None))
-    )
+    production_month = func.substring(ReturnCaseItem.production_date, 1, 7)
+    query = production_filters(with_product_model(items_in_range(
+        start, end, production_month.label("production_month"), UNITS.label("defect_count"),
+    )).filter(ReturnCaseItem.production_date.isnot(None)))
+    counts = {row.production_month: row.defect_count for row in query.group_by(production_month).all()}
 
-    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
-        query = query.filter(ProductModel.product_type == ProductTypeEnum[product_type_filter])
-
-    if product_model_id_filter:
-        try:
-            query = query.filter(ReturnCaseItem.product_model_id == int(product_model_id_filter))
-        except ValueError:
-            return jsonify({"error": "Invalid product_model_id"}), 400
-
-    if service_id_filter:
-        try:
-            query = (
-                query.join(ReturnCaseItemService, ReturnCaseItemService.return_case_item_id == ReturnCaseItem.id)
-                .filter(ReturnCaseItemService.service_definition_id == int(service_id_filter))
-                .filter(ReturnCaseItemService.is_performed == True)
-            )
-        except ValueError:
-            return jsonify({"error": "Invalid service_id"}), 400
-
-    defect_counts = {
-        row.production_month: row.defect_count
-        for row in query.group_by(func.substring(ReturnCaseItem.production_date, 1, 7)).all()
-    }
-
-    return jsonify({
-        "data": [{"month": m, "defect_count": defect_counts.get(m, 0)} for m in months_in_range]
-    })
+    return jsonify({"data": [{"month": m, "defect_count": counts.get(m, 0)} for m in months]})
 
 
 @reports_bp.route("/reports/fault-responsibility-stats", methods=["GET"])
-def fault_responsibility_stats():
-    try:
-        start_date, end_date = parse_date_range()
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    query = (
-        db.session.query(
-            ReturnCaseItem.fault_responsibility,
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItem.fault_responsibility.isnot(None))
-        .group_by(ReturnCaseItem.fault_responsibility)
-        .all()
-    )
-
-    total_items = (
-        db.session.query(func.sum(ReturnCaseItem.product_count))
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .scalar()
-    ) or 0
-
-    fault_stats = {
-        ft.value: {"fault_responsibility": ft.value, "item_count": 0, "percentage": 0}
-        for ft in FaultResponsibilityEnum
-    }
-    for row in query:
-        if row.fault_responsibility:
-            fault_stats[row.fault_responsibility.value] = {
-                "fault_responsibility": row.fault_responsibility.value,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-
-    return jsonify({"total_items": total_items, "data": list(fault_stats.values())})
-
-
-@reports_bp.route("/reports/service-type-stats", methods=["GET"])
-def service_type_stats():
-    return jsonify({"service_stats": {}, "total_items": 0}), 200
+@report
+def fault_responsibility_stats(start, end):
+    return distribution(start, end, ReturnCaseItem.fault_responsibility,
+                        FaultResponsibilityEnum, "fault_responsibility")
 
 
 @reports_bp.route("/reports/resolution-method-stats", methods=["GET"])
-def resolution_method_stats():
-    try:
-        start_date, end_date = parse_date_range()
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    query = (
-        db.session.query(
-            ReturnCaseItem.resolution_method,
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItem.resolution_method.isnot(None))
-        .group_by(ReturnCaseItem.resolution_method)
-        .all()
-    )
-
-    total_items = (
-        db.session.query(func.sum(ReturnCaseItem.product_count))
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .scalar()
-    ) or 0
-
-    resolution_stats = {
-        rt.value: {"resolution_method": rt.value, "item_count": 0, "percentage": 0}
-        for rt in ResolutionMethodEnum
-    }
-    for row in query:
-        if row.resolution_method:
-            resolution_stats[row.resolution_method.value] = {
-                "resolution_method": row.resolution_method.value,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-
-    return jsonify({"total_items": total_items, "data": list(resolution_stats.values())})
+@report
+def resolution_method_stats(start, end):
+    return distribution(start, end, ReturnCaseItem.resolution_method,
+                        ResolutionMethodEnum, "resolution_method")
 
 
 @reports_bp.route("/reports/product-type-stats", methods=["GET"])
-def product_type_stats():
-    try:
-        start_date, end_date = parse_date_range()
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    query = (
-        db.session.query(
-            ProductModel.product_type,
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCaseItem, ReturnCaseItem.product_model_id == ProductModel.id)
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
+@report
+def product_type_stats(start, end):
+    rows = (
+        with_product_model(items_in_range(start, end, ProductModel.product_type, UNITS.label("item_count")))
         .group_by(ProductModel.product_type)
         .all()
     )
-
-    total_items = sum(row.item_count for row in query)
-    product_stats = {
-        pt.value: {"product_type": pt.value, "item_count": 0, "percentage": 0}
-        for pt in ProductTypeEnum
-    }
-    for row in query:
-        if row.product_type:
-            product_stats[row.product_type.value] = {
-                "product_type": row.product_type.value,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-
-    return jsonify({"total_items": total_items, "data": list(product_stats.values())})
+    counts = {row.product_type: row.item_count for row in rows}
+    total = sum(counts.values())
+    return jsonify({
+        "total_items": total,
+        "data": [
+            {"product_type": member.value,
+             "item_count": counts.get(member, 0),
+             "percentage": pct(counts[member], total) if member in counts else 0}
+            for member in ProductTypeEnum
+        ],
+    })
 
 
 @reports_bp.route("/reports/top-defects", methods=["GET"])
-def top_defects():
-    try:
-        start_date, end_date = parse_date_range()
-        product_type_filter = request.args.get("product_type", "")
-        service_id_filter = request.args.get("service_id", "")
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid parameters"}), 400
+@report
+def top_defects(start, end):
+    """The five most common fault types. Percentages are of all fault
+    occurrences, which can exceed the unit total when an item has several."""
+    product_type = product_type_arg()
+    service_id = int_arg("service_id")
 
-    query = (
-        db.session.query(
-            ServiceDefinition.service_name,
-            ServiceDefinition.product_type,
-            func.sum(ReturnCaseItem.product_count).label("occurrence_count")
-        )
-        .join(ReturnCaseItemService, ReturnCaseItemService.service_definition_id == ServiceDefinition.id)
-        .join(ReturnCaseItem, ReturnCaseItem.id == ReturnCaseItemService.return_case_item_id)
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItemService.is_performed == True)
-    )
+    def faults(*columns):
+        query = with_performed_services(items_in_range(start, end, *columns)).join(
+            ServiceDefinition, ServiceDefinition.id == ReturnCaseItemService.service_definition_id)
+        if product_type:
+            query = query.filter(ServiceDefinition.product_type == product_type)
+        return query
 
-    # Total items in date range (no service join)
-    total_items_query = (
-        db.session.query(func.sum(ReturnCaseItem.product_count))
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-    )
+    units_query = items_in_range(start, end, UNITS)
+    if product_type:
+        units_query = with_product_model(units_query).filter(ProductModel.product_type == product_type)
+    total = total_units(units_query)
+    total_occurrences = total_units(faults(UNITS))
 
-    # Total service occurrences (with service join) — used as percentage denominator
-    total_service_query = (
-        db.session.query(func.sum(ReturnCaseItem.product_count))
-        .join(ReturnCaseItemService, ReturnCaseItemService.return_case_item_id == ReturnCaseItem.id)
-        .join(ServiceDefinition, ServiceDefinition.id == ReturnCaseItemService.service_definition_id)
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItemService.is_performed == True)
-    )
-
-    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
-        pt = ProductTypeEnum[product_type_filter]
-        query = query.filter(ServiceDefinition.product_type == pt)
-        total_items_query = total_items_query.join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id).filter(ProductModel.product_type == pt)
-        total_service_query = total_service_query.filter(ServiceDefinition.product_type == pt)
-
-    if service_id_filter:
-        try:
-            query = query.filter(ServiceDefinition.id == int(service_id_filter))
-        except ValueError:
-            return jsonify({"error": "Invalid service_id"}), 400
-
-    total_items = total_items_query.scalar() or 0
-    total_service_occurrences = total_service_query.scalar() or 0
-    results = (
+    query = faults(ServiceDefinition.service_name, ServiceDefinition.product_type,
+                   UNITS.label("occurrence_count"))
+    if service_id is not None:
+        query = query.filter(ServiceDefinition.id == service_id)
+    rows = (
         query.group_by(ServiceDefinition.service_name, ServiceDefinition.product_type)
-        .order_by(func.sum(ReturnCaseItem.product_count).desc())
+        .order_by(UNITS.desc())
         .limit(5)
         .all()
     )
 
     return jsonify({
-        "total_items": total_items,
-        "total_service_occurrences": total_service_occurrences,
+        "total_items": total,
+        "total_service_occurrences": total_occurrences,
         "data": [
-            {
-                "service_name": row.service_name,
-                "product_type": row.product_type.value,
-                "occurrence_count": row.occurrence_count,
-                "percentage": pct(row.occurrence_count, total_service_occurrences)
-            }
-            for row in results
-        ]
+            {"service_name": row.service_name, "product_type": row.product_type.value,
+             "occurrence_count": row.occurrence_count,
+             "percentage": pct(row.occurrence_count, total_occurrences)}
+            for row in rows
+        ],
     })
 
 
 @reports_bp.route("/reports/production-date-distribution", methods=["GET"])
-def production_date_distribution():
-    try:
-        start_date, end_date = parse_date_range()
-        product_type_filter = request.args.get("product_type", "")
-        product_model_id_filter = request.args.get("product_model_id", "")
-        service_id_filter = request.args.get("service_id", "")
-    except (TypeError, ValueError):
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-
-    query = (
-        db.session.query(
-            ReturnCaseItem.production_date.label("production_month"),
-            ProductModel.product_type,
-            ProductModel.name.label("product_model"),
-            func.sum(ReturnCaseItem.product_count).label("item_count")
-        )
-        .join(ReturnCase, ReturnCase.id == ReturnCaseItem.return_case_id)
-        .join(ProductModel, ProductModel.id == ReturnCaseItem.product_model_id)
-        .filter(ReturnCase.arrival_date >= start_date)
-        .filter(ReturnCase.arrival_date <= end_date)
-        .filter(ReturnCaseItem.production_date.isnot(None))
-    )
-
-    if product_type_filter and product_type_filter in ProductTypeEnum._member_map_:
-        query = query.filter(ProductModel.product_type == ProductTypeEnum[product_type_filter])
-
-    if product_model_id_filter:
-        try:
-            query = query.filter(ReturnCaseItem.product_model_id == int(product_model_id_filter))
-        except ValueError:
-            return jsonify({"error": "Invalid product_model_id"}), 400
-
-    if service_id_filter:
-        try:
-            query = (
-                query.join(ReturnCaseItemService, ReturnCaseItemService.return_case_item_id == ReturnCaseItem.id)
-                .filter(ReturnCaseItemService.service_definition_id == int(service_id_filter))
-                .filter(ReturnCaseItemService.is_performed == True)
-            )
-        except ValueError:
-            return jsonify({"error": "Invalid service_id"}), 400
-
-    results = (
-        query.group_by(ReturnCaseItem.production_date, ProductModel.product_type, ProductModel.name)
+@report
+def production_date_distribution(start, end):
+    """Units per production month, product type and model."""
+    rows = (
+        production_filters(with_product_model(items_in_range(
+            start, end,
+            ReturnCaseItem.production_date.label("production_month"), ProductModel.product_type,
+            ProductModel.name.label("product_model"), UNITS.label("item_count"),
+        )).filter(ReturnCaseItem.production_date.isnot(None)))
+        .group_by(ReturnCaseItem.production_date, ProductModel.product_type, ProductModel.name)
         .order_by(ReturnCaseItem.production_date)
         .all()
     )
-    total_items = sum(row.item_count for row in results)
-
+    total = sum(row.item_count for row in rows)
     return jsonify({
-        "total_items": total_items,
+        "total_items": total,
         "data": [
-            {
-                "production_month": row.production_month,
-                "product_type": row.product_type.value,
-                "product_model": row.product_model,
-                "item_count": row.item_count,
-                "percentage": pct(row.item_count, total_items)
-            }
-            for row in results
-        ]
+            {"production_month": row.production_month, "product_type": row.product_type.value,
+             "product_model": row.product_model, "item_count": row.item_count,
+             "percentage": pct(row.item_count, total)}
+            for row in rows
+        ],
     })
