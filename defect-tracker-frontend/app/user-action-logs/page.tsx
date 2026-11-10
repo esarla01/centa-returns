@@ -10,6 +10,7 @@ import Pagination from '@/app/components/Pagination';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, api } from '@/lib/api';
+import { usePageSize } from '@/lib/usePageSize';
 
 function UserActionLogsContent() {
   // Loading state for the user
@@ -19,8 +20,7 @@ function UserActionLogsContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
-  const limitParam = searchParams.get('limit');
-  const limit = limitParam ? Number(limitParam) : 5;
+  const limit = usePageSize('logs');
 
   // State for logs, total pages, and search term
   const [logs, setLogs] = useState<UserActionLog[]>([]);

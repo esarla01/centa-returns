@@ -424,3 +424,61 @@ def test_final_completion_when_a_role_holds_the_permission(client_for, customer,
     # Managers and admins are told the case is finished.
     assert sorted(sent_emails[0]["to"]) == ["admin@example.com", "manager@example.com"]
     assert case_status(case_id) == "COMPLETED"
+
+
+# --- The case list: paging and efficiency -------------------------------------
+
+def test_product_filter_counts_a_case_once_however_many_items_match(client_for, customer, product, service):
+    support, tech = client_for("SUPPORT"), client_for("TECHNICIAN")
+    case_ids = []
+    for _ in range(3):
+        case_id = create_case(support, customer)
+        advance_to(client_for, case_id, "TECHNICAL_REVIEW")
+        payload = technical_review_payload(product, service)
+        payload["items"] = [item_payload(product, service), item_payload(product, service), item_payload(product, service)]
+        assert tech.put(f"/returns/{case_id}/teknik-inceleme", json=payload).status_code == 200
+        case_ids.append(case_id)
+
+    body = support.get("/returns?limit=2&page=1&productType=door_detector").get_json()
+    assert body["totalItems"] == 3
+    assert body["totalPages"] == 2
+    assert [c["id"] for c in body["cases"]] == [case_ids[2], case_ids[1]]
+    assert all(len(c["items"]) == 3 for c in body["cases"])
+
+    body = support.get(f"/returns?limit=2&page=2&productModel={product}").get_json()
+    assert [c["id"] for c in body["cases"]] == [case_ids[0]]
+
+
+def test_listing_cases_does_not_query_per_item(app, client_for, customer, product, service):
+    from sqlalchemy import event
+
+    support, tech = client_for("SUPPORT"), client_for("TECHNICIAN")
+
+    def add_cases(count):
+        for _ in range(count):
+            case_id = create_case(support, customer)
+            advance_to(client_for, case_id, "TECHNICAL_REVIEW")
+            payload = technical_review_payload(product, service)
+            payload["items"] = [item_payload(product, service) for _ in range(3)]
+            tech.put(f"/returns/{case_id}/teknik-inceleme", json=payload)
+
+    def queries_for_list():
+        statements = []
+
+        def record(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        event.listen(db.engine, "before_cursor_execute", record)
+        try:
+            assert support.get("/returns?limit=5").status_code == 200
+        finally:
+            event.remove(db.engine, "before_cursor_execute", record)
+        return len(statements)
+
+    add_cases(1)
+    with_one_case = queries_for_list()
+    add_cases(4)
+    with_five_cases = queries_for_list()
+    # More cases and items must not mean more queries.
+    assert with_five_cases == with_one_case
+    assert with_five_cases <= 10

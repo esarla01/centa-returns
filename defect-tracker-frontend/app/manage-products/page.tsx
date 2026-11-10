@@ -14,6 +14,7 @@ import DeleteServiceModal from '../components/services/DeleteServiceModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, api } from '@/lib/api';
+import { usePageSize } from '@/lib/usePageSize';
 
 // Helper to get a color style based on product type
 const getTypeClass = (type: ProductType) => {
@@ -44,9 +45,7 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
-  const limitParam = searchParams.get('limit');
-  // Limit coming from middleware, fallback to 5 if missing
-  const limit = limitParam ? Number(limitParam) : 5;     
+  const limit = usePageSize('products');
 
   // Tab state
   const [activeTab, setActiveTab] = useState<'products' | 'services'>('products');
@@ -95,7 +94,7 @@ function ProductsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filters]);
+  }, [currentPage, filters, limit]);
 
   const fetchServices = useCallback(async () => {
     setIsLoading(true);
@@ -116,7 +115,7 @@ function ProductsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, serviceFilters]);
+  }, [currentPage, serviceFilters, limit]);
 
   useEffect(() => {
     if (!loading) {

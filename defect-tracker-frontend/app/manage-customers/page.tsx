@@ -13,6 +13,7 @@ import EditCustomerModal from '../components/customers/EditCustomerModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, api } from '@/lib/api';
+import { usePageSize } from '@/lib/usePageSize';
 
 function CustomersContent() {
   // Loading state for the user
@@ -22,9 +23,7 @@ function CustomersContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
-  const limitParam = searchParams.get('limit');
-  // Limit coming from middleware, fallback to 5 if missing
-  const limit = limitParam ? Number(limitParam) : 5;
+  const limit = usePageSize('customers');
 
   // State for customers, total pages, and search term
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -61,7 +60,7 @@ function CustomersContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, search, limit]);
 
   // Fetch customers when page, or search term changes
   useEffect(() => {

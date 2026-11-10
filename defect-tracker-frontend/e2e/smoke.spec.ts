@@ -75,6 +75,8 @@ test('a case moves through all five stages', async ({ browser }) => {
 
   await test.step('Support creates the case and completes "Teslim Alındı"', async () => {
     const page = await loginAs(browser, 'support');
+    // The list opens directly, without being redirected to add a page size to the address.
+    await expect(page).toHaveURL(/\/manage-returns$/);
     await page.getByRole('button', { name: /Yeni Vaka Oluştur/ }).click();
     await page.getByRole('button', { name: /Müşteri Seçin/ }).click();
     await page.getByRole('button', { name: CUSTOMER, exact: true }).click();

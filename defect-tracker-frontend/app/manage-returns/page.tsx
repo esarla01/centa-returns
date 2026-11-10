@@ -14,6 +14,7 @@ import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, api } from '@/lib/api';
+import { usePageSize } from '@/lib/usePageSize';
 import { CasesCards } from '../components/returns/CasesCards';
 
 const initialFilters: Filters = {
@@ -36,9 +37,7 @@ function ReturnsDashboardContent() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const currentPage = Number(pageParam) || 1;
-  const limitParam = searchParams.get('limit');
-  // Limit coming from middleware, fallback to 5 if missing
-  const limit = limitParam ? Number(limitParam) : 5;
+  const limit = usePageSize('returns');
 
   // Data
   const [cases, setCases] = useState<FullReturnCase[]>([]);
@@ -83,7 +82,7 @@ function ReturnsDashboardContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, filters]);
+  }, [currentPage, filters, limit]);
 
   useEffect(() => {
     if (!loading) {

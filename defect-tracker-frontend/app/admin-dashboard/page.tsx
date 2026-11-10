@@ -13,6 +13,7 @@ import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationMo
 import EmailNotificationToggle from '../components/adminDashboard/EmailNotificationToggle';
 import { useAuth } from '../contexts/AuthContext';
 import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { usePageSize } from '@/lib/usePageSize';
 
 const getRoleClass = (role: string) => {
   switch (role) {
@@ -33,9 +34,7 @@ function AdminDashboardContent() {
 
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
-  const limitParam = searchParams.get('limit');
-  // Limit coming from middleware, fallback to 5 if missing
-  const limit = limitParam ? Number(limitParam) : 5;
+  const limit = usePageSize('users');
 
   // Current page
   const currentPage = Number(pageParam) || 1;

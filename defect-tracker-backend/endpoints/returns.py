@@ -4,11 +4,11 @@ from functools import wraps
 
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt, jwt_required
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from models import (
     ActionType, AppPermissions, CaseStatusEnum, Customers, ProductModel, ProductTypeEnum,
-    ReceiptMethodEnum, ReturnCase, ReturnCaseItem, ServiceDefinition, UserActionLog, db,
+    ReceiptMethodEnum, ReturnCase, ReturnCaseItem, ReturnCaseItemService, ServiceDefinition, UserActionLog, db,
 )
 from permissions import permission_required
 from serializers import serialize_case
@@ -60,12 +60,17 @@ def apply_case_filters(query, args):
     if receipt_method in ReceiptMethodEnum.__members__:
         query = query.filter(ReturnCase.receipt_method == ReceiptMethodEnum[receipt_method])
 
-    if product_type or product_model:
-        query = query.join(ReturnCase.items).join(ReturnCaseItem.product_model)
-        if product_type in ProductTypeEnum.__members__:
-            query = query.filter(ProductModel.product_type == ProductTypeEnum[product_type])
-        if product_model.isdigit():
-            query = query.filter(ReturnCaseItem.product_model_id == int(product_model))
+    # A case matches when at least one of its items does. Asking "does such an
+    # item exist" (rather than joining to the items) keeps one row per case,
+    # so page counts stay right when several items of a case match.
+    item_conditions = []
+    if product_type in ProductTypeEnum.__members__:
+        item_conditions.append(
+            ReturnCaseItem.product_model.has(ProductModel.product_type == ProductTypeEnum[product_type]))
+    if product_model.isdigit():
+        item_conditions.append(ReturnCaseItem.product_model_id == int(product_model))
+    if item_conditions:
+        query = query.filter(ReturnCase.items.any(db.and_(*item_conditions)))
 
     return query
 
@@ -78,9 +83,13 @@ def get_return_cases():
         page = int(request.args.get('page', 1))
         limit = int(request.args.get('limit', 10))
 
+        # Everything a case row shows is loaded up front, in a fixed number
+        # of queries however many cases and items there are.
+        items = selectinload(ReturnCase.items)
         query = ReturnCase.query.options(
             joinedload(ReturnCase.customer),
-            joinedload(ReturnCase.items).joinedload(ReturnCaseItem.product_model),
+            items.joinedload(ReturnCaseItem.product_model),
+            items.selectinload(ReturnCaseItem.services).joinedload(ReturnCaseItemService.service_definition),
         )
         query = apply_case_filters(query, request.args)
         # Newest arrival first; id breaks ties.
