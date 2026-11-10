@@ -96,3 +96,14 @@ def test_token_of_a_deleted_user_is_rejected(app, client_for):
     db.session.delete(db.session.get(User, "sales@example.com"))
     db.session.commit()
     assert client.get("/returns").status_code == 401
+
+
+def test_errors_are_returned_as_json(client_for, product):
+    manager = client_for("MANAGER")
+    # Not found
+    res = manager.put("/products/9999", json={"name": "X", "product_type": "overload"})
+    assert res.status_code == 404 and "error" in res.get_json()
+    # A crash inside an endpoint (a list where an object is expected)
+    res = manager.put(f"/products/{product}", json=[])
+    assert res.status_code == 500
+    assert res.get_json() == {"error": "Beklenmeyen bir hata oluştu."}

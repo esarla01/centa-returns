@@ -199,7 +199,6 @@ class ReturnCase(db.Model):
     #   - iscilik
     #   - cost
     #   - performed_services
-    items = db.relationship('ReturnCaseItem', back_populates='return_case', cascade='all, delete-orphan')
     yedek_parca = db.Column(db.Numeric(10, 2), nullable=True, default=0)
     bakim = db.Column(db.Numeric(10, 2), nullable=True, default=0)
     iscilik = db.Column(db.Numeric(10, 2), nullable=True, default=0)
@@ -245,8 +244,8 @@ class ReturnCaseItem(db.Model):
     product_model_id = db.Column(db.Integer, db.ForeignKey('product_models.id'), nullable=False)
     product_count = db.Column(db.Integer, nullable=False, default=1)
     
-    # Changed from String to Date for production date (month-year format)
-    production_date = db.Column(db.String(7), nullable=False)  # MM-YYYY format for production date
+    # Production month as text, in YYYY-MM form (for example 2024-03)
+    production_date = db.Column(db.String(7), nullable=False)
 
 
     # Warranty status of the product

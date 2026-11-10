@@ -208,9 +208,7 @@ def get_return_cases():
         })
 
     except Exception as e:
-        print(f"Error in get_return_cases: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logging.exception("Error in get_return_cases")
         return jsonify({"error": f"Failed to fetch return cases: {str(e)}"}), 500
 
 @return_case_bp.route('/simple', methods=['POST'])
@@ -371,9 +369,7 @@ def complete_teslim_alindi(return_case_id):
 def update_teknik_inceleme(return_case_id):
     """Update Teknik İnceleme stage information"""
     try:
-        print(f"Updating teknik inceleme for case {return_case_id}")
         data = request.get_json()
-        print(f"Received data: {data}")
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
@@ -409,7 +405,6 @@ def update_teknik_inceleme(return_case_id):
             
             # Add new items
             for item_data in data['items']:
-                print(f"Processing item: {item_data}")
                 # Handle empty strings for enum fields - set to None if empty
                 warranty_status = None
                 if item_data.get('warranty_status') and item_data['warranty_status'].strip():

@@ -1,6 +1,9 @@
 from models import ProductTypeEnum, ServiceDefinition, User, db, UserRole, AppPermissions, Role, Permission, RolePermission
+import logging
 import os
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 ROLE_PERMISSIONS = {
@@ -81,7 +84,7 @@ def seed_users():
     email = os.getenv('SEED_ADMIN_EMAIL', "erinsarlak003@gmail.com")
     password = os.getenv('SEED_ADMIN_PASSWORD')
     if not password:
-        print("⚠️  SEED_ADMIN_PASSWORD is not set, skipping admin user seed")
+        logger.warning("SEED_ADMIN_PASSWORD is not set, skipping admin user seed")
         return
 
     user = User.query.filter_by(email=email).first()
@@ -161,4 +164,3 @@ def seed_services():
                 ))
 
     db.session.commit()
-    print("✅ Services seeded successfully")

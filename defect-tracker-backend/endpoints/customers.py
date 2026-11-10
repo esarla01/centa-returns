@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from models import db, Customers, AppPermissions, ActionType
 from permissions import permission_required
 from services.log_service import LogService
+from utils import format_tr_datetime
 
 
 customer_bp = Blueprint("customer", __name__, url_prefix="/customers")
@@ -73,7 +74,6 @@ def create_customer():
                 user_email=email,
                 customer_id=new_customer.id
             )
-            print(f"Customer creation logged for {new_customer.id}")
             
         except Exception as e:
             logging.error(f"Error logging action for customer {new_customer.id}: {e}")
@@ -199,21 +199,7 @@ def get_customers():
             'representative': customer.representative,
             'contact_info': customer.contact_info,
             'address': customer.address,
-            'created_at': (
-                customer.created_at.strftime("%d %b %Y %H:%M")
-                .replace("Jan", "Oca")
-                .replace("Feb", "Şub")
-                .replace("Mar", "Mar")
-                .replace("Apr", "Nis")
-                .replace("May", "May")
-                .replace("Jun", "Haz")
-                .replace("Jul", "Tem")
-                .replace("Aug", "Ağu")
-                .replace("Sep", "Eyl")
-                .replace("Oct", "Eki")
-                .replace("Nov", "Kas")
-                .replace("Dec", "Ara")
-            ) if customer.created_at else None
+            'created_at': format_tr_datetime(customer.created_at)
         }
         for customer in paginated_customers.items
     ]

@@ -1,17 +1,15 @@
 import datetime
-from math import ceil
-from types import NoneType
+import logging
 from sqlalchemy import or_
 import secrets
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, get_jwt_identity, jwt_required, get_jwt
-from flask_mail import Message
 from models import AppPermissions, Permission, Role, RolePermission, User, UserRole, db, mail
 import re
-from permissions import permission_required
+from permissions import get_user_permissions
 from services.email_service import CentaEmailService
 
-URL_BASE = 'http://localhost:5000'
+logger = logging.getLogger(__name__)
 
 user_bp = Blueprint("user", __name__, url_prefix="/auth")
 
@@ -55,7 +53,6 @@ def accept_invitation():
         user.last_name = last_name.strip()
         user.set_password(password)
         user.accepted_at = datetime.datetime.utcnow()
-        user.is_invited = False
         user.invitation_token = None
         user.invitation_expiry = None
         user.invited_by = None
@@ -66,7 +63,7 @@ def accept_invitation():
         try:
             CentaEmailService.send_welcome_email(user.email, user.first_name)
         except Exception as e:
-            print(f"Error sending welcome email: {e}")
+            logger.error("Error sending welcome email: %s", e)
             # Don't fail the account activation if email fails
 
         return jsonify({"msg": "Hesabınız başarıyla aktifleştirildi. Artık giriş yapabilirsiniz."}), 200
@@ -157,13 +154,13 @@ def forgot_password():
     user.reset_token_expiry = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
     db.session.commit()
 
-    reset_url = f" https://centa-returns-frontend-production.up.railway.app/reset-password?token={token}"
+    reset_url = f"{current_app.config['EMAIL_LINK_BASE_URL']}/reset-password?token={token}"
 
     try:
         CentaEmailService.send_password_reset(user.email, user.first_name, reset_url)
     except Exception as e:
         # Log the error and return a generic message
-        print(f"Error sending email: {e}")
+        logger.error("Error sending email: %s", e)
         return jsonify({"msg": "E-posta gönderilirken bir hata oluştu."}, {"error": str(e)}), 500
 
     return jsonify(msg="Bu e-posta adresi mevcutsa, sıfırlama bağlantısı gönderildi."), 200
@@ -202,7 +199,7 @@ def reset_password():
         CentaEmailService.send_password_reset_confirmation(user.email, user.first_name)
     except Exception as e:
         # Log the error and return a generic message
-        print(f"Error sending email: {e}")
+        logger.error("Error sending email: %s", e)
         return jsonify(msg="Şifre başarıyla sıfırlandı, ancak onay e-postası gönderilemedi."), 200
 
     return jsonify(msg="Şifre başarıyla sıfırlandı"), 200
@@ -224,23 +221,7 @@ def whoami():
     if not user:
         return jsonify({"msg": "Kullanıcı bulunamadı"}), 404
     
-    # Get permission ids from database
-    role_id = user.role_id
-    permission_ids = [
-        pid for (pid,) in
-        RolePermission.query
-            .filter_by(role_id=role_id)
-            .with_entities(RolePermission.permission_id)
-            .all()
-    ]
-    permissions = (
-        Permission.query
-        .filter(Permission.id.in_(permission_ids))
-        .all()
-    )
-
-    # Get permission names from database
-    permission_names = [perm.name.name for perm in permissions] 
+    permission_names = [perm.name for perm in get_user_permissions(user)]
 
     # Return response
     response =  {

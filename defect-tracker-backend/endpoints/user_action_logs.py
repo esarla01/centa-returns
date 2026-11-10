@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from models import UserActionLog, db, User
@@ -52,7 +53,7 @@ def get_user_action_logs():
                 }
                 logs_data.append(log_dict)
             except Exception as log_error:
-                print(f"Error processing log {log.id}: {log_error}")
+                logging.error("Error processing log %s: %s", log.id, log_error)
                 # Skip this log if there's an error
                 continue
         
@@ -64,7 +65,5 @@ def get_user_action_logs():
         })
         
     except Exception as e:
-        print(f"Error in get_user_action_logs: {e}")
-        import traceback
-        traceback.print_exc()
+        logging.exception("Error in get_user_action_logs")
         return jsonify({'error': str(e)}), 500

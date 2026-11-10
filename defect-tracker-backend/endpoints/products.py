@@ -86,7 +86,6 @@ def create_product():
             user_email=email,
             product_model_id=new_product.id,
         )
-        print(f"Product model creation logged for {new_product.id}")
     except Exception as e:
         logging.error(f"Error logging action for product {new_product.id}: {e}")
 

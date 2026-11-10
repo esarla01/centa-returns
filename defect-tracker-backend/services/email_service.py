@@ -14,8 +14,6 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 # Add validation for API key
 if not resend.api_key:
     logging.error("RESEND_API_KEY environment variable is not set!")
-else:
-    logging.info(f"ReSend API key loaded: {resend.api_key[:10]}...")
 
 # Import models for database queries
 from models import ReturnCase, User, Role, UserRole

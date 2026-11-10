@@ -85,7 +85,6 @@ def create_service():
             user_email=email,
             service_id=new_service.id,
         )
-        print(f"Service creation logged for {new_service.id}")
     except Exception as e:
         logging.error(f"Error logging action for service {new_service.id}: {e}")
 

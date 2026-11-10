@@ -157,3 +157,12 @@ def test_notification_toggle_controls_new_case_recipients(client_for, customer, 
     assert admin.patch("/admin/toggle-email-notifications", json={"email": email_for("MANAGER")}).status_code == 400
     assert admin.patch("/admin/toggle-email-notifications",
                        json={"email": "nobody@example.com", "enabled": True}).status_code == 404
+
+
+def test_email_links_use_the_configured_base_address(app, client_for, sent_emails):
+    base = app.config["EMAIL_LINK_BASE_URL"]
+    client_for("ADMIN").post("/admin/invite-user", json={"email": "new@example.com", "role": "SALES"})
+    assert f'{base}/accept-invitation?token=' in sent_emails[-1]["html"]
+
+    make_client(app).post("/auth/forgot-password", json={"email": email_for("SALES")})
+    assert f'"{base}/reset-password?token=' in sent_emails[-1]["html"]

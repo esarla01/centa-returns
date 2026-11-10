@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import logging
+from flask import Blueprint, current_app, request, jsonify
 from flask_jwt_extended import get_jwt, jwt_required
 from models import AppPermissions, Permission, Role, RolePermission, User, UserRole, db
 from permissions import permission_required
@@ -8,10 +9,12 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from services.email_service import CentaEmailService
+from utils import format_tr_datetime
 from flask_jwt_extended import get_jwt_identity
 import datetime
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+logger = logging.getLogger(__name__)
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PASSWORD_REGEX = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")
@@ -87,7 +90,7 @@ def invite_user():
         db.session.commit()
 
         # Send invitation email
-        invitation_url = f"https://centa-returns-frontend-production.up.railway.app/accept-invitation?token={invitation_token}"        
+        invitation_url = f"{current_app.config['EMAIL_LINK_BASE_URL']}/accept-invitation?token={invitation_token}"
         
         if CentaEmailService.send_user_invitation(
             email, 
@@ -106,7 +109,7 @@ def invite_user():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error: {e}")
+        logger.error("Error inviting user: %s", e)
         return jsonify({"msg": "Kullanıcı davet edilirken bir hata oluştu", "error": str(e)}), 500
 
 @admin_bp.route('', methods=['DELETE'])
@@ -195,9 +198,6 @@ def retrieve_users():
     search = request.args.get('search', '', type=str).strip()
     role_filter = request.args.get('role', '', type=str) # e.g., "ADMIN", "MANAGER"
     
-    print(f"Role filter received: '{role_filter}'")
-    print(f"Available UserRole members: {list(UserRole._member_map_.keys())}")
-
     # Get the users and their roles
     query = db.session.query(User).join(Role)
 
@@ -213,11 +213,8 @@ def retrieve_users():
 
     # If there is a role filter, filter the users by role
     if role_filter and role_filter.upper() in UserRole._member_map_:
-        print(f"Filtering by role: {role_filter.upper()}")
         query = query.filter(Role.name == UserRole[role_filter.upper()])
-    else:
-        print(f"Role filter not applied. role_filter: '{role_filter}', upper: '{role_filter.upper() if role_filter else ''}', in map: {role_filter.upper() in UserRole._member_map_ if role_filter else False}")
-    
+
     # Paginate the users
     paginated_users = query.order_by(Role.name).paginate(
         page=page, 
@@ -232,51 +229,9 @@ def retrieve_users():
         "firstName": user.first_name,
         "lastName": user.last_name,
         "role": user.role.name.value,
-        "createdAt": (
-            user.accepted_at.strftime("%d %b %Y %H:%M")
-            .replace("Jan", "Oca")
-            .replace("Feb", "Şub")
-            .replace("Mar", "Mar")
-            .replace("Apr", "Nis")
-            .replace("May", "May")
-            .replace("Jun", "Haz")
-            .replace("Jul", "Tem")
-            .replace("Aug", "Ağu")
-            .replace("Sep", "Eyl")
-            .replace("Oct", "Eki")
-            .replace("Nov", "Kas")
-            .replace("Dec", "Ara")
-        ) if user.accepted_at else None,
-        "invitedAt": (
-            user.invited_at.strftime("%d %b %Y %H:%M")
-            .replace("Jan", "Oca")
-            .replace("Feb", "Şub")
-            .replace("Mar", "Mar")
-            .replace("Apr", "Nis")
-            .replace("May", "May")
-            .replace("Jun", "Haz")
-            .replace("Jul", "Tem")
-            .replace("Aug", "Ağu")
-            .replace("Sep", "Eyl")
-            .replace("Oct", "Eki")
-            .replace("Nov", "Kas")
-            .replace("Dec", "Ara")
-        ) if user.invited_at else None,
-        "lastLogin": (
-            user.last_login.strftime("%d %b %Y %H:%M")
-            .replace("Jan", "Oca")
-            .replace("Feb", "Şub")
-            .replace("Mar", "Mar")
-            .replace("Apr", "Nis")
-            .replace("May", "May")
-            .replace("Jun", "Haz")
-            .replace("Jul", "Tem")
-            .replace("Aug", "Ağu")
-            .replace("Sep", "Eyl")
-            .replace("Oct", "Eki")
-            .replace("Nov", "Kas")
-            .replace("Dec", "Ara")
-        ) if user.last_login else None,
+        "createdAt": format_tr_datetime(user.accepted_at),
+        "invitedAt": format_tr_datetime(user.invited_at),
+        "lastLogin": format_tr_datetime(user.last_login),
         "invitedBy": user.invited_by,
         "isInvited": bool(user.invitation_token and user.invitation_expiry and user.invitation_expiry > datetime.datetime.utcnow()),
         "isActive": bool(user.password_hash),
