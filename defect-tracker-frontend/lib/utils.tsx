@@ -1,35 +1,20 @@
 // lib/utils.ts
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { ApiError, api, errorMessage } from './api';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export const completeStage = async (caseId: number, stage: string): Promise<{ success: boolean; message?: string; error?: string }> => {
-  const stageEndpoints = {
-    'teslim_alindi': `/returns/${caseId}/complete-teslim-alindi`,
-    'teknik_inceleme': `/returns/${caseId}/complete-teknik-inceleme`,
-    'odeme_tahsilati': `/returns/${caseId}/complete-odeme-tahsilati`,
-    'kargoya_verildi': `/returns/${caseId}/complete-kargoya-verildi`,
-    'tamamlandi': `/returns/${caseId}/complete-tamamlandi`
-  };
+const TURKISH_MONTHS = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+];
 
-  const endpoint = stageEndpoints[stage as keyof typeof stageEndpoints];
-  if (!endpoint) {
-    return { success: false, error: 'Geçersiz aşama' };
-  }
-
-  try {
-    const data = await api.post<{ message: string }>(endpoint);
-    return { success: true, message: data.message };
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return { success: false, error: errorMessage(error, 'Bir hata oluştu') };
-    }
-    return { success: false, error: 'Bağlantı hatası' };
-  }
+/** "2024-05-20" -> "20 Mayıs 2024" */
+export const formatTurkishDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return `${date.getDate()} ${TURKISH_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 };
 
 export const truncateTextWithEllipsis = (text: string | null, maxCharacters: number): string => {

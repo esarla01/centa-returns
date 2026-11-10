@@ -24,8 +24,8 @@ test('a wrong password shows the reason', async ({ page }) => {
   await expect(page).toHaveURL(/login/);
 });
 
-async function loginAs(browser: Browser, role: string): Promise<Page> {
-  const context = await browser.newContext();
+async function loginAs(browser: Browser, role: string, viewport?: { width: number; height: number }): Promise<Page> {
+  const context = await browser.newContext(viewport ? { viewport } : {});
   const page = await context.newPage();
   page.on('pageerror', (error) => problems.push(`[${role}] page error: ${error.message}`));
   await page.goto('/login');
@@ -184,4 +184,55 @@ test('a case moves through all five stages', async ({ browser }) => {
 
   const unexpected = problems.filter((problem) => !expectedRefusals.some((refusal) => problem.includes(refusal)));
   expect(unexpected, 'failed API calls or JavaScript errors').toEqual([]);
+});
+
+// The two tests below run after the one above and use the case it finished.
+
+test('tablet layout shows every stage and offers the right buttons', async ({ browser }) => {
+  const page = await loginAs(browser, 'manager', { width: 900, height: 1000 });
+  const card = page.locator('div.rounded-lg.shadow.border', { hasText: CUSTOMER }).filter({ visible: true }).first();
+  await expect(card).toContainText('Kargoya Verildi:');
+  await expect(card).toContainText('Tamamlandı:');
+
+  await card.locator('input[type=checkbox]').check();
+  // Nobody holds the permission to complete the last stage, so it is not offered.
+  await expect(card.locator('button[title="Bu aşamayı tamamlama yetkiniz yok"]')).toBeDisabled();
+  // The manager may still correct the payment status of a finished case.
+  await card.locator('button[title="Tamamlandı aşamasını düzenle"]').click();
+  await expect(page.getByRole('button', { name: 'Güncelle', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'İptal' }).click();
+
+  await card.locator('button[title="Görüntüle"]').click();
+  await expect(page.getByText('TR123456').filter({ visible: true }).first()).toBeVisible();
+  await page.context().close();
+  expect(problems.filter((problem) => problem.startsWith('[manager]') && !problem.includes('whoami'))).toEqual([]);
+});
+
+test('phone layout: create a case, complete its stage, delete it', async ({ browser }) => {
+  const page = await loginAs(browser, 'support', { width: 390, height: 800 });
+  const before = problems.length;
+
+  await page.getByRole('button', { name: /Ekle|Yeni Vaka Oluştur/ }).click();
+  await page.getByRole('button', { name: /Müşteri Seçin/ }).click();
+  await page.getByRole('button', { name: CUSTOMER, exact: true }).click();
+  await page.locator('form#add-case-form select').selectOption('in_person');
+  await page.getByRole('button', { name: 'Vaka Oluştur', exact: true }).click();
+
+  const card = page.locator('div.rounded-lg', { hasText: 'Elden Teslim' }).filter({ visible: true }).first();
+  await expect(card).toContainText('Teslim Alındı');
+
+  await card.locator('button[title="Aşamayı Tamamla"]').click();
+  await page.locator('button:has-text("Aşamayı Tamamla")').click();
+  await expect(card).toContainText('Teknik İnceleme');
+  // Support has nothing to edit or complete at this stage...
+  await expect(card.locator('button[title="Vakayı Düzenle"]')).toHaveCount(0);
+  await expect(card.locator('button[title="Aşamayı Tamamla"]')).toHaveCount(0);
+
+  // ...but may still delete the case, as on the desktop table.
+  await card.locator('button[title="Vakayı Sil"]').click();
+  await page.getByRole('button', { name: 'Evet, Sil' }).click();
+  await expect(page.locator('div.rounded-lg', { hasText: 'Elden Teslim' }).filter({ visible: true })).toHaveCount(0);
+
+  await page.context().close();
+  expect(problems.slice(before)).toEqual([]);
 });

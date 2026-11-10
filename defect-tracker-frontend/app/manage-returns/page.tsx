@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { truncateTextWithEllipsis } from '@/lib/utils';
 import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import FilterSidebar, { Filters } from '../components/returns/FilterSidebar';
@@ -51,7 +50,6 @@ function ReturnsDashboardContent() {
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [caseToEdit, setCaseToEdit] = useState<FullReturnCase | null>(null);
   const [caseToDelete, setCaseToDelete] = useState<FullReturnCase | null>(null);
 
   // Mobile filter state
@@ -95,7 +93,6 @@ function ReturnsDashboardContent() {
 
   const handleSuccess = () => {
     setIsAddModalOpen(false);
-    setCaseToEdit(null);
     setCaseToDelete(null);
     fetchData();
   };
@@ -258,7 +255,6 @@ function ReturnsDashboardContent() {
                 <CasesTable
                   cases={cases}
                   isLoading={isLoading}
-                  onEdit={setCaseToEdit}
                   onDelete={setCaseToDelete}
                   onRefresh={fetchData}
                 />

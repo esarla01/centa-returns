@@ -1,203 +1,43 @@
 'use client';
 
-import { FullReturnCase } from "@/lib/types";
+import { FullReturnCase, FullReturnCaseItem } from "@/lib/types";
 import { useAuth } from "@/app/contexts/AuthContext";
-import { useState } from "react";
-import { Pencil, Trash2, X, CheckCircle, Mail, Eye } from 'lucide-react';
-import StageCompletionModal from './StageCompletionModal';
-import TeslimAlindiModal from './TeslimAlindiModal';
-import TeknikIncelemeModal from './TeknikIncelemeModal';
-import OdemeTahsilatiModal from './OdemeTahsilatiModal';
-import KargoyaVerildiModal from './KargoyaVerildiModal';
-import TamamlandiModal from './TamamlandiModal';
-import ViewReturnCaseModal from './ViewReturnCaseModal';
-import EmailCustomerModal from './EmailCustomerModal';
-import { truncateTextWithEllipsis, formatCurrency } from "@/lib/utils";
-
+import { useState, type ReactNode } from "react";
+import { Trash2, Mail, Eye } from 'lucide-react';
+import StageActions from './StageActions';
+import { useCaseModals } from './useCaseModals';
+import { truncateTextWithEllipsis, formatCurrency, formatTurkishDate } from "@/lib/utils";
+import {
+  STAGES, canDeleteCase, canEmailCustomer, deleteHint, isCurrentStage, isStageCompleted, statusTone,
+} from "@/lib/workflow";
 
 interface CasesTableProps {
   cases: FullReturnCase[];
   isLoading: boolean;
-  onEdit: (c: FullReturnCase) => void;
   onDelete: (c: FullReturnCase) => void;
-  onRefresh?: () => void; // Optional callback to refresh data
+  onRefresh?: () => void; // reload the list after something was saved
 }
 
+/** One line per product in the case, or a dash when there are none yet. */
+function PerItem({ items, children }: { items: FullReturnCaseItem[]; children: (item: FullReturnCaseItem) => ReactNode }) {
+  if (items.length === 0) return <div className="text-xs text-gray-500">—</div>;
+  return (
+    <ul className="space-y-1">
+      {items.map((item) => (
+        <li key={item.id} className="border-b last:border-b-0 pb-1">{children(item)}</li>
+      ))}
+    </ul>
+  );
+}
 
-const getStatusTextColor = (status: string) => {
-  switch (status) {
-    case 'Teslim Alındı':
-      return 'text-orange-700';
-    case 'Teknik İnceleme':
-      return 'text-blue-800';
-    case 'Ödeme Tahsilatı':
-      return 'text-yellow-800';
-    case 'Kargoya Veriliyor':
-      return 'text-purple-800';
-    case 'Tamamlandı':
-      return 'text-green-800';
-    default:
-      return 'text-gray-800';
-  }
-};
-
-const getStatusStyle = (status: string) => {
-    switch (status) {
-    case 'Teslim Alındı':
-      return 'bg-orange-50 hover:bg-orange-100';
-    case 'Teknik İnceleme':
-      return 'bg-blue-50 hover:bg-blue-100';
-    case 'Ödeme Tahsilatı':
-      return 'bg-yellow-50 hover:bg-yellow-100';
-    case 'Kargoya Veriliyor':
-      return 'bg-purple-50 hover:bg-purple-100';
-    case 'Tamamlandı':
-      return 'bg-green-50 hover:bg-green-100';
-    default:
-      return 'bg-gray-50 hover:bg-gray-100';
-  }
-};
-
-// Helper function to check if a stage is completed (current status is beyond this stage)
-const isStageCompleted = (currentStatus: string, stage: string): boolean => {
-  const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
-  const currentIndex = stageOrder.indexOf(currentStatus);
-  const stageIndex = stageOrder.indexOf(stage);
-  
-  if (currentIndex === -1 || stageIndex === -1) return false;
-  return currentIndex > stageIndex;
-};
-
-const canUserCompleteStage = (userRole: string, caseStatus: string): boolean => {
-  switch (caseStatus) {
-    case 'Teslim Alındı':
-      return userRole === 'SUPPORT';
-    case 'Teknik İnceleme':
-      return userRole === 'TECHNICIAN';
-    case 'Ödeme Tahsilatı':
-      return userRole === 'SALES';
-    case 'Kargoya Veriliyor':
-      return userRole === 'LOGISTICS';
-    case 'Tamamlandı':
-      return userRole === 'MANAGER';
-    default:
-      return false;
-  }
-};
-
-
-// Helper function to check if a stage is current (current status matches this stage)
-const isCurrentStage = (currentStatus: string, stage: string): boolean => {
-  const stageMapping = {
-    'teslim_alindi': 'Teslim Alındı',
-    'teknik_inceleme': 'Teknik İnceleme',
-    'odeme_tahsilati': 'Ödeme Tahsilatı',
-    'kargoya_verildi': 'Kargoya Veriliyor',
-    'tamamlandi': 'Tamamlandı'
-  };
-  return stageMapping[stage as keyof typeof stageMapping] === currentStatus;
-};
-
-const canUserDeleteCase = (userRole: string, caseStatus: string): boolean => {
-  const deletableStatuses = ['Teslim Alındı', 'Teknik İnceleme'];
-  const allowedRoles = ['SUPPORT', 'MANAGER', 'ADMIN'];
-  return deletableStatuses.includes(caseStatus) && allowedRoles.includes(userRole);
-};
-
-const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => {
-  if (caseStatus === 'Tamamlandı') {
-    return userRole === 'LOGISTICS';
-  }
-  return false;
-};
-
-const getDeletePermissionMessage = (userRole: string, caseStatus: string): string => {
-  const deletableStatuses = ['Teslim Alındı', 'Teknik İnceleme'];
-  if (!deletableStatuses.includes(caseStatus)) {
-    return 'Bu durumda silme yapılamaz';
-  }
-  return ['SUPPORT', 'MANAGER', 'ADMIN'].includes(userRole)
-    ? 'Sil'
-    : 'Sadece DESTEK, YÖNETİCİ veya ADMIN rolü silebilir';
-};
-
-const formatTurkishDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const day = date.getDate();
-  const month = date.getMonth();
-  const year = date.getFullYear();
-  
-  const months = [
-    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
-  ];
-  
-  return `${day} ${months[month]} ${year}`;
-};
-
-export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefresh }: CasesTableProps) {
+/**
+ * The case list for wide screens (a table) and tablets (cards). Phones use
+ * CasesCards. A case must be ticked before its buttons work.
+ */
+export default function CasesTable({ cases, isLoading, onDelete, onRefresh }: CasesTableProps) {
   const { user } = useAuth();
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
-  const [stageCompletionModal, setStageCompletionModal] = useState<{
-    isOpen: boolean;
-    caseId: number;
-    stage: string;
-  }>({
-    isOpen: false,
-    caseId: 0,
-    stage: ''
-  });
-
-  // Stage-specific modal states
-  const [teslimAlindiModal, setTeslimAlindiModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
-
-  const [teknikIncelemeModal, setTeknikIncelemeModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
-
-  const [odemeTahsilatiModal, setOdemeTahsilatiModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
-
-  const [kargoyaVerildiModal, setKargoyaVerildiModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
-
-  const [tamamlandiModal, setTamamlandiModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
-
-  const [viewModal, setViewModal] = useState<{ isOpen: boolean; case: FullReturnCase | null }>({ isOpen: false, case: null });
-
-  const [emailCustomerModal, setEmailCustomerModal] = useState<{
-    isOpen: boolean;
-    case: FullReturnCase | null;
-  }>({
-    isOpen: false,
-    case: null
-  });
+  const modals = useCaseModals(onRefresh);
 
   const handleCaseSelection = (caseId: number) => {
     setSelectedCaseId(selectedCaseId === caseId ? null : caseId);
@@ -206,95 +46,6 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
   const handleDeleteClick = (caseItem: FullReturnCase) => {
     if (selectedCaseId !== caseItem.id) return;
     onDelete(caseItem);
-  };
-
-  const handleStageEdit = (caseItem: FullReturnCase, stage: string) => {
-    switch (stage) {
-      case 'teslim_alindi':
-        setTeslimAlindiModal({ isOpen: true, case: caseItem });
-        break;
-      case 'teknik_inceleme':
-        setTeknikIncelemeModal({ isOpen: true, case: caseItem });
-        break;
-      case 'odeme_tahsilati':
-        setOdemeTahsilatiModal({ isOpen: true, case: caseItem });
-        break;
-      case 'kargoya_verildi':
-        setKargoyaVerildiModal({ isOpen: true, case: caseItem });
-        break;
-      case 'tamamlandi':
-        setTamamlandiModal({ isOpen: true, case: caseItem });
-        break;
-      default:
-        onEdit(caseItem);
-    }
-  };
-
-  // Helper function to check if a stage can be edited by the current user role
-  const canEditStage = (currentStatus: string, stage: string): boolean => {
-    const stageMapping = {
-      'teslim_alindi': 'Teslim Alındı',
-      'teknik_inceleme': 'Teknik İnceleme',
-      'odeme_tahsilati': 'Ödeme Tahsilatı',
-      'kargoya_verildi': 'Kargoya Veriliyor',
-      'tamamlandi': 'Tamamlandı'
-    };
-
-    // Define which roles can edit which stages
-    const stageEditPermissions: { [key: string]: string[] } = {
-      'teslim_alindi': ['SUPPORT'],
-      'teknik_inceleme': ['TECHNICIAN'],
-      'odeme_tahsilati': ['SALES'],
-      'kargoya_verildi': ['LOGISTICS'],
-      'tamamlandi': ['MANAGER']
-    };
-
-    // Get the mapped stage name
-    const mappedStage = stageMapping[stage as keyof typeof stageMapping];
-    if (!mappedStage) return false;
-
-    // Only allow editing if the current status is at or beyond this stage
-    const stageOrder = ['Teslim Alındı', 'Teknik İnceleme', 'Ödeme Tahsilatı', 'Kargoya Veriliyor', 'Tamamlandı'];
-    const currentIndex = stageOrder.indexOf(currentStatus);
-    const stageIndex = stageOrder.indexOf(mappedStage);
-
-    if (currentIndex === -1 || stageIndex === -1) return false;
-    if (currentIndex < stageIndex) return false;
-
-    // Check if the user's role is allowed to edit this stage
-    // user?.role is available in the component scope
-    // If user is not defined, deny permission
-    if (!user?.role) return false;
-    const allowedRoles = stageEditPermissions[stage];
-    if (!allowedRoles) return false;
-
-    return allowedRoles.includes(user.role);
-  };
-
-  const handleStageComplete = (caseItem: FullReturnCase, stage: string) => {
-    setStageCompletionModal({
-      isOpen: true,
-      caseId: caseItem.id,
-      stage
-    });
-  };
-
-  const handleStageCompleteSuccess = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
-  };
-
-  const closeStageCompletionModal = () => {
-    setStageCompletionModal({
-      isOpen: false,
-      caseId: 0,
-      stage: ''
-    });
-  };
-
-  const handleEmailCustomer = (caseItem: FullReturnCase) => {
-    setEmailCustomerModal({ isOpen: true, case: caseItem });
   };
 
   return (
@@ -356,8 +107,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
             ) : (
               cases.map((c) => {
                 const isSelected = selectedCaseId === c.id;
-                const canDelete = canUserDeleteCase(user?.role || '', c.status);
-                const canEmail = canUserEmailCustomer(user?.role || '', c.status);
+                const canDelete = canDeleteCase(user, c.status);
+                const canEmail = canEmailCustomer(user, c.status);
                 const isDeleteButtonActive = isSelected && canDelete;
                 const isViewButtonActive = isSelected;
                 const isEmailButtonActive = isSelected && canEmail;
@@ -365,7 +116,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
 
 
                 return (
-                  <tr key={c.id} className={getStatusStyle(c.status)}>
+                  <tr key={c.id} className={statusTone(c.status).row}>
                     {/* Selection Checkbox */}
                     <td className="p-4">
                       <input 
@@ -383,7 +134,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     <td className="p-4">
                       <div className="space-y-1">
                         <div>
-                          <span className={`${getStatusTextColor(c.status)} text-sm font-semibold`}>
+                          <span className={`${statusTone(c.status).text} text-sm font-semibold`}>
                             {c.status}
                           </span>
                         </div>
@@ -396,143 +147,70 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     <td className="p-4">{c.receipt_method}</td>
                     <td className="p-4">{c.notes ? (c.notes.length > 20 ? `${c.notes.substring(0, 20)}...` : c.notes) : "(Yok)"}</td>
                     <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleStageEdit(c, 'teslim_alindi')}
-                          disabled={!canEditStage(c.status, 'teslim_alindi') || !isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'teslim_alindi') && isSelected
-                              ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'teslim_alindi')
-                              ? "Teslim Alındı aşamasını düzenle"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleStageComplete(c, 'teslim_alindi')}
-                          className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Teslim Alındı')
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'teslim_alindi') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isCurrentStage(c.status, 'teslim_alindi') || !isSelected}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Teslim Alındı') 
-                              ? "Teslim Alındı tamamlandı" 
-                              : isCurrentStage(c.status, 'teslim_alindi') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Teslim Alındı aşamasını tamamla"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          {isStageCompleted(c.status, 'Teslim Alındı') ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                      <StageActions
+                        stage={modals.stage('teslim_alindi')} status={c.status} user={user} isSelected={isSelected} variant="table"
+                        onEdit={() => modals.editStage(c, modals.stage('teslim_alindi'))}
+                        onComplete={() => modals.completeStage(c, modals.stage('teslim_alindi'))}
+                      />
                     </td>
                     
                     {/* Teknik İnceleme Stage */}
                     <td className="p-4 min-w-[200px]">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="flex flex-row">
                                 <span className="text-xs text-gray-600">
                                 <span className="font-semibold">{item.product_model?.name || "—"} </span>
                                 {item.product_count ? `(${item.product_count} adet${item.has_control_unit ? ", ünite dahil" : ""})` : ""}
                                 </span>
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
                     <td className="p-4">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="text-xs">
                                 {item.production_date || "—"}
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
                     <td className="p-4">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="text-xs">
                                 {item.warranty_status === 'Garanti Dahilinde' ? 'Var' :
                                  item.warranty_status === 'Garanti Dışı' ? 'Yok' : "—"}
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
                     <td className="p-4">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="text-xs">
                                 {item.fault_responsibility === 'Kullanıcı Hatası' ? 'Kullanıcı Hatası' :
                                  item.fault_responsibility === 'Teknik Sorun' ? 'Teknik Sorun' :
                                  item.fault_responsibility === 'Karışık' ? 'Karışık' : "—"}
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
                     <td className="p-4">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0  pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="text-xs">
                                 {item.resolution_method || "—"}
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
 
                     {/* Arza Tespiti/Hizmetleri */}
                     <td className="p-4 min-w-[200px]">
-                      {c.items.length > 0 ? (
-                        <ul className="space-y-1">
-                          {c.items.map(item => (
-                            <li key={item.id} className="border-b last:border-b-0 pb-1">
+                      <PerItem items={c.items}>
+                        {(item) => (
                               <div className="text-xs">
                                 {item.services && item.services.length > 0 ? (
                                   <div className="space-y-1">
@@ -555,12 +233,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                                   <span className="text-gray-500">Hizmet bilgisi yok</span>
                                 )}
                               </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="text-xs text-gray-500">—</div>
-                      )}
+                        )}
+                      </PerItem>
                     </td>
 
                     {/* Toplam Tutar */}
@@ -572,103 +246,21 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
 
                     {/* Teknik İnceleme Eylemler */}
                     <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleStageEdit(c, 'teknik_inceleme')}
-                          disabled={!canEditStage(c.status, 'teknik_inceleme') || !isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'teknik_inceleme') && isSelected
-                              ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'teknik_inceleme')
-                              ? "Teknik İnceleme aşamasını düzenle"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleStageComplete(c, 'teknik_inceleme')}
-                          className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Teknik İnceleme')
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'teknik_inceleme') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isCurrentStage(c.status, 'teknik_inceleme') || !isSelected}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Teknik İnceleme') 
-                              ? "Teknik İnceleme tamamlandı" 
-                              : isCurrentStage(c.status, 'teknik_inceleme') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Teknik İnceleme aşamasını tamamla"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          {isStageCompleted(c.status, 'Teknik İnceleme') ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                      <StageActions
+                        stage={modals.stage('teknik_inceleme')} status={c.status} user={user} isSelected={isSelected} variant="table"
+                        onEdit={() => modals.editStage(c, modals.stage('teknik_inceleme'))}
+                        onComplete={() => modals.completeStage(c, modals.stage('teknik_inceleme'))}
+                      />
                     </td>
                     
                     {/* Ödeme Tahsilatı Stage */}
                     <td className="p-4">{c.payment_status ?? "—"}</td>
                     <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleStageEdit(c, 'odeme_tahsilati')}
-                          disabled={!canEditStage(c.status, 'odeme_tahsilati') || !isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'odeme_tahsilati') && isSelected
-                              ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'odeme_tahsilati')
-                              ? "Ödeme Tahsilatı aşamasını düzenle"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleStageComplete(c, 'odeme_tahsilati')}
-                          className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Ödeme Tahsilatı')
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isCurrentStage(c.status, 'odeme_tahsilati') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Ödeme Tahsilatı') 
-                              ? "Ödeme Tahsilatı tamamlandı" 
-                              : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Ödeme Tahsilatı aşamasını tamamla"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
+                      <StageActions
+                        stage={modals.stage('odeme_tahsilati')} status={c.status} user={user} isSelected={isSelected} variant="table"
+                        onEdit={() => modals.editStage(c, modals.stage('odeme_tahsilati'))}
+                        onComplete={() => modals.completeStage(c, modals.stage('odeme_tahsilati'))}
+                      />
                     </td>
                     
                     {/* Kargoya Verildi Stage */}
@@ -676,59 +268,18 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                     <td className="p-4">{c.tracking_number ?? "—"}</td>
                     <td className="p-4">{c.shipping_date ? formatTurkishDate(c.shipping_date) : "—"}</td>
                     <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleStageEdit(c, 'kargoya_verildi')}
-                          disabled={!canEditStage(c.status, 'kargoya_verildi') || !isSelected}
-                          className={`transition-colors p-1 rounded ${
-                            canEditStage(c.status, 'kargoya_verildi') && isSelected
-                              ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : canEditStage(c.status, 'kargoya_verildi')
-                              ? "Kargoya Verildi aşamasını düzenle"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleStageComplete(c, 'kargoya_verildi')}
-                          className={`transition-colors p-1 rounded ${
-                            isStageCompleted(c.status, 'Kargoya Veriliyor')
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : isCurrentStage(c.status, 'kargoya_verildi') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                              ? 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                              : 'text-gray-400 cursor-not-allowed'
-                          }`}
-                          disabled={!isCurrentStage(c.status, 'kargoya_verildi') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                          title={
-                            !isSelected
-                              ? "Önce vakayı seçin"
-                              : isStageCompleted(c.status, 'Kargoya Veriliyor') 
-                              ? "Kargoya Verildi tamamlandı" 
-                              : isCurrentStage(c.status, 'kargoya_verildi') && canUserCompleteStage(user?.role || '', c.status)
-                              ? "Kargoya Verildi aşamasını tamamla"
-                              : "Bu aşama henüz aktif değil"
-                          }
-                        >
-                          {isStageCompleted(c.status, 'Kargoya Veriliyor') ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <X className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </td>                
+                      <StageActions
+                        stage={modals.stage('kargoya_verildi')} status={c.status} user={user} isSelected={isSelected} variant="table"
+                        onEdit={() => modals.editStage(c, modals.stage('kargoya_verildi'))}
+                        onComplete={() => modals.completeStage(c, modals.stage('kargoya_verildi'))}
+                      />
+                    </td>
                     
                     {/* Actions */}
                     <td className="p-4">  
                       <div className="flex items-center justify-center space-x-2">
                         <button 
-                          onClick={() => setViewModal({ isOpen: true, case: c })}
+                          onClick={() => modals.view(c)}
                           disabled={!isViewButtonActive}
                           className={`transition-all duration-200 ${
                             isViewButtonActive
@@ -740,7 +291,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           <Eye className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleEmailCustomer(c)}
+                          onClick={() => modals.email(c)}
                           disabled={!isEmailButtonActive}
                           className={`transition-all duration-200 ${
                             isEmailButtonActive
@@ -759,7 +310,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                               ? 'text-red-500 hover:text-red-700 cursor-pointer opacity-100'
                               : 'text-gray-300 cursor-not-allowed opacity-50'
                           }`}
-                          title={getDeletePermissionMessage(user?.role || '', c.status)}
+                          title={deleteHint(user, c.status)}
                         >
                           <Trash2 className="h-5 w-5" />
                         </button>
@@ -783,12 +334,12 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
         ) : (
           cases.map((c) => {
             const isSelected = selectedCaseId === c.id;
-            const canDelete = canUserDeleteCase(user?.role || '', c.status);
+            const canDelete = canDeleteCase(user, c.status);
             const isDeleteButtonActive = isSelected && canDelete;
             const isViewButtonActive = isSelected;
 
             return (
-              <div key={c.id} className={`bg-white rounded-lg shadow border p-4 space-y-3 ${getStatusStyle(c.status)}`}>
+              <div key={c.id} className={`bg-white rounded-lg shadow border p-4 space-y-3 ${statusTone(c.status).row}`}>
                 {/* Header with Checkbox */}
                 <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-3">
@@ -805,7 +356,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                   </div>
                   <div className="flex space-x-2">                   
                     <button 
-                      onClick={() => setViewModal({ isOpen: true, case: c })}
+                      onClick={() => modals.view(c)}
                       disabled={!isViewButtonActive}
                       className={`p-1 transition-all duration-200 ${
                         isViewButtonActive
@@ -826,7 +377,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
                           ? 'text-red-500 hover:text-red-700 opacity-100'
                           : 'text-gray-300 opacity-50'
                       }`}
-                      title={getDeletePermissionMessage(user?.role || '', c.status)}
+                      title={deleteHint(user, c.status)}
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
@@ -835,277 +386,26 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
 
                 {/* Status */}
                 <div className="space-y-1">
-                  <span className={`${getStatusTextColor(c.status)} text-sm font-semibold`}>
+                  <span className={`${statusTone(c.status).text} text-sm font-semibold`}>
                     {c.status}
                   </span>
                 </div>
 
-                {/* Stage Completion Status with Edit Buttons */}
+                {/* Each stage: where the case stands, and its buttons */}
                 <div className="grid grid-cols-1 gap-2 text-xs">
-                  <div className="flex items-center justify-between p-2 bg-orange-50 rounded">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-orange-700 font-semibold">Teslim Alındı:</span>
-                      <span>{isStageCompleted(c.status, 'Teslim Alındı') ? "✅" : isCurrentStage(c.status, 'teslim_alindi') ? "🔄" : "❌"}</span>
+                  {STAGES.map((stage) => (
+                    <div key={stage.key} className={`flex items-center justify-between p-2 rounded ${stage.tone.panel}`}>
+                      <div className="flex items-center space-x-1">
+                        <span className={`font-semibold ${stage.tone.label}`}>{stage.title}:</span>
+                        <span>{isStageCompleted(c.status, stage) ? "✅" : isCurrentStage(c.status, stage) ? "🔄" : "❌"}</span>
+                      </div>
+                      <StageActions
+                        stage={stage} status={c.status} user={user} isSelected={isSelected} variant="card"
+                        onEdit={() => modals.editStage(c, stage)}
+                        onComplete={() => modals.completeStage(c, stage)}
+                      />
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleStageEdit(c, 'teslim_alindi')}
-                        disabled={!canEditStage(c.status, 'teslim_alindi') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'teslim_alindi') && isSelected
-                            ? 'text-orange-600 hover:text-orange-800 hover:bg-orange-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : canEditStage(c.status, 'teslim_alindi')
-                            ? "Teslim Alındı aşamasını düzenle"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleStageComplete(c, 'teslim_alindi')}
-                        disabled={!isCurrentStage(c.status, 'teslim_alindi') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Teslim Alındı')
-                            ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'teslim_alindi') && isSelected
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : isStageCompleted(c.status, 'Teslim Alındı') 
-                            ? "Teslim Alındı tamamlandı" 
-                            : isCurrentStage(c.status, 'teslim_alindi')
-                            ? "Teslim Alındı aşamasını tamamla"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        {isStageCompleted(c.status, 'Teslim Alındı') ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-blue-800 font-semibold">Teknik İnceleme:</span>
-                      <span>{isStageCompleted(c.status, 'Teknik İnceleme') ? "✅" : isCurrentStage(c.status, 'teknik_inceleme') ? "🔄" : "❌"}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleStageEdit(c, 'teknik_inceleme')}
-                        disabled={!canEditStage(c.status, 'teknik_inceleme') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'teknik_inceleme') && isSelected
-                            ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : canEditStage(c.status, 'teknik_inceleme')
-                            ? "Teknik İnceleme aşamasını düzenle"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleStageComplete(c, 'teknik_inceleme')}
-                        disabled={!isCurrentStage(c.status, 'teknik_inceleme') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Teknik İnceleme')
-                            ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'teknik_inceleme') && isSelected
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : isStageCompleted(c.status, 'Teknik İnceleme') 
-                            ? "Teknik İnceleme tamamlandı" 
-                            : isCurrentStage(c.status, 'teknik_inceleme')
-                            ? "Teknik İnceleme aşamasını tamamla"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        {isStageCompleted(c.status, 'Teknik İnceleme') ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-2 bg-yellow-50 rounded">
-                    <div className="flex items-center space-x-1">
-                                      <span className="text-yellow-800 font-semibold">Ödeme Tahsilatı:</span>
-                <span>{isStageCompleted(c.status, 'Ödeme Tahsilatı') ? "✅" : isCurrentStage(c.status, 'odeme_tahsilati') ? "🔄" : "❌"}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleStageEdit(c, 'odeme_tahsilati')}
-                        disabled={!canEditStage(c.status, 'odeme_tahsilati') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'odeme_tahsilati') && isSelected
-                            ? 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                                                      : canEditStage(c.status, 'odeme_tahsilati')
-                          ? "Ödeme Tahsilatı aşamasını düzenle"
-                            : "Bu aşama henüz aktif değil"
-                          }
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleStageComplete(c, 'odeme_tahsilati')}
-                        disabled={!isCurrentStage(c.status, 'odeme_tahsilati') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Ödeme Tahsilatı')
-                            ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                                                        : isStageCompleted(c.status, 'Ödeme Tahsilatı')
-                            ? "Ödeme Tahsilatı tamamlandı" 
-                            : isCurrentStage(c.status, 'odeme_tahsilati') && canUserCompleteStage(user?.role || '', c.status)
-                            ? "Ödeme Tahsilatı aşamasını tamamla"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        {isStageCompleted(c.status, 'Ödeme Tahsilatı') ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-2 bg-purple-50 rounded">
-                    <div className="flex items-center space-x-1">
-                      <span className="text-purple-800 font-semibold">Kargoya Verildi:</span>
-                      <span>{isStageCompleted(c.status, 'Kargoya Veriliyor') ? "✅" : isCurrentStage(c.status, 'kargoya_verildi') ? "🔄" : "❌"}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleStageEdit(c, 'kargoya_verildi')}
-                        disabled={!canEditStage(c.status, 'kargoya_verildi') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'kargoya_verildi') && isSelected
-                            ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : canEditStage(c.status, 'kargoya_verildi')
-                            ? "Kargoya Verildi aşamasını düzenle"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleStageComplete(c, 'kargoya_verildi')}
-                        disabled={!isCurrentStage(c.status, 'kargoya_verildi') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Kargoya Veriliyor')
-                            ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'kargoya_verildi') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : isStageCompleted(c.status, 'Kargoya Veriliyor') 
-                            ? "Kargoya Verildi tamamlandı" 
-                            : isCurrentStage(c.status, 'kargoya_verildi') && canUserCompleteStage(user?.role || '', c.status)
-                            ? "Kargoya Verildi aşamasını tamamla"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        {isStageCompleted(c.status, 'Kargoya Veriliyor') ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <div className="flex items-center space-x-1">
-                      <span className="font-semibold">Tamamlandı:</span>
-                      <span>{isStageCompleted(c.status, 'Tamamlandı') ? "✅" : isCurrentStage(c.status, 'tamamlandi') ? "🔄" : "❌"}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => handleStageEdit(c, 'tamamlandi')}
-                        disabled={!canEditStage(c.status, 'tamamlandi') || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          canEditStage(c.status, 'tamamlandi') && isSelected
-                            ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : canEditStage(c.status, 'tamamlandi')
-                            ? "Tamamlandı aşamasını düzenle"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={() => handleStageComplete(c, 'tamamlandi')}
-                        disabled={!isCurrentStage(c.status, 'tamamlandi') || !canUserCompleteStage(user?.role || '', c.status) || !isSelected}
-                        className={`transition-colors p-1 rounded ${
-                          isStageCompleted(c.status, 'Tamamlandı')
-                            ? 'text-green-600 hover:text-green-800 hover:bg-green-100' 
-                            : isCurrentStage(c.status, 'tamamlandi') && canUserCompleteStage(user?.role || '', c.status) && isSelected
-                            ? 'text-red-600 hover:text-red-800 hover:bg-red-100'
-                            : 'text-gray-400 cursor-not-allowed'
-                        }`}
-                        title={
-                          !isSelected
-                            ? "Önce vakayı seçin"
-                            : isStageCompleted(c.status, 'Tamamlandı') 
-                            ? "Tamamlandı" 
-                            : isCurrentStage(c.status, 'tamamlandi') && canUserCompleteStage(user?.role || '', c.status)
-                            ? "Tamamlandı aşamasını tamamla"
-                            : "Bu aşama henüz aktif değil"
-                        }
-                      >
-                        {isStageCompleted(c.status, 'Tamamlandı') ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Details Grid */}
@@ -1211,71 +511,7 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
           })
         )}
       </div>
-
-      {/* Stage Completion Modal */}
-      <StageCompletionModal
-        isOpen={stageCompletionModal.isOpen}
-        onClose={closeStageCompletionModal}
-        stage={stageCompletionModal.stage}
-        caseId={stageCompletionModal.caseId}
-        onSuccess={handleStageCompleteSuccess}
-      />
-
-      {/* Stage-specific Modals */}
-      {teslimAlindiModal.isOpen && teslimAlindiModal.case && (
-        <TeslimAlindiModal
-          returnCase={teslimAlindiModal.case}
-          onClose={() => setTeslimAlindiModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-
-      {teknikIncelemeModal.isOpen && teknikIncelemeModal.case && (
-        <TeknikIncelemeModal
-          returnCase={teknikIncelemeModal.case}
-          onClose={() => setTeknikIncelemeModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-
-      {odemeTahsilatiModal.isOpen && odemeTahsilatiModal.case && (
-        <OdemeTahsilatiModal
-          returnCase={odemeTahsilatiModal.case}
-          onClose={() => setOdemeTahsilatiModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-
-      {kargoyaVerildiModal.isOpen && kargoyaVerildiModal.case && (
-        <KargoyaVerildiModal
-          returnCase={kargoyaVerildiModal.case}
-          onClose={() => setKargoyaVerildiModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-
-      {tamamlandiModal.isOpen && tamamlandiModal.case && (
-        <TamamlandiModal
-          returnCase={tamamlandiModal.case}
-          onClose={() => setTamamlandiModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-
-      {viewModal.isOpen && viewModal.case && (
-        <ViewReturnCaseModal
-          returnCase={viewModal.case}
-          onClose={() => setViewModal({ isOpen: false, case: null })}
-        />
-      )}
-
-      {emailCustomerModal.isOpen && emailCustomerModal.case && (
-        <EmailCustomerModal
-          returnCase={emailCustomerModal.case}
-          onClose={() => setEmailCustomerModal({ isOpen: false, case: null })}
-          onSuccess={handleStageCompleteSuccess}
-        />
-      )}
-        </div>
-    );
+      {modals.modals}
+    </div>
+  );
 }
