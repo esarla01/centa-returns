@@ -1,7 +1,8 @@
 """Statistics for the reports page.
 
-Every report covers the cases that ARRIVED inside a date range and counts
-product units (an item's product_count), not rows. The shared pieces are at
+Every report counts product units (an item's product_count), not rows. All
+but one cover the cases that ARRIVED inside a date range; the production
+trend (defects-by-production-month) goes by production month instead. The shared pieces are at
 the top: reading the range, the base query, and the optional filters.
 """
 from datetime import datetime
@@ -21,6 +22,9 @@ from permissions import permission_required
 reports_bp = Blueprint("reports", __name__)
 
 UNITS = func.sum(ReturnCaseItem.product_count)
+
+# Label for units whose fault responsibility / resolution has not been filled in yet.
+NOT_RECORDED = "Belirtilmemiş"
 
 
 @permission_required(AppPermissions.PAGE_VIEW_STATISTICS)
@@ -114,8 +118,8 @@ def pct(count, total):
 
 def distribution(start, end, column, enum_class, key):
     """Units per value of an enum column, listing every possible value (zero
-    when unused). Percentages are of all units in range, including items
-    where the column is still empty."""
+    when unused). Units whose value has not been recorded yet are reported
+    as "Belirtilmemiş", so the rows always add up to the total."""
     rows = (
         items_in_range(start, end, column, UNITS.label("item_count"))
         .filter(column.isnot(None))
@@ -124,15 +128,16 @@ def distribution(start, end, column, enum_class, key):
     )
     total = total_units(items_in_range(start, end, UNITS))
     counts = {row[0]: row.item_count for row in rows}
-    return jsonify({
-        "total_items": total,
-        "data": [
-            {key: member.value,
-             "item_count": counts.get(member, 0),
-             "percentage": pct(counts[member], total) if member in counts else 0}
-            for member in enum_class
-        ],
-    })
+    data = [
+        {key: member.value,
+         "item_count": counts.get(member, 0),
+         "percentage": pct(counts[member], total) if member in counts else 0}
+        for member in enum_class
+    ]
+    not_recorded = total - sum(counts.values())
+    if not_recorded > 0:
+        data.append({key: NOT_RECORDED, "item_count": not_recorded, "percentage": pct(not_recorded, total)})
+    return jsonify({"total_items": total, "data": data})
 
 
 def production_filters(query):
@@ -207,45 +212,16 @@ def items_by_product_model(start, end):
     })
 
 
-@reports_bp.route("/reports/returns-breakdown", methods=["GET"])
-@report
-def returns_breakdown(start, end):
-    """Units per period, for every product model / customer pair. Periods are
-    months for ranges of 30 days or more, ISO weeks otherwise."""
-    group_unit = "month" if (end - start).days >= 30 else "week"
-    period = func.to_char(ReturnCase.arrival_date, "YYYY-MM" if group_unit == "month" else "IYYY-IW")
-
-    rows = (
-        with_customer(with_product_model(items_in_range(
-            start, end,
-            period.label("period"), ProductModel.name.label("product_model"),
-            Customers.name.label("customer_name"), UNITS.label("return_count"),
-        )))
-        .group_by("period", "product_model", "customer_name")
-        .order_by("period")
-        .all()
-    )
-
-    customers = {row.customer_name for row in rows}
-    product_models = {row.product_model for row in rows}
-    all_keys = {f"{model}|{customer}" for model in product_models for customer in customers}
-    periods = {}
-    for row in rows:
-        entry = periods.setdefault(row.period, {"period": row.period, **{key: 0 for key in all_keys}})
-        entry[f"{row.product_model}|{row.customer_name}"] = row.return_count
-
-    return jsonify({
-        "group_unit": group_unit,
-        "data": list(periods.values()),
-        "customers": list(customers),
-        "productModels": list(product_models),
-    })
-
-
 @reports_bp.route("/reports/defects-by-production-month", methods=["GET"])
 @report
 def defects_by_production_month(start, end):
-    """Units per production month, for the months inside the selected range."""
+    """Returned units by the month they were PRODUCED in, for each production
+    month from `start` to `end`.
+
+    Unlike the other reports this one does not look at when the unit came
+    back: a unit made in December and returned in January belongs to
+    December here, whichever range is being looked at.
+    """
     if (end - start).days < 30:
         return jsonify({"error": "Date range must be at least one month", "data": []}), 400
 
@@ -256,9 +232,12 @@ def defects_by_production_month(start, end):
         month += relativedelta(months=1)
 
     production_month = func.substring(ReturnCaseItem.production_date, 1, 7)
-    query = production_filters(with_product_model(items_in_range(
-        start, end, production_month.label("production_month"), UNITS.label("defect_count"),
-    )).filter(ReturnCaseItem.production_date.isnot(None)))
+    query = production_filters(with_product_model(
+        db.session.query(production_month.label("production_month"), UNITS.label("defect_count"))
+        .select_from(ReturnCaseItem)
+        .filter(production_month >= months[0])
+        .filter(production_month <= months[-1])
+    ))
     counts = {row.production_month: row.defect_count for row in query.group_by(production_month).all()}
 
     return jsonify({"data": [{"month": m, "defect_count": counts.get(m, 0)} for m in months]})

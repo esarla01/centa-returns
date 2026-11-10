@@ -186,7 +186,78 @@ test('a case moves through all five stages', async ({ browser }) => {
   expect(unexpected, 'failed API calls or JavaScript errors').toEqual([]);
 });
 
-// The two tests below run after the one above and use the case it finished.
+// The tests below run after the one above and use the case it finished:
+// 2 x DT-25 (Fotosel), produced 2024-03, "Teknik Sorun", "Tamir", one fault type found.
+
+test('statistics: every chart shows the finished case, and the filters work', async ({ browser }) => {
+  const page = await loginAs(browser, 'manager');
+  const before = problems.length;
+  await page.goto('/view-statistics');
+  const card = (title: string) =>
+    page.locator('div.bg-white.rounded.shadow.p-4', { has: page.getByRole('heading', { name: title, exact: true }) });
+
+  const topDefects = card('En Sık Görülen Arıza Tipleri (Top 5)');
+  await expect(topDefects).toContainText('Toplam İade Ürün Adedi: 2');
+  await expect(topDefects).toContainText('Toplam Tespit Edilen Arıza: 2');
+  await expect(topDefects.locator('tbody tr')).toHaveCount(1);
+  await expect(topDefects.locator('tbody tr')).toContainText('100%');
+
+  const production = card('Üretim Dönemi Dağılım Analizi');
+  await expect(production.locator('tbody tr')).toContainText('2024-03');
+  await expect(production.locator('tbody tr')).toContainText('100%');
+
+  for (const [title, slice] of [
+    ['Hata Sorumluluğuna Göre Arıza Dağılımı', 'Teknik Sorun'],
+    ['Çözüm Yöntemine Göre Arıza Dağılımı', 'Tamir'],
+    ['Ürün Türüne Göre Arıza Dağılımı', 'Fotosel'],
+    ['Ürün Modeline Arıza Adedi', 'DT-25'],
+  ]) {
+    await expect(card(title)).toContainText('Toplam İade Ürün Adedi: 2');
+    await expect(card(title)).toContainText(slice);
+    await expect(card(title)).toContainText('100%');
+  }
+
+  const customers = card('Müşterilere Göre Arıza Adedi (Top 5)');
+  await expect(customers.locator('tbody tr')).toContainText(CUSTOMER);
+  await expect(customers.locator('tbody tr')).toContainText('100%');
+
+  // Filtering to a product type with no returns empties the chart but keeps the filters usable.
+  const productType = topDefects.locator('select').first();
+  const faultType = topDefects.locator('select').nth(1);
+  await expect(faultType).toBeDisabled();
+  await productType.selectOption('overload');
+  await expect(topDefects).toContainText('Seçilen tarih aralığında veri bulunamadı');
+  await productType.selectOption('door_detector');
+  await expect(topDefects.locator('tbody tr')).toHaveCount(1);
+  await expect(faultType).toBeEnabled();
+  await expect(faultType.locator('option')).toHaveCount(17); // "Tümü" + the 16 Fotosel fault types
+
+  // The production trend has its own range. The units were produced in March 2024.
+  const trend = card('Üretim Dönemi Arıza Trend Analizi');
+  await expect(trend).toContainText('Kas 2026');
+  await expect(trend).not.toContainText('Mar 2024');
+  await trend.locator('select').first().selectOption('5');
+  await expect(trend).toContainText('(61 / 61 ay)');
+  // Many months: narrow to a 12-month window and move it.
+  await trend.getByRole('button', { name: '12 Ay Göster' }).click();
+  await expect(trend).toContainText('(12 / 61 ay)');
+  await expect(trend.getByRole('button', { name: '← Önceki' })).toBeDisabled();
+  await trend.getByRole('button', { name: 'Sonraki →' }).click();
+  await expect(trend.getByRole('button', { name: '← Önceki' })).toBeEnabled();
+  // A custom range around the production month shows it.
+  await trend.locator('select').first().selectOption('custom');
+  await trend.locator('input[type=date]').first().fill('2024-01-01');
+  await trend.locator('input[type=date]').nth(1).fill('2024-06-30');
+  await expect(trend).toContainText('Mar 2024');
+  await expect(trend).toContainText('Haz 2024');
+  // A range shorter than a month is explained rather than charted.
+  await trend.locator('input[type=date]').first().fill('2024-06-20');
+  await expect(trend).toContainText('en az bir aylık bir tarih aralığı seçin');
+
+  await page.context().close();
+  expect(problems.slice(before)).toEqual([]);
+});
+
 
 test('tablet layout shows every stage and offers the right buttons', async ({ browser }) => {
   const page = await loginAs(browser, 'manager', { width: 900, height: 1000 });

@@ -2,24 +2,23 @@
 
 import Header from '@/app/components/Header';
 import ItemsByCustomerChart from '@/app/components/statistics/ItemsByCustomerChart';
-import ItemsByProductModelChart from '@/app/components/statistics/ItemsByProductModelChart';
+import DistributionPieChart from '@/app/components/statistics/DistributionPieChart';
+import { fromDateInput, monthsBefore, toDateParam, today } from '@/app/components/statistics/shared';
+import { API_ENDPOINTS } from '@/lib/api';
 import { useState } from 'react';
 import DefectsByProductionMonthChart from '../components/statistics/DefectsByProductionMonthChart';
-import FaultResponsibilityChart from '../components/statistics/FaultResponsibilityChart';
-import ResolutionMethodChart from '../components/statistics/ResolutionMethodChart';
-import ProductTypeChart from '../components/statistics/ProductTypeChart';
 import TopDefectsChart from '../components/statistics/TopDefectsChart';
 import ProductionDateDistributionChart from '../components/statistics/ProductionDateDistributionChart';
 import { RequirePermission } from '../components/RequirePermission';
 import { Calendar, Filter, RefreshCw, ChevronDown } from 'lucide-react';
 
+// The last colour is for "Belirtilmemiş" (not recorded yet).
+const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9CA3AF'];
+const MODEL_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
 export default function StatisticsPage() {
-  const [startDate, setStartDate] = useState<Date | null>(() => {
-    const start = new Date();
-    start.setMonth(start.getMonth() - 1);
-    return start;
-  });
-  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(() => monthsBefore(today(), 1));
+  const [endDate, setEndDate] = useState<Date | null>(today);
   const [refreshKey, setRefreshKey] = useState(0);
   const [quickSelect, setQuickSelect] = useState<string>('1'); // Default to last 1 month
 
@@ -32,15 +31,8 @@ export default function StatisticsPage() {
       return;
     }
     
-    const today = new Date();
-    const months = parseInt(value);
-    
-    // Calculate start date by going back X months
-    const start = new Date();
-    start.setMonth(start.getMonth() - months);
-    
-    setStartDate(start);
-    setEndDate(today);
+    setStartDate(monthsBefore(today(), parseInt(value)));
+    setEndDate(today());
   };
 
   return (
@@ -104,9 +96,9 @@ export default function StatisticsPage() {
               </label>
               <input
                 type="date"
-                value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                value={toDateParam(startDate)}
                 onChange={(e) => {
-                  setStartDate(e.target.value ? new Date(e.target.value) : null);
+                  setStartDate(fromDateInput(e.target.value));
                   setQuickSelect('custom'); // Switch to custom when manually changing dates
                 }}
                 disabled={quickSelect !== 'custom'}
@@ -122,9 +114,9 @@ export default function StatisticsPage() {
               </label>
               <input
                 type="date"
-                value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                value={toDateParam(endDate)}
                 onChange={(e) => {
-                  setEndDate(e.target.value ? new Date(e.target.value) : null);
+                  setEndDate(fromDateInput(e.target.value));
                   setQuickSelect('custom'); // Switch to custom when manually changing dates
                 }}
                 disabled={quickSelect !== 'custom'}
@@ -182,7 +174,11 @@ export default function StatisticsPage() {
                 Müşteri eğitimi gerekliliği veya ürün tasarımında iyileştirme ihtiyacı konusunda 
                 karar vermenize yardımcı olur.
               </p>
-              <FaultResponsibilityChart
+              <DistributionPieChart
+                path={API_ENDPOINTS.REPORTS.FAULT_RESPONSIBILITY_STATS}
+                nameField="fault_responsibility"
+                tooltipLabel="Hata Sorumluluğu"
+                colors={PIE_COLORS}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
@@ -194,7 +190,11 @@ export default function StatisticsPage() {
                 İadelerin nasıl çözüldüğünü (tamir, değişim, vb.) gösterir. Servis maliyetlerini 
                 analiz etmenize ve garanti politikalarınızı optimize etmenize yardımcı olur.
               </p>
-              <ResolutionMethodChart
+              <DistributionPieChart
+                path={API_ENDPOINTS.REPORTS.RESOLUTION_METHOD_STATS}
+                nameField="resolution_method"
+                tooltipLabel="Çözüm Yöntemi"
+                colors={PIE_COLORS}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
@@ -209,7 +209,11 @@ export default function StatisticsPage() {
                 Hangi ürün kategorilerinin (fotosel, kontrol ünitesi, vb.) daha fazla arıza verdiğini gösterir. 
                 Ürün portföyünüzde hangi kategorilere daha fazla odaklanmanız gerektiğini belirlemenize yardımcı olur.
               </p>
-              <ProductTypeChart
+              <DistributionPieChart
+                path={API_ENDPOINTS.REPORTS.PRODUCT_TYPE_STATS}
+                nameField="product_type"
+                tooltipLabel="Ürün Türü"
+                colors={PIE_COLORS}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
@@ -221,7 +225,12 @@ export default function StatisticsPage() {
                 Her ürün modelinin iade sayısını gösterir. Hangi modellerin daha sorunlu olduğunu tespit ederek, 
                 tasarım iyileştirmeleri ve kalite kontrol önlemlerine öncelik verebilirsiniz.
               </p>
-              <ItemsByProductModelChart
+              <DistributionPieChart
+                path={API_ENDPOINTS.REPORTS.ITEMS_BY_PRODUCT_MODEL}
+                nameField="product_model_name"
+                tooltipLabel="Ürün Modeli"
+                colors={MODEL_COLORS}
+                groupBelowPercent={3}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}

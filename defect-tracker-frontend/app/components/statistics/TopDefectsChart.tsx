@@ -1,9 +1,11 @@
 'use client';
 
-import { API_ENDPOINTS, api } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { ChevronDown } from 'lucide-react';
+import { API_ENDPOINTS } from '@/lib/api';
+import {
+  type DateRangeProps, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
+} from './shared';
 
 interface TopDefectData {
   service_name: string;
@@ -18,250 +20,53 @@ interface TopDefectsResponse {
   data: TopDefectData[];
 }
 
-interface TopDefectsChartProps {
-  startDate: Date | null;
-  endDate: Date | null;
-  refreshKey: number;
-}
-
-interface ServiceDefinition {
-  id: number;
-  service_name: string;
-  product_type: string;
-}
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-const PRODUCT_TYPE_ENUM: { [key: string]: string } = {
-  'overload': 'Aşırı Yük Sensörü',
-  'door_detector': 'Fotosel',
-  'control_unit': 'Kontrol Ünitesi'
-};
+/** The five fault types found most often, as bars and as a table. */
+export default function TopDefectsChart({ startDate, endDate, refreshKey }: DateRangeProps) {
+  const [productType, setProductType] = useState('');
+  const [serviceId, setServiceId] = useState('');
 
-export default function TopDefectsChart({
-  startDate,
-  endDate,
-  refreshKey,
-}: TopDefectsChartProps) {
-  const [data, setData] = useState<TopDefectData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalServiceOccurrences, setTotalServiceOccurrences] = useState(0);
+  const services = useOptions<{ id: number; service_name: string }>(
+    API_ENDPOINTS.SERVICES, 'services', productType ? { type: productType, limit: 1000 } : null);
 
-  // Filter states
-  const [productType, setProductType] = useState<string>('');
-  const [serviceId, setServiceId] = useState<string>('');
-  const [availableServices, setAvailableServices] = useState<ServiceDefinition[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
+  const range = dateRangeQuery(startDate, endDate);
+  const { result, loading, failure } = useReport<TopDefectsResponse>(
+    API_ENDPOINTS.REPORTS.TOP_DEFECTS,
+    range && { ...range, product_type: productType, service_id: serviceId },
+    refreshKey);
 
-  // Fetch available services when product type changes
-  useEffect(() => {
-    if (!productType) {
-      setAvailableServices([]);
-      setServiceId('');
-      return;
-    }
+  const rows = result?.data ?? [];
+  // Two product types can have a fault type with the same name; say which is which on the axis.
+  const names = rows.map((row) => row.service_name);
+  const data = rows.map((row) => ({
+    ...row,
+    axis_label: names.filter((name) => name === row.service_name).length > 1
+      ? `${row.service_name} (${row.product_type})`
+      : row.service_name,
+  }));
+  const totalItems = result?.total_items ?? 0;
+  const totalServiceOccurrences = result?.total_service_occurrences ?? 0;
 
-    const fetchServices = async () => {
-      setLoadingServices(true);
-      try {
-        const result = await api.get<any>(API_ENDPOINTS.SERVICES + `?type=${productType}&limit=1000`)
-          .catch(() => { throw new Error('Servisler yüklenirken hata oluştu'); });
-        setAvailableServices(result.services || []);
-      } catch (err) {
-        console.error('Error fetching services:', err);
-        setAvailableServices([]);
-      } finally {
-        setLoadingServices(false);
-      }
-    };
-
-    fetchServices();
-  }, [productType]);
-
-  // Fetch chart data
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
-
-        const params = new URLSearchParams({
-          start_date: startDateStr,
-          end_date: endDateStr,
-        });
-
-        if (productType) {
-          params.append('product_type', productType);
-        }
-
-        if (serviceId) {
-          params.append('service_id', serviceId);
-        }
-
-        const result = await api.get<TopDefectsResponse>(API_ENDPOINTS.REPORTS.TOP_DEFECTS + `?${params.toString()}`)
-          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
-        setData(result.data);
-        setTotalItems(result.total_items);
-        setTotalServiceOccurrences(result.total_service_occurrences);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [startDate, endDate, refreshKey, productType, serviceId]);
-
-  const isEmpty = !loading && (!data || data.length === 0);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Yükleniyor...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Hata: {error}</div>
-      </div>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <div className="flex flex-col">
-        {/* Filters */}
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Product Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ürün Türü
-            </label>
-            <div className="relative">
-              <select
-                value={productType}
-                onChange={(e) => {
-                  setProductType(e.target.value);
-                  setServiceId(''); // Reset service selection when product type changes
-                }}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Tümü</option>
-                {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Service Name Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Arıza Tipi
-            </label>
-            <div className="relative">
-              <select
-                value={serviceId}
-                onChange={(e) => setServiceId(e.target.value)}
-                disabled={!productType || loadingServices}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Tümü</option>
-                {availableServices.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.service_name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-            {!productType && (
-              <p className="mt-1 text-xs text-gray-500">
-                Önce bir ürün türü seçin
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</div>
-        </div>
-      </div>
-    );
-  }
+  const notice = chartNotice(loading, failure, data.length === 0);
 
   return (
     <div className="w-full">
-      {/* Filters */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Product Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ürün Türü
-          </label>
-          <div className="relative">
-            <select
-              value={productType}
-              onChange={(e) => {
-                setProductType(e.target.value);
-                setServiceId(''); // Reset service selection when product type changes
-              }}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="">Tümü</option>
-              {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Service Name Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Arıza Tipi
-          </label>
-          <div className="relative">
-            <select
-              value={serviceId}
-              onChange={(e) => setServiceId(e.target.value)}
-              disabled={!productType || loadingServices}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Tümü</option>
-              {availableServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.service_name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-          {!productType && (
-            <p className="mt-1 text-xs text-gray-500">
-              Önce bir ürün türü seçin
-            </p>
-          )}
-        </div>
+        <SelectFilter
+          label="Ürün Türü" value={productType} options={PRODUCT_TYPE_OPTIONS}
+          onChange={(value) => { setProductType(value); setServiceId(''); }}
+        />
+        <SelectFilter
+          label="Arıza Tipi" value={serviceId} onChange={setServiceId}
+          options={services.options.map((service) => ({ value: service.id, label: service.service_name }))}
+          disabled={!productType || services.loading}
+          hint={productType ? undefined : 'Önce bir ürün türü seçin'}
+        />
       </div>
 
+      {notice ?? (
+        <>
       {/* Total Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
@@ -281,7 +86,7 @@ export default function TopDefectsChart({
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
-            dataKey="service_name" 
+            dataKey="axis_label" 
             angle={-45}
             textAnchor="end"
             height={100}
@@ -362,6 +167,8 @@ export default function TopDefectsChart({
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -54,7 +54,6 @@ MATRIX = [
     # Reports
     ("GET", "/reports/items-by-customer" + REPORT_QS, STATS),
     ("GET", "/reports/items-by-product-model" + REPORT_QS, STATS),
-    ("GET", "/reports/returns-breakdown" + REPORT_QS, STATS),
     ("GET", "/reports/defects-by-production-month" + REPORT_QS, STATS),
     ("GET", "/reports/fault-responsibility-stats" + REPORT_QS, STATS),
     ("GET", "/reports/resolution-method-stats" + REPORT_QS, STATS),

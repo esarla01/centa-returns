@@ -95,32 +95,45 @@ def test_items_by_product_model(get, data):
     ]
 
 
-def test_returns_breakdown(get, data):
-    body = get("/reports/returns-breakdown" + QS)
-    assert body["group_unit"] == "month"
-    assert sorted(body["customers"]) == ["Acme", "Beta"]
-    assert sorted(body["productModels"]) == ["DT-25", "OL-1"]
-    assert body["data"] == [
-        {"period": "2024-03", "DT-25|Acme": 4, "DT-25|Beta": 0, "OL-1|Acme": 0, "OL-1|Beta": 0},
-        {"period": "2024-04", "DT-25|Acme": 0, "DT-25|Beta": 1, "OL-1|Acme": 0, "OL-1|Beta": 2},
-    ]
-    weekly = get("/reports/returns-breakdown?start_date=2024-03-01&end_date=2024-03-20")
-    assert weekly["group_unit"] == "week"
-    assert weekly["data"] == [{"period": "2024-10", "DT-25|Acme": 4}]
-
-
 def test_defects_by_production_month(get, data, client_for):
-    # Only production months that fall inside the selected window are listed.
+    # Units are placed in the month they were produced; when they came back does not matter.
     assert get("/reports/defects-by-production-month" + QS) == {
         "data": [{"month": "2024-03", "defect_count": 2}, {"month": "2024-04", "defect_count": 0}]}
+    # Made in late 2023, returned in 2024: still counted under 2023.
+    assert get("/reports/defects-by-production-month?start_date=2023-11-01&end_date=2023-12-31") == {
+        "data": [{"month": "2023-11", "defect_count": 5}, {"month": "2023-12", "defect_count": 0}]}
+    # A range that starts mid-month still includes that whole production month.
+    assert get("/reports/defects-by-production-month?start_date=2022-06-20&end_date=2022-07-25") == {
+        "data": [{"month": "2022-06", "defect_count": 10}, {"month": "2022-07", "defect_count": 0}]}
+
     assert get("/reports/defects-by-production-month" + QS + "&product_type=door_detector") == {
         "data": [{"month": "2024-03", "defect_count": 0}, {"month": "2024-04", "defect_count": 0}]}
     assert get("/reports/defects-by-production-month" + QS + f"&service_id={data['impact']}") == {
         "data": [{"month": "2024-03", "defect_count": 2}, {"month": "2024-04", "defect_count": 0}]}
+    by_model = get("/reports/defects-by-production-month?start_date=2023-11-01&end_date=2023-12-31"
+                   f"&product_model_id={data['dt25']}&service_id={data['cable']}")
+    assert by_model["data"][0] == {"month": "2023-11", "defect_count": 4}  # the unperformed row is not counted
 
     short = client_for("MANAGER").get(
         "/reports/defects-by-production-month?start_date=2024-03-01&end_date=2024-03-10")
     assert short.status_code == 400
+
+
+def test_units_without_a_recorded_value_are_shown_as_not_recorded(get, data):
+    """An item saved part-way through technical review has no fault
+    responsibility or resolution yet. It must still be accounted for."""
+    case = ReturnCase(customer_id=data["acme"], arrival_date=date(2024, 3, 20))
+    db.session.add(case)
+    db.session.add(ReturnCaseItem(return_case=case, product_model_id=data["dt25"], product_count=3,
+                                  production_date="2024-01"))
+    db.session.commit()
+
+    for path, key in (("fault-responsibility-stats", "fault_responsibility"),
+                      ("resolution-method-stats", "resolution_method")):
+        body = get(f"/reports/{path}" + QS)
+        assert body["total_items"] == 10
+        assert body["data"][-1] == {key: "Belirtilmemiş", "item_count": 3, "percentage": 30.0}
+        assert sum(row["item_count"] for row in body["data"]) == body["total_items"]
 
 
 def test_fault_responsibility_stats(get, data):
@@ -192,7 +205,7 @@ def test_production_date_distribution(get, data):
 
 
 @pytest.mark.parametrize("path", [
-    "items-by-customer", "items-by-product-model", "returns-breakdown", "defects-by-production-month",
+    "items-by-customer", "items-by-product-model", "defects-by-production-month",
     "fault-responsibility-stats", "resolution-method-stats", "product-type-stats", "top-defects",
     "production-date-distribution",
 ])

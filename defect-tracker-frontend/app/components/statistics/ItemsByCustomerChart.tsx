@@ -1,9 +1,11 @@
 'use client';
 
-import { API_ENDPOINTS, api } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { ChevronDown } from 'lucide-react';
+import { API_ENDPOINTS } from '@/lib/api';
+import {
+  type DateRangeProps, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
+} from './shared';
 
 interface CustomerData {
   customer_id: number;
@@ -17,225 +19,38 @@ interface CustomerResponse {
   data: CustomerData[];
 }
 
-interface ItemsByCustomerChartProps {
-  startDate: Date | null;
-  endDate: Date | null;
-  refreshKey: number;
-}
-
-interface Customer {
-  id: number;
-  name: string;
-}
-
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-const PRODUCT_TYPE_ENUM: { [key: string]: string } = {
-  'overload': 'Aşırı Yük Sensörü',
-  'door_detector': 'Fotosel',
-  'control_unit': 'Kontrol Ünitesi'
-};
+/** The five customers who returned the most units, as bars and as a table. */
+export default function ItemsByCustomerChart({ startDate, endDate, refreshKey }: DateRangeProps) {
+  const [productType, setProductType] = useState('');
+  const [customerId, setCustomerId] = useState('');
 
-export default function ItemsByCustomerChart({
-  startDate,
-  endDate,
-  refreshKey,
-}: ItemsByCustomerChartProps) {
-  const [data, setData] = useState<CustomerData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalItems, setTotalItems] = useState(0);
+  const customers = useOptions<{ id: number; name: string }>(API_ENDPOINTS.CUSTOMERS, 'customers', { limit: 1000 });
 
-  // Filter states
-  const [productType, setProductType] = useState<string>('');
-  const [customerId, setCustomerId] = useState<string>('');
-  const [availableCustomers, setAvailableCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const range = dateRangeQuery(startDate, endDate);
+  const { result, loading, failure } = useReport<CustomerResponse>(
+    API_ENDPOINTS.REPORTS.ITEMS_BY_CUSTOMER,
+    range && { ...range, product_type: productType, customer_id: customerId },
+    refreshKey);
 
-  // Fetch all customers for the dropdown
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      setLoadingCustomers(true);
-      try {
-        const result = await api.get<any>(API_ENDPOINTS.CUSTOMERS + '?limit=1000')
-          .catch(() => { throw new Error('Müşteriler yüklenirken hata oluştu'); });
-        setAvailableCustomers(result.customers || []);
-      } catch (err) {
-        console.error('Error fetching customers:', err);
-        setAvailableCustomers([]);
-      } finally {
-        setLoadingCustomers(false);
-      }
-    };
-
-    fetchCustomers();
-  }, []);
-
-  // Fetch chart data
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
-
-        const params = new URLSearchParams({
-          start_date: startDateStr,
-          end_date: endDateStr,
-        });
-
-        if (productType) {
-          params.append('product_type', productType);
-        }
-
-        if (customerId) {
-          params.append('customer_id', customerId);
-        }
-
-        const result = await api.get<CustomerResponse>(API_ENDPOINTS.REPORTS.ITEMS_BY_CUSTOMER + `?${params.toString()}`)
-          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
-        setData(result.data);
-        setTotalItems(result.total_items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [startDate, endDate, refreshKey, productType, customerId]);
-
-  const isEmpty = !loading && (!data || data.length === 0);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Yükleniyor...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Hata: {error}</div>
-      </div>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <div className="flex flex-col">
-        {/* Filters */}
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Product Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ürün Türü
-            </label>
-            <div className="relative">
-              <select
-                value={productType}
-                onChange={(e) => setProductType(e.target.value)}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Tümü</option>
-                {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Customer Name Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Müşteri Adı
-            </label>
-            <div className="relative">
-              <select
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                disabled={loadingCustomers}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Tümü</option>
-                {availableCustomers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</div>
-        </div>
-      </div>
-    );
-  }
+  const data = result?.data ?? [];
+  const totalItems = result?.total_items ?? 0;
+  const notice = chartNotice(loading, failure, data.length === 0);
 
   return (
     <div className="w-full">
-      {/* Filters */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Product Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ürün Türü
-          </label>
-          <div className="relative">
-            <select
-              value={productType}
-              onChange={(e) => setProductType(e.target.value)}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="">Tümü</option>
-              {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Customer Name Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Müşteri Adı
-          </label>
-          <div className="relative">
-            <select
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-              disabled={loadingCustomers}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Tümü</option>
-              {availableCustomers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
+        <SelectFilter label="Ürün Türü" value={productType} onChange={setProductType} options={PRODUCT_TYPE_OPTIONS} />
+        <SelectFilter
+          label="Müşteri Adı" value={customerId} onChange={setCustomerId}
+          options={customers.options.map((customer) => ({ value: customer.id, label: customer.name }))}
+          disabled={customers.loading}
+        />
       </div>
 
+      {notice ?? (
+        <>
       {/* Total Items Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
@@ -323,6 +138,8 @@ export default function ItemsByCustomerChart({
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,378 +1,74 @@
 'use client';
 
-import { API_ENDPOINTS, api } from '@/lib/api';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { ChevronDown } from 'lucide-react';
-
-interface ProductionDateData {
-  production_month: string;
-  product_type: string;
-  product_model: string;
-  item_count: number;
-  percentage: number;
-}
+import { API_ENDPOINTS } from '@/lib/api';
+import {
+  type DateRangeProps, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
+} from './shared';
 
 interface ProductionDateResponse {
   total_items: number;
-  data: ProductionDateData[];
-}
-
-interface ProductionDateDistributionChartProps {
-  startDate: Date | null;
-  endDate: Date | null;
-  refreshKey: number;
-}
-
-interface ProductModel {
-  id: number;
-  name: string;
-  product_type: string;
-}
-
-interface ServiceDefinition {
-  id: number;
-  service_name: string;
-  product_type: string;
+  /** One row per production month, product type and model. */
+  data: { production_month: string; item_count: number }[];
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#A4DE6C', '#D0ED57', '#FFC658'];
 
-const PRODUCT_TYPE_ENUM: { [key: string]: string } = {
-  'overload': 'Aşırı Yük Sensörü',
-  'door_detector': 'Fotosel',
-  'control_unit': 'Kontrol Ünitesi'
-};
+/** Of the units returned in the period, how many were produced in each month. */
+export default function ProductionDateDistributionChart({ startDate, endDate, refreshKey }: DateRangeProps) {
+  const [productType, setProductType] = useState('');
+  const [productModelId, setProductModelId] = useState('');
+  const [serviceId, setServiceId] = useState('');
 
-export default function ProductionDateDistributionChart({
-  startDate,
-  endDate,
-  refreshKey,
-}: ProductionDateDistributionChartProps) {
-  const [data, setData] = useState<ProductionDateData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalItems, setTotalItems] = useState(0);
+  const ofType = productType ? { type: productType, limit: 1000 } : null;
+  const models = useOptions<{ id: number; name: string }>(API_ENDPOINTS.PRODUCTS, 'products', ofType);
+  const services = useOptions<{ id: number; service_name: string }>(API_ENDPOINTS.SERVICES, 'services', ofType);
 
-  // Filter states
-  const [productType, setProductType] = useState<string>('');
-  const [productModelId, setProductModelId] = useState<string>('');
-  const [serviceId, setServiceId] = useState<string>('');
-  const [availableModels, setAvailableModels] = useState<ProductModel[]>([]);
-  const [availableServices, setAvailableServices] = useState<ServiceDefinition[]>([]);
-  const [loadingModels, setLoadingModels] = useState(false);
-  const [loadingServices, setLoadingServices] = useState(false);
+  const range = dateRangeQuery(startDate, endDate);
+  const { result, loading, failure } = useReport<ProductionDateResponse>(
+    API_ENDPOINTS.REPORTS.PRODUCTION_DATE_DISTRIBUTION,
+    range && { ...range, product_type: productType, product_model_id: productModelId, service_id: serviceId },
+    refreshKey);
 
-  // Fetch available product models when product type changes
-  useEffect(() => {
-    if (!productType) {
-      setAvailableModels([]);
-      setProductModelId('');
-      return;
-    }
+  // Add the rows of each month together, whatever the model.
+  const totalItems = result?.total_items ?? 0;
+  const perMonth = new Map<string, number>();
+  (result?.data ?? []).forEach((row) => {
+    perMonth.set(row.production_month, (perMonth.get(row.production_month) ?? 0) + row.item_count);
+  });
+  const data = Array.from(perMonth.entries())
+    .map(([month, count]) => ({
+      production_month: month,
+      item_count: count,
+      percentage: totalItems > 0 ? parseFloat(((count / totalItems) * 100).toFixed(2)) : 0,
+    }))
+    .sort((a, b) => a.production_month.localeCompare(b.production_month));
 
-    const fetchModels = async () => {
-      setLoadingModels(true);
-      try {
-        const result = await api.get<any>(API_ENDPOINTS.PRODUCTS + `?type=${productType}&limit=1000`)
-          .catch(() => { throw new Error('Ürün modelleri yüklenirken hata oluştu'); });
-        setAvailableModels(result.products || []);
-      } catch (err) {
-        console.error('Error fetching models:', err);
-        setAvailableModels([]);
-      } finally {
-        setLoadingModels(false);
-      }
-    };
-
-    fetchModels();
-  }, [productType]);
-
-  // Fetch available services when product type changes
-  useEffect(() => {
-    if (!productType) {
-      setAvailableServices([]);
-      setServiceId('');
-      return;
-    }
-
-    const fetchServices = async () => {
-      setLoadingServices(true);
-      try {
-        const result = await api.get<any>(API_ENDPOINTS.SERVICES + `?type=${productType}&limit=1000`)
-          .catch(() => { throw new Error('Servisler yüklenirken hata oluştu'); });
-        setAvailableServices(result.services || []);
-      } catch (err) {
-        console.error('Error fetching services:', err);
-        setAvailableServices([]);
-      } finally {
-        setLoadingServices(false);
-      }
-    };
-
-    fetchServices();
-  }, [productType]);
-
-  // Fetch chart data
-  useEffect(() => {
-    if (!startDate || !endDate) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const startDateStr = startDate.toISOString().split('T')[0];
-        const endDateStr = endDate.toISOString().split('T')[0];
-
-        const params = new URLSearchParams({
-          start_date: startDateStr,
-          end_date: endDateStr,
-        });
-
-        if (productType) {
-          params.append('product_type', productType);
-        }
-
-        if (productModelId) {
-          params.append('product_model_id', productModelId);
-        }
-
-        if (serviceId) {
-          params.append('service_id', serviceId);
-        }
-
-        const result = await api.get<ProductionDateResponse>(API_ENDPOINTS.REPORTS.PRODUCTION_DATE_DISTRIBUTION + `?${params.toString()}`)
-          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
-        
-        // Aggregate data by production month
-        const aggregatedMap = new Map<string, number>();
-        result.data.forEach(item => {
-          const current = aggregatedMap.get(item.production_month) || 0;
-          aggregatedMap.set(item.production_month, current + item.item_count);
-        });
-
-        // Convert to array and calculate percentages
-        const aggregatedData = Array.from(aggregatedMap.entries())
-          .map(([month, count]) => ({
-            production_month: month,
-            item_count: count,
-            percentage: result.total_items > 0 ? parseFloat(((count / result.total_items) * 100).toFixed(2)) : 0
-          }))
-          .sort((a, b) => a.production_month.localeCompare(b.production_month));
-
-        setData(aggregatedData as any);
-        setTotalItems(result.total_items);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Bilinmeyen hata');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [startDate, endDate, refreshKey, productType, productModelId, serviceId]);
-
-  const isEmpty = !loading && (!data || data.length === 0);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Yükleniyor...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Hata: {error}</div>
-      </div>
-    );
-  }
-
-  if (isEmpty) {
-    return (
-      <div className="flex flex-col">
-        {/* Filters */}
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Product Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ürün Türü
-            </label>
-            <div className="relative">
-              <select
-                value={productType}
-                onChange={(e) => {
-                  setProductType(e.target.value);
-                  setProductModelId(''); // Reset model selection when product type changes
-                  setServiceId(''); // Reset service selection when product type changes
-                }}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-              >
-                <option value="">Tümü</option>
-                {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                  <option key={key} value={key}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Product Model Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ürün Modeli
-            </label>
-            <div className="relative">
-              <select
-                value={productModelId}
-                onChange={(e) => setProductModelId(e.target.value)}
-                disabled={!productType || loadingModels}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Tümü</option>
-                {availableModels.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-            {!productType && (
-              <p className="mt-1 text-xs text-gray-500">
-                Önce bir ürün türü seçin
-              </p>
-            )}
-          </div>
-
-          {/* Service Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Arıza Tipi
-            </label>
-            <div className="relative">
-              <select
-                value={serviceId}
-                onChange={(e) => setServiceId(e.target.value)}
-                disabled={!productType || loadingServices}
-                className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Tümü</option>
-                {availableServices.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.service_name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-            {!productType && (
-              <p className="mt-1 text-xs text-gray-500">
-                Önce bir ürün türü seçin
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Seçilen tarih aralığında veri bulunamadı</div>
-        </div>
-      </div>
-    );
-  }
+  const notice = chartNotice(loading, failure, data.length === 0);
+  const pickTypeFirst = productType ? undefined : 'Önce bir ürün türü seçin';
 
   return (
     <div className="w-full">
-      {/* Filters */}
       <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Product Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ürün Türü
-          </label>
-          <div className="relative">
-            <select
-              value={productType}
-              onChange={(e) => {
-                setProductType(e.target.value);
-                setProductModelId(''); // Reset model selection when product type changes
-                setServiceId(''); // Reset service selection when product type changes
-              }}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              <option value="">Tümü</option>
-              {Object.entries(PRODUCT_TYPE_ENUM).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
-
-        {/* Product Model Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ürün Modeli
-          </label>
-          <div className="relative">
-            <select
-              value={productModelId}
-              onChange={(e) => setProductModelId(e.target.value)}
-              disabled={!productType || loadingModels}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Tümü</option>
-              {availableModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-          {!productType && (
-            <p className="mt-1 text-xs text-gray-500">
-              Önce bir ürün türü seçin
-            </p>
-          )}
-        </div>
-
-        {/* Service Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Arıza Tipi
-          </label>
-          <div className="relative">
-            <select
-              value={serviceId}
-              onChange={(e) => setServiceId(e.target.value)}
-              disabled={!productType || loadingServices}
-              className="w-full appearance-none border border-gray-300 rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            >
-              <option value="">Tümü</option>
-              {availableServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.service_name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-          </div>
-          {!productType && (
-            <p className="mt-1 text-xs text-gray-500">
-              Önce bir ürün türü seçin
-            </p>
-          )}
-        </div>
+        <SelectFilter
+          label="Ürün Türü" value={productType} options={PRODUCT_TYPE_OPTIONS}
+          onChange={(value) => { setProductType(value); setProductModelId(''); setServiceId(''); }}
+        />
+        <SelectFilter
+          label="Ürün Modeli" value={productModelId} onChange={setProductModelId}
+          options={models.options.map((model) => ({ value: model.id, label: model.name }))}
+          disabled={!productType || models.loading} hint={pickTypeFirst}
+        />
+        <SelectFilter
+          label="Arıza Tipi" value={serviceId} onChange={setServiceId}
+          options={services.options.map((service) => ({ value: service.id, label: service.service_name }))}
+          disabled={!productType || services.loading} hint={pickTypeFirst}
+        />
       </div>
 
+      {notice ?? (
+        <>
       {/* Total Items Display */}
       <div className="text-center mb-4">
         <p className="text-sm text-gray-600">
@@ -468,7 +164,8 @@ export default function ProductionDateDistributionChart({
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 }
-
