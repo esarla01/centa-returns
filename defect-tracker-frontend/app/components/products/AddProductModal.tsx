@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface AddProductModalProps {
   onClose: () => void;
@@ -21,19 +21,10 @@ export default function AddProductModal({ onClose, onSuccess }: AddProductModalP
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, product_type: productType }),
-        credentials: 'include',
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.msg || 'Failed to create model.');
-      }
+      await api.post(API_ENDPOINTS.PRODUCTS, { name, product_type: productType });
       onSuccess();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to create model.'));
     } finally {
       setIsLoading(false);
     }

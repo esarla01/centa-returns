@@ -7,7 +7,7 @@ import { tr } from 'date-fns/locale';
 import { useState, useEffect, FormEvent, use } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { Customer, User, ProductModel } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 import SimpleSelect from '../SimpleSelect';
 
 interface AddReturnCaseModalProps {
@@ -43,11 +43,8 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
     useEffect(() => {
         const fetchDropdownData = async () => {
             try {
-                // Fetch all data in parallel
-                const custRes = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', { method: 'GET', credentials: 'include' });
-                const custData = await custRes.json();
-
-                setCustomers(custData.customers || []);
+                const data = await api.get<{ customers?: Customer[] }>(API_ENDPOINTS.CUSTOMERS, { limit: 1000 });
+                setCustomers(data.customers || []);
 
             } catch (err) {
                 setError("Dropdown verileri yüklenemedi.");
@@ -77,25 +74,16 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
         }
         setIsSubmitting(true);
         try {
-                const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.SIMPLE), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    customerId: caseDetails.customerId,
-                    arrivalDate: caseDetails.arrivalDate,
-                    receiptMethod: caseDetails.receiptMethod,
-                    notes: caseDetails.notes,
-                })
+            await api.post(API_ENDPOINTS.RETURNS.SIMPLE, {
+                customerId: caseDetails.customerId,
+                arrivalDate: caseDetails.arrivalDate,
+                receiptMethod: caseDetails.receiptMethod,
+                notes: caseDetails.notes,
             });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.error || 'Sunucu hatası');
-            }
             onSuccess();
             onClose();
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            setError(errorMessage(err, 'Sunucu hatası'));
         } finally {
             setIsSubmitting(false);
         }

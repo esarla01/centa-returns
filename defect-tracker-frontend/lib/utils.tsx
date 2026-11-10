@@ -1,8 +1,7 @@
 // lib/utils.ts
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { buildApiUrl } from './api';
-import { useEffect, useState } from "react";
+import { ApiError, api, errorMessage } from './api';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -23,22 +22,12 @@ export const completeStage = async (caseId: number, stage: string): Promise<{ su
   }
 
   try {
-    const response = await fetch(buildApiUrl(endpoint), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      return { success: true, message: data.message };
-    } else {
-      return { success: false, error: data.error || 'Bir hata oluştu' };
+    const data = await api.post<{ message: string }>(endpoint);
+    return { success: true, message: data.message };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { success: false, error: errorMessage(error, 'Bir hata oluştu') };
     }
-  } catch (e: unknown) {
     return { success: false, error: 'Bağlantı hatası' };
   }
 };

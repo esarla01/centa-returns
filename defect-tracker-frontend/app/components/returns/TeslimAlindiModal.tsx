@@ -7,7 +7,7 @@ import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 import SimpleSelect from '../SimpleSelect';
 
 interface TeslimAlindiModalProps {
@@ -33,14 +33,10 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
+        const data = await api.get<{ customers?: Customer[] }>(API_ENDPOINTS.CUSTOMERS, { limit: 1000 });
         setCustomers(data.customers || []);
-      } catch (err) {
-        console.error('Failed to fetch customers:', err);
+      } catch {
+        // The customer list simply stays empty if it cannot be loaded.
       }
     };
     fetchCustomers();
@@ -53,23 +49,12 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
     setSuccess(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/teslim-alindi', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          customerId: formData.customerId,
-          arrivalDate: formData.arrivalDate.toISOString().split('T')[0],
-          receiptMethod: formData.receiptMethod,
-          notes: formData.notes,
-        })
+      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'teslim-alindi'), {
+        customerId: formData.customerId,
+        arrivalDate: formData.arrivalDate.toISOString().split('T')[0],
+        receiptMethod: formData.receiptMethod,
+        notes: formData.notes,
       });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
 
       setSuccess('Teslim Alındı bilgileri başarıyla güncellendi!');
       setTimeout(() => {
@@ -77,8 +62,8 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
         onClose();
       }, 1500);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

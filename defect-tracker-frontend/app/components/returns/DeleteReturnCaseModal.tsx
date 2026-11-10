@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types'; // Using the full type for consistency
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface DeleteReturnCaseModalProps {
   returnCase: FullReturnCase;
@@ -19,17 +19,10 @@ export default function DeleteReturnCaseModal({ returnCase, onClose, onSuccess }
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.msg || 'Failed to delete case.');
-      }
+      await api.delete(API_ENDPOINTS.RETURNS.BY_ID(returnCase.id));
       onSuccess();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to delete case.'));
     } finally {
       setIsLoading(false);
     }

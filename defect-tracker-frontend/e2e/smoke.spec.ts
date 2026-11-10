@@ -12,6 +12,17 @@ const PASSWORD = process.env.E2E_PASSWORD ?? '';
 const CUSTOMER = 'Acme Asansör';
 
 const problems: string[] = [];
+// Refusals the test provokes on purpose, to check that their message is shown.
+const expectedRefusals = ['complete-teknik-inceleme -> 400'];
+
+test('a wrong password shows the reason', async ({ page }) => {
+  await page.goto('/login');
+  await page.fill('#email', 'support@example.com');
+  await page.fill('#password', 'definitely-wrong');
+  await page.click('button[type=submit]');
+  await expect(page.getByText('E-posta veya şifre yanlış! Lütfen tekrar deneyin.')).toBeVisible();
+  await expect(page).toHaveURL(/login/);
+});
 
 async function loginAs(browser: Browser, role: string): Promise<Page> {
   const context = await browser.newContext();
@@ -69,6 +80,13 @@ test('a case moves through all five stages', async ({ browser }) => {
   await test.step('Technician fills in and completes "Teknik İnceleme"', async () => {
     const page = await loginAs(browser, 'technician');
     await expect(caseRow(page)).toBeVisible();
+
+    // Completing before anything is filled in is refused, and the reason is shown.
+    await selectCase(page);
+    await caseRow(page).locator('button[title="Teknik İnceleme aşamasını tamamla"]').click();
+    await page.getByRole('button', { name: 'Aşamayı Tamamla' }).click();
+    await expect(page.getByText(/Ürün bilgileri eksik/)).toBeVisible();
+    await page.getByRole('button', { name: 'İptal' }).click();
 
     // The review form is long; its data is saved through the API here, then
     // the form is opened and saved again unchanged to exercise the interface.
@@ -164,5 +182,6 @@ test('a case moves through all five stages', async ({ browser }) => {
     await page.context().close();
   });
 
-  expect(problems, 'failed API calls or JavaScript errors').toEqual([]);
+  const unexpected = problems.filter((problem) => !expectedRefusals.some((refusal) => problem.includes(refusal)));
+  expect(unexpected, 'failed API calls or JavaScript errors').toEqual([]);
 });

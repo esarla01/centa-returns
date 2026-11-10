@@ -105,7 +105,6 @@ const canUserDeleteCase = (userRole: string, caseStatus: string): boolean => {
 };
 
 const canUserEmailCustomer = (userRole: string, caseStatus: string): boolean => {
-  console.log('canUserEmailCustomer', userRole, caseStatus);
   if (caseStatus === 'Tamamlandı') {
     return userRole === 'LOGISTICS';
   }
@@ -227,7 +226,6 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
         setTamamlandiModal({ isOpen: true, case: caseItem });
         break;
       default:
-        console.log(`Edit stage: ${stage} for case: ${caseItem.id}`);
         onEdit(caseItem);
     }
   };
@@ -282,12 +280,8 @@ export default function CasesTable({ cases, isLoading, onEdit, onDelete, onRefre
   };
 
   const handleStageCompleteSuccess = () => {
-    console.log('CasesTable: handleStageCompleteSuccess called');
     if (onRefresh) {
-      console.log('CasesTable: Calling onRefresh callback');
       onRefresh();
-    } else {
-      console.log('CasesTable: No onRefresh callback provided');
     }
   };
 

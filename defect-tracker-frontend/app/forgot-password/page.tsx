@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, ApiError, api } from '@/lib/api';
 import router from 'next/router';
 
 export default function ForgotPasswordPage() {
@@ -12,21 +12,12 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.FORGOT_PASSWORD), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', 
-        body: JSON.stringify({ email }),
-      });
-      if (response.ok) {
-        setSent(true);
-      } else {
-        setError('Failed to send reset link. Please try again.');
-        setTimeout(() => setError(null), 2000);
-      }
+      await api.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email });
+      setSent(true);
     } catch (error) {
-      console.error('Error sending email:', error);
-      setError('Network error. Please check your connection.');
+      setError(error instanceof ApiError
+        ? 'Failed to send reset link. Please try again.'
+        : 'Network error. Please check your connection.');
       setTimeout(() => setError(null), 2000);
     }
   };

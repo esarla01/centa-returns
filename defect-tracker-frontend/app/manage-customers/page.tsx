@@ -12,7 +12,7 @@ import DeleteCustomerModal from '../components/customers/DeleteCustomerModal';
 import EditCustomerModal from '../components/customers/EditCustomerModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 
 function CustomersContent() {
   // Loading state for the user
@@ -52,18 +52,14 @@ function CustomersContent() {
     });
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?' + params.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch customers');
-      const data = await res.json();
+      const data = await api.get<{ customers: Customer[]; totalPages: number }>(
+        `${API_ENDPOINTS.CUSTOMERS}?${params.toString()}`);
       setCustomers(data.customers);
       setTotalPages(data.totalPages);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
+    } catch {
       setCustomers([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, search]);
 

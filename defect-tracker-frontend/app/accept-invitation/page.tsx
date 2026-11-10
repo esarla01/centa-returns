@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import Image from 'next/image';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 function AcceptInvitationContent() {
   const searchParams = useSearchParams();
@@ -24,19 +24,14 @@ function AcceptInvitationContent() {
 
   const validateInvitation = useCallback(async () => {
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.VALIDATE_INVITATION(token!)));
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
-        setUserInfo(data.user);
-        // Pre-fill the name fields with the data from the invitation
-        setFirstName(data.user.first_name || '');
-        setLastName(data.user.last_name || '');
-      } else {
-        setMessage(data.msg);
-      }
-    } catch {
-      setMessage('Davet bağlantısı doğrulanamadı.');
+      const data = await api.get<{ user: { first_name?: string; last_name?: string } }>(
+        API_ENDPOINTS.AUTH.VALIDATE_INVITATION(token!));
+      setUserInfo(data.user);
+      // Pre-fill the name fields with the data from the invitation
+      setFirstName(data.user.first_name || '');
+      setLastName(data.user.last_name || '');
+    } catch (error) {
+      setMessage(errorMessage(error, 'Davet bağlantısı doğrulanamadı.'));
     } finally {
       setIsLoading(false);
     }
@@ -65,29 +60,17 @@ function AcceptInvitationContent() {
     setMessage('');
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.ACCEPT_INVITATION), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          token, 
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          password 
-        }),
+      const data = await api.post<{ msg: string }>(API_ENDPOINTS.AUTH.ACCEPT_INVITATION, {
+        token,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        password,
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsSuccess(true);
-        setMessage(data.msg);
-        setTimeout(() => router.push('/login'), 3000);
-      } else {
-        setMessage(data.msg);
-      }
+      setIsSuccess(true);
+      setMessage(data.msg);
+      setTimeout(() => router.push('/login'), 3000);
     } catch (error) {
-      console.error('Error accepting invitation:', error);
-      setMessage('Ağ hatası. Lütfen bağlantınızı kontrol edin.');
+      setMessage(errorMessage(error, 'Ağ hatası. Lütfen bağlantınızı kontrol edin.'));
     } finally {
       setIsSubmitting(false);
     }

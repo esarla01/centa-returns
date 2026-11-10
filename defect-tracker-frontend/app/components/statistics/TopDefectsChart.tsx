@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronDown } from 'lucide-react';
@@ -66,18 +66,8 @@ export default function TopDefectsChart({
     const fetchServices = async () => {
       setLoadingServices(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.SERVICES) + `?type=${productType}&limit=1000`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Servisler yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.SERVICES + `?type=${productType}&limit=1000`)
+          .catch(() => { throw new Error('Servisler yüklenirken hata oluştu'); });
         setAvailableServices(result.services || []);
       } catch (err) {
         console.error('Error fetching services:', err);
@@ -115,18 +105,8 @@ export default function TopDefectsChart({
           params.append('service_id', serviceId);
         }
 
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.REPORTS.TOP_DEFECTS) + `?${params.toString()}`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Veri yüklenirken hata oluştu');
-        }
-
-        const result: TopDefectsResponse = await response.json();
+        const result = await api.get<TopDefectsResponse>(API_ENDPOINTS.REPORTS.TOP_DEFECTS + `?${params.toString()}`)
+          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
         setData(result.data);
         setTotalItems(result.total_items);
         setTotalServiceOccurrences(result.total_service_occurrences);

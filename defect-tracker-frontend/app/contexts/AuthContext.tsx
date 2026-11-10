@@ -1,7 +1,7 @@
 // app/context/AuthContext.tsx
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 
 type User = {
   email: string;
@@ -31,30 +31,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     setLoading(true);
-    console.log('Refreshing user data...');
-
     try {
-      // Get user from backend
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.WHOAMI), {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      // Set user if response is ok
-      if (response.ok) {
-        const data = await response.json();
-        console.log('User data refreshed successfully:', data.email);
-        setUser(data);
-      } else if (response.status === 401) {
-        // User is not authenticated, this is normal after logout
-        console.log('User not authenticated (401)');
-        setUser(null);
-      } else {
-        console.log('Fetch error:', response.status, response.statusText);
-        setUser(null);
-      }
-    } catch (error) {
-      console.log('Network error during user refresh:', error);
+      setUser(await api.get<User>(API_ENDPOINTS.AUTH.WHOAMI));
+    } catch {
+      // Not logged in (the normal case after logout) or the server is unreachable.
       setUser(null);
     }
     setLoading(false);
@@ -62,25 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.LOGOUT), {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        // Clear user state immediately
-        setUser(null);
-        console.log('Logout successful');
-      } else {
-        console.error('Logout failed:', response.status, response.statusText);
-        // Still clear user state even if logout fails
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-      // Still clear user state even if logout fails
-      setUser(null);
+      await api.post(API_ENDPOINTS.AUTH.LOGOUT);
+    } catch {
+      // The local session is cleared even if the server could not be told.
     }
+    setUser(null);
   };
 
   useEffect(() => {

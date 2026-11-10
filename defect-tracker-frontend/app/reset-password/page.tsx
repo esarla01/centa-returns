@@ -2,7 +2,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, Suspense } from 'react';
 import Image from 'next/image';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, ApiError, api, errorMessage } from '@/lib/api';
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -29,23 +29,14 @@ function ResetPasswordContent() {
     setMessage('');
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.RESET_PASSWORD), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, new_password }),
-      });
-
-      if (res.ok) {
-        setIsSuccess(true);
-        setMessage('Şifre başarıyla sıfırlandı! Yönlendiriliyorsunuz...');
-        setTimeout(() => router.push('/login'), 2000);
-      } else {
-        const data = await res.json();
-        setMessage(data.msg || 'Bir hata oluştu.');
-      }
+      await api.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, { token, new_password });
+      setIsSuccess(true);
+      setMessage('Şifre başarıyla sıfırlandı! Yönlendiriliyorsunuz...');
+      setTimeout(() => router.push('/login'), 2000);
     } catch (error) {
-      console.error('Error resetting password:', error);
-      setMessage('Ağ hatası. Lütfen bağlantınızı kontrol edin.');
+      setMessage(error instanceof ApiError
+        ? errorMessage(error, 'Bir hata oluştu.')
+        : 'Ağ hatası. Lütfen bağlantınızı kontrol edin.');
     } finally {
       setIsSubmitting(false);
     }

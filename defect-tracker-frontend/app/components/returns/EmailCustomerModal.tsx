@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X, Mail, Send, AlertCircle, CheckCircle, User, Package, Calendar, MapPin, Phone } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface EmailCustomerModalProps {
   returnCase: FullReturnCase;
@@ -90,21 +90,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
     setSuccess(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/send-customer-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          emailContent: emailContent,
-          recipientEmail: recipientEmail
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
+      await api.post(API_ENDPOINTS.RETURNS.SEND_CUSTOMER_EMAIL(returnCase.id), { emailContent, recipientEmail });
 
       setSuccess('E-posta başarıyla gönderildi!');
       setTimeout(() => {
@@ -112,8 +98,8 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
         onClose();
       }, 1500);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

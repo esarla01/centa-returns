@@ -13,7 +13,7 @@ import AddServiceModal from '../components/services/AddServiceModal';
 import DeleteServiceModal from '../components/services/DeleteServiceModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 
 // Helper to get a color style based on product type
 const getTypeClass = (type: ProductType) => {
@@ -86,18 +86,14 @@ function ProductsContent() {
     });
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?' + params.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
+      const data = await api.get<{ products: ProductModel[]; totalPages: number }>(
+        `${API_ENDPOINTS.PRODUCTS}?${params.toString()}`);
       setProducts(data.products);
       setTotalPages(data.totalPages);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+    } catch {
       setProducts([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, filters]);
 
@@ -111,18 +107,14 @@ function ProductsContent() {
     });
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.SERVICES) + '?' + params.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
+      const data = await api.get<{ services: ServiceModel[]; totalPages: number }>(
+        `${API_ENDPOINTS.SERVICES}?${params.toString()}`);
       setServices(data.services);
       setServicesTotalPages(data.totalPages);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching services:', error);
+    } catch {
       setServices([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, serviceFilters]);
 

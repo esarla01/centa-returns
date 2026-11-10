@@ -1,7 +1,7 @@
 // components/admin/AddUserModal.tsx
 'use client';
 import { useState } from 'react';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface AddUserModalProps {
   onClose: () => void;
@@ -23,31 +23,18 @@ export default function AddUserModal({ onClose, onUserInvited }: AddUserModalPro
     setMessage('');
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.INVITE_USER), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setIsSuccess(true);
-        setMessage(data.msg);
-        setFormData({ email: '', role: '' });
-        setTimeout(() => {
-          onClose();
-          onUserInvited();
-          setIsSuccess(false);
-          setMessage('');
-        }, 2000);
-      } else {
-        setMessage(data.msg);
-      }
+      const data = await api.post<{ msg: string }>(API_ENDPOINTS.ADMIN.INVITE_USER, formData);
+      setIsSuccess(true);
+      setMessage(data.msg);
+      setFormData({ email: '', role: '' });
+      setTimeout(() => {
+        onClose();
+        onUserInvited();
+        setIsSuccess(false);
+        setMessage('');
+      }, 2000);
     } catch (error) {
-      console.error('Error inviting user:', error);
-      setMessage('Ağ hatası. Lütfen bağlantınızı kontrol edin.');
+      setMessage(errorMessage(error, 'Ağ hatası. Lütfen bağlantınızı kontrol edin.'));
     } finally {
       setIsSubmitting(false);
     }

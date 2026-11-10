@@ -9,7 +9,7 @@ import Header from '@/app/components/Header';
 import Pagination from '@/app/components/Pagination';
 import { RequirePermission } from '../components/RequirePermission';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 
 function UserActionLogsContent() {
   // Loading state for the user
@@ -43,18 +43,14 @@ function UserActionLogsContent() {
     });
 
     try {
-      const res = await fetch(buildApiUrl('/user-action-logs') + '?' + params.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch action logs');
-      const data = await res.json();
+      const data = await api.get<{ logs: UserActionLog[]; totalPages: number }>(
+        `${API_ENDPOINTS.USER_ACTION_LOGS}?${params.toString()}`);
       setLogs(data.logs);
       setTotalPages(data.totalPages);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error fetching action logs:', error);
+    } catch {
       setLogs([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, search, limit]);
 

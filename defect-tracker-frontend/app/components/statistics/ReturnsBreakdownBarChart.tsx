@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import React, { useEffect, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, ReferenceLine
@@ -37,14 +37,13 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
           start_date: startDate ?  startDate.toISOString().split("T")[0] : "",
           end_date: endDate? endDate.toISOString().split("T")[0] : "",
         });
-        const res = await fetch(buildApiUrl(API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN) + `?${params.toString()}`, { credentials: 'include' });
-        const json = await res.json();
+        const json = await api.get<any>(`${API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN}?${params.toString()}`);
 
         setData(json.data);
         setCustomers(json.customers);
         setProductModels(json.productModels);
-      } catch (error) {
-        console.error('Failed to fetch breakdown data', error);
+      } catch {
+        // The chart shows its empty state.
       } finally {
         setLoading(false);
       }

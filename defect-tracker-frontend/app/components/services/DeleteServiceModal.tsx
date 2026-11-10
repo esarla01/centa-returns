@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { ServiceModel } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface DeleteServiceModalProps {
   service: ServiceModel;
@@ -19,18 +19,11 @@ export default function DeleteServiceModal({ service, onClose, onSuccess }: Dele
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.SERVICES) + '/' + service.id, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.msg || 'Failed to delete service.');
-      }
+      await api.delete(`${API_ENDPOINTS.SERVICES}/${service.id}`);
       onSuccess();
       onClose(); // Explicitly calling onClose as per the provided pattern
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Failed to delete service.'));
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronDown } from 'lucide-react';
@@ -57,18 +57,8 @@ export default function ItemsByCustomerChart({
     const fetchCustomers = async () => {
       setLoadingCustomers(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '?limit=1000',
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Müşteriler yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.CUSTOMERS + '?limit=1000')
+          .catch(() => { throw new Error('Müşteriler yüklenirken hata oluştu'); });
         setAvailableCustomers(result.customers || []);
       } catch (err) {
         console.error('Error fetching customers:', err);
@@ -106,18 +96,8 @@ export default function ItemsByCustomerChart({
           params.append('customer_id', customerId);
         }
 
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.REPORTS.ITEMS_BY_CUSTOMER) + `?${params.toString()}`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Veri yüklenirken hata oluştu');
-        }
-
-        const result: CustomerResponse = await response.json();
+        const result = await api.get<CustomerResponse>(API_ENDPOINTS.REPORTS.ITEMS_BY_CUSTOMER + `?${params.toString()}`)
+          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
         setData(result.data);
         setTotalItems(result.total_items);
       } catch (err) {

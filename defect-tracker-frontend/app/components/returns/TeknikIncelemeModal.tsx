@@ -5,7 +5,7 @@ import trTR from 'antd/locale/tr_TR';
 import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { EditableProduct, FullReturnCase, FullReturnCaseItem, ProductModel, ProductType, ServiceDefinition, ServiceSelection } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 import SimpleSelect from '../SimpleSelect';
 
 interface TeknikIncelemeModalProps {
@@ -93,26 +93,17 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch product models
-        const productResponse = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const productData = await productResponse.json();
+        const productData = await api.get<{ products?: ProductModel[] }>(API_ENDPOINTS.PRODUCTS, { limit: 1000 });
         setProductModels(productData.products || []);
 
-        // Fetch service definitions for each product type
+        // Fetch the fault types of each product type
         const productTypes = ['overload', 'door_detector', 'control_unit'];
         const servicePromises = productTypes.map(async (type) => {
           try {
-            const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + `/service-definitions/${type}`, {
-              method: 'GET',
-              credentials: 'include',
-            });
-            const data = await response.json();
+            const data = await api.get<{ services?: ServiceDefinition[] }>(
+              API_ENDPOINTS.RETURNS.SERVICE_DEFINITIONS(type));
             return { type, services: data.services || [] };
-          } catch (err) {
-            console.error(`Failed to fetch services for ${type}:`, err);
+          } catch {
             return { type, services: [] };
           }
         });
@@ -123,8 +114,8 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
           serviceMap[type] = services;
         });
         setServiceDefinitions(serviceMap);
-      } catch (err) {
-        console.error('Failed to fetch data:', err);
+      } catch {
+        // The form opens with empty lists if they cannot be loaded.
       }
     };
     fetchData();
@@ -168,9 +159,6 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
   };
 
   const handleProductChange = (productId: number, field: string, value: any) => {
-    console.log(value);
-    console.log(productId);
-    console.log(field);
     setProducts(prev => prev.map(p => 
       p.id === productId ? { ...p, [field]: value } : p
     ));
@@ -277,29 +265,16 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
       };
       
       
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/teknik-inceleme', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
+      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'teknik-inceleme'), requestBody);
 
       setSuccess('Teknik İnceleme bilgileri başarıyla güncellendi!');
-      console.log('TeknikIncelemeModal: Success, calling onSuccess callback');
       setTimeout(() => {
-        console.log('TeknikIncelemeModal: Executing onSuccess and onClose');
         onSuccess();
         onClose();
-      }, 2000); // Increased delay to ensure database transaction is committed
+      }, 2000);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

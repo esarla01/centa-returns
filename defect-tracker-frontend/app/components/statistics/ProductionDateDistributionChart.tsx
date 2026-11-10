@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { ChevronDown } from 'lucide-react';
@@ -74,18 +74,8 @@ export default function ProductionDateDistributionChart({
     const fetchModels = async () => {
       setLoadingModels(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.PRODUCTS) + `?type=${productType}&limit=1000`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Ürün modelleri yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.PRODUCTS + `?type=${productType}&limit=1000`)
+          .catch(() => { throw new Error('Ürün modelleri yüklenirken hata oluştu'); });
         setAvailableModels(result.products || []);
       } catch (err) {
         console.error('Error fetching models:', err);
@@ -109,18 +99,8 @@ export default function ProductionDateDistributionChart({
     const fetchServices = async () => {
       setLoadingServices(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.SERVICES) + `?type=${productType}&limit=1000`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Servisler yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.SERVICES + `?type=${productType}&limit=1000`)
+          .catch(() => { throw new Error('Servisler yüklenirken hata oluştu'); });
         setAvailableServices(result.services || []);
       } catch (err) {
         console.error('Error fetching services:', err);
@@ -162,18 +142,8 @@ export default function ProductionDateDistributionChart({
           params.append('service_id', serviceId);
         }
 
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.REPORTS.PRODUCTION_DATE_DISTRIBUTION) + `?${params.toString()}`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Veri yüklenirken hata oluştu');
-        }
-
-        const result: ProductionDateResponse = await response.json();
+        const result = await api.get<ProductionDateResponse>(API_ENDPOINTS.REPORTS.PRODUCTION_DATE_DISTRIBUTION + `?${params.toString()}`)
+          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
         
         // Aggregate data by production month
         const aggregatedMap = new Map<string, number>();

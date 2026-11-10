@@ -6,7 +6,7 @@ import { FullReturnCase } from '@/lib/types';
 import DatePicker from 'react-datepicker';
 import { tr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface KargoyaVerildiModalProps {
   returnCase: FullReturnCase;
@@ -44,22 +44,11 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
     }
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.KARGOYA_VERILDI(returnCase.id.toString())), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          shippingInfo: formData.shippingInfo,
-          trackingNumber: formData.trackingNumber,
-          shippingDate: formData.shippingDate ? formData.shippingDate.toISOString().split('T')[0] : null,
-        })
+      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'kargoya-verildi'), {
+        shippingInfo: formData.shippingInfo,
+        trackingNumber: formData.trackingNumber,
+        shippingDate: formData.shippingDate ? formData.shippingDate.toISOString().split('T')[0] : null,
       });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
 
       setSuccess('Kargo bilgileri başarıyla güncellendi!');
       setTimeout(() => {
@@ -67,8 +56,8 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
         onClose();
       }, 1500);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

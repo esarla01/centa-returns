@@ -72,7 +72,6 @@ export default function StageCompletionModal({ isOpen, onClose, stage, caseId, o
     const result = await completeStage(caseId, stage);
     
     if (result.success) {
-      console.log('Stage completed successfully:', result.message);
       
       // Call the success callback if provided
       if (onSuccess) {

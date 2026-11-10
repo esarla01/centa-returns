@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,24 +23,12 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.AUTH.LOGIN), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', 
-        body: JSON.stringify({ email, password }),
-      });
-      if (res.ok) {
-            // Refresh user state after successful login
-            await refreshUser();
-            router.push('/manage-returns'); // Redirect to manage-returns page after successful login
-        
-      } else {
-        const data = await res.json();
-        setError(data.msg);
-      }
+      await api.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+      // Refresh user state after successful login
+      await refreshUser();
+      router.push('/manage-returns');
     } catch (err) {
-      console.error(err);
-      setError('Network error. Please check your connection.');
+      setError(errorMessage(err, 'Network error. Please check your connection.'));
     } finally {
       setIsSubmitting(false);
     }

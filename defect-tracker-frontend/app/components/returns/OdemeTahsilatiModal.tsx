@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface OdemeTahsilatiModalProps {
   returnCase: FullReturnCase;
@@ -27,20 +27,9 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
     setSuccess(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '/' + returnCase.id + '/odeme-tahsilati', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          payment_status: formData.payment_status,
-        })
+      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'odeme-tahsilati'), {
+        payment_status: formData.payment_status,
       });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
 
       setSuccess('Ödeme tahsilatı bilgileri başarıyla güncellendi!');
       setTimeout(() => {
@@ -48,8 +37,8 @@ export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: 
         onClose();
       }, 1500);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

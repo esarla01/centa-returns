@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface TamamlandiModalProps {
   returnCase: FullReturnCase;
@@ -43,20 +43,9 @@ export default function TamamlandiModal({ returnCase, onClose, onSuccess }: Tama
     setSuccess(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.TAMAMLANDI(returnCase.id.toString())), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          paymentStatus: formData.paymentStatus,
-        })
+      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'tamamlandi'), {
+        paymentStatus: formData.paymentStatus,
       });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Sunucu hatası');
-      }
 
       setSuccess('Tamamlandı bilgileri başarıyla güncellendi!');
       setTimeout(() => {
@@ -64,8 +53,8 @@ export default function TamamlandiModal({ returnCase, onClose, onSuccess }: Tama
         onClose();
       }, 1500);
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Sunucu hatası'));
     } finally {
       setIsLoading(false);
     }

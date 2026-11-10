@@ -3,7 +3,7 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Customer } from '@/lib/types';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface EditCustomerModalProps {
   customer: Customer;
@@ -26,29 +26,17 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }: Edit
     setError(null);
 
     try {
-        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS) + '/' + customer.id, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          // 'name' is not sent, as it's not being changed
-          representative: representative,
-          contact_info: contactInfo,
-          address: address,
-        }),
-        credentials: 'include',
+      // 'name' is not sent, as it's not being changed
+      await api.put(`${API_ENDPOINTS.CUSTOMERS}/${customer.id}`, {
+        representative,
+        contact_info: contactInfo,
+        address,
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.msg || 'Müşteri güncellenirken bir hata oluştu.');
-      }
 
       onSuccess(); // This will close the modal and refresh the data
       
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Müşteri güncellenirken bir hata oluştu.'));
     } finally {
       setIsLoading(false);
     }

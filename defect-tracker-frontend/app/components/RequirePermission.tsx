@@ -18,14 +18,6 @@ export function RequirePermission({ permission, children }: RequirePermissionPro
   useEffect(() => {
     // Don't start countdown if still loading
     if (loading) return;
-    console.log('RequirePermission');
-    console.log('user', user);
-    console.log('permission', permission);
-    console.log('user.permissions', user?.permissions);
-    console.log('user.role', user?.role);
-    console.log('user.email', user?.email);
-    console.log('user.firstName', user?.firstName);
-    console.log('user.lastName', user?.lastName);
 
     // Only start countdown if user is null or doesn't have permission
     if (!user || !user.permissions.includes(permission)) {

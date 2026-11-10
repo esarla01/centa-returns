@@ -1,46 +1,4 @@
-export type ReturnCase = {
-  id: number;
-  status: string;
-  customer: {
-    id: number;
-    name: string;
-  };
-  arrival_date: string;
-  receipt_method: string;
-  notes: string | null;
-  performed_services: string | null;
-  yedek_parca: number;
-  bakim: number;
-  iscilik: number;
-  cost: number;
-  shipping_info: string | null;
-  tracking_number: string | null;
-  shipping_date: string | null;
-  payment_status: string | null;
-  items: {
-    id: number;
-    product_model: {
-      id: number;
-      name: string;
-      product_type: string;
-    };
-    product_count: number;
-    production_date: string | null;
-    is_main_product: boolean;
-    warranty_status: string;
-    fault_responsibility: string;
-    resolution_method: string;
-    attached_to_item_id: number | null;
-  }[];
-};
-
-export interface ReturnCaseItemSummary {
-  product_name: string;
-  count: number;
-  is_main_product: boolean;
-}
-
-// New interface for service definitions
+// A fault type that can be recorded against a product type
 export interface ServiceDefinition {
   id: number;
   service_name: string;

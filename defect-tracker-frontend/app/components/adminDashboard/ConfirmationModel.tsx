@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { User } from '@/lib/types'; // Make sure to import your User type
 import { AlertTriangle } from 'lucide-react';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface DeleteConfirmationModalProps {
   user: User; // The user object to be deleted
@@ -21,27 +21,11 @@ export default function DeleteConfirmationModal({ user, onClose, onSuccess }: De
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(API_ENDPOINTS.ADMIN.USERS), { 
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: user.email, 
-        }),
-        credentials: 'include', 
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || 'Failed to delete user.');
-      }
-      onSuccess(); 
-      onClose();   
-
+      await api.delete(API_ENDPOINTS.ADMIN.USERS, { email: user.email });
+      onSuccess();
+      onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(errorMessage(err, 'Failed to delete user.'));
     } finally {
       setIsLoading(false);
     }

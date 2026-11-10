@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 interface AddCustomerModalProps {
   onClose: () => void;
@@ -24,32 +24,18 @@ export default function AddCustomerModal({ onClose, onCustomerAdded }: AddCustom
     setError(null);
 
     try {
-      // ASSUMPTION: The API endpoint to add a customer is POST /api/customers
-        const response = await fetch(buildApiUrl(API_ENDPOINTS.CUSTOMERS), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: name,
-          representative: representative,
-          contact_info: contactInfo,
-          address: address,
-        }),
-        credentials: 'include',
+      await api.post(API_ENDPOINTS.CUSTOMERS, {
+        name,
+        representative,
+        contact_info: contactInfo,
+        address,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.msg || 'Müşteri eklenirken bir hata oluştu.');
-      }
 
       onCustomerAdded();
       onClose();
 
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(errorMessage(err, 'Müşteri eklenirken bir hata oluştu.'));
     } finally {
       setIsLoading(false);
     }

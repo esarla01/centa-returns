@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -44,18 +44,8 @@ export default function ProductTypeChart({
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
 
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.REPORTS.PRODUCT_TYPE_STATS) + `?start_date=${startDateStr}&end_date=${endDateStr}`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Veri yüklenirken hata oluştu');
-        }
-
-        const result: ProductTypeResponse = await response.json();
+        const result = await api.get<ProductTypeResponse>(API_ENDPOINTS.REPORTS.PRODUCT_TYPE_STATS + `?start_date=${startDateStr}&end_date=${endDateStr}`)
+          .catch(() => { throw new Error('Veri yüklenirken hata oluştu'); });
         setData(result.data);
         setTotalItems(result.total_items);
       } catch (err) {

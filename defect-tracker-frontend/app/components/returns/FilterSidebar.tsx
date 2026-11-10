@@ -1,6 +1,6 @@
 'use client';
 
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { User } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -50,21 +50,16 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
   useEffect(() => {
     const fetchProductModels = async () => {
       try {
-        const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCTS) + '?limit=1000', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
+        const data = await api.get<{ products?: ProductModel[] }>(API_ENDPOINTS.PRODUCTS, { limit: 1000 });
         setProductModels(data.products || []);
-      } catch (err) {
-        console.error('Failed to fetch product models:', err);
+      } catch {
+        // The model filter simply stays empty if the list cannot be loaded.
       }
     };
     fetchProductModels();
   }, []);
   
   const handleFilterChange = (field: keyof Filters, value: string) => {
-    console.log(`Filter changed: ${field} = ${value}`);
     setFilters(prev => ({ ...prev, [field]: value }));
     
     // Reset pagination to page 1 when any filter changes

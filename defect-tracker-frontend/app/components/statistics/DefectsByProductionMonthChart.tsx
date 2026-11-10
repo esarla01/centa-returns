@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from "recharts";
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, ApiError, api, errorMessage } from '@/lib/api';
 import { ChevronDown, Calendar, RefreshCw } from 'lucide-react';
 
 type Props = Record<string, never>;
@@ -87,18 +87,8 @@ export default function DefectsByProductionMonthChart({}: Props) {
     const fetchProductModels = async () => {
       setLoadingProductModels(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.PRODUCTS) + `?type=${productType}&limit=1000`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Ürün modelleri yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.PRODUCTS + `?type=${productType}&limit=1000`)
+          .catch(() => { throw new Error('Ürün modelleri yüklenirken hata oluştu'); });
         setAvailableProductModels(result.products || []);
       } catch (err) {
         console.error('Error fetching product models:', err);
@@ -122,18 +112,8 @@ export default function DefectsByProductionMonthChart({}: Props) {
     const fetchServices = async () => {
       setLoadingServices(true);
       try {
-        const response = await fetch(
-          buildApiUrl(API_ENDPOINTS.SERVICES) + `?type=${productType}&limit=1000`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Servisler yüklenirken hata oluştu');
-        }
-
-        const result = await response.json();
+        const result = await api.get<any>(API_ENDPOINTS.SERVICES + `?type=${productType}&limit=1000`)
+          .catch(() => { throw new Error('Servisler yüklenirken hata oluştu'); });
         setAvailableServices(result.services || []);
       } catch (err) {
         console.error('Error fetching services:', err);
@@ -184,28 +164,16 @@ export default function DefectsByProductionMonthChart({}: Props) {
         params.append('service_id', serviceId);
       }
 
-      const res = await fetch(
-        buildApiUrl(API_ENDPOINTS.REPORTS.DEFECTS_BY_PRODUCTION_MONTH) + `?${params.toString()}`,
-        {
-          credentials: 'include',
-        }
-      );
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        if (errorData.error === "Date range must be at least one month") {
-          setShowPlaceholder(true);
-          setData([]);
-          return;
-        }
-        throw new Error(errorData.error || 'Server error');
-      }
-      
-      const json = await res.json();
+      const json = await api.get<any>(`${API_ENDPOINTS.REPORTS.DEFECTS_BY_PRODUCTION_MONTH}?${params.toString()}`);
       setData(json.data || []);
-    } catch (e: any) {
-      setError(e.message || 'Hata');
+    } catch (e) {
       setData([]);
+      // Ranges shorter than a month are not an error: the chart explains itself.
+      if (e instanceof ApiError && e.message === 'Date range must be at least one month') {
+        setShowPlaceholder(true);
+        return;
+      }
+      setError(errorMessage(e, 'Server error'));
     } finally {
       setLoading(false);
     }

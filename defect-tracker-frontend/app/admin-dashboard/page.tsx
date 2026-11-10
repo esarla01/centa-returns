@@ -12,7 +12,7 @@ import AddUserModal from '../components/adminDashboard/AddUserModal';
 import DeleteConfirmationModal from '../components/adminDashboard/ConfirmationModel';
 import EmailNotificationToggle from '../components/adminDashboard/EmailNotificationToggle';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
 
 const getRoleClass = (role: string) => {
   switch (role) {
@@ -64,29 +64,16 @@ function AdminDashboardContent() {
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
 
-    const params = new URLSearchParams();
-    params.append('page', String(currentPage));
-    params.append('limit', limit.toString());
-    if (filters.search) params.append('search', filters.search);
-    if (filters.role) params.append('role', filters.role);
-
-    const url = `${buildApiUrl(API_ENDPOINTS.ADMIN.USERS)}?${params.toString()}`;
-
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
+      const data = await api.get<{ users: UserType[]; totalPages: number }>(API_ENDPOINTS.ADMIN.USERS, {
+        page: currentPage,
+        limit,
+        search: filters.search,
+        role: filters.role,
       });
-
-      if (!response.ok) {
-        throw new Error('Kullanıcılar getirilirken bir hata oluştu');
-      }
-
-      const data = await response.json();
       setUsers(data.users);
       setTotalPages(data.totalPages);
-    } catch (error) {
-      // console.error('Kullanıcılar getirilirken bir hata oluştu:', error);
+    } catch {
       setUsers([]);
     } finally {
       setIsLoading(false);
@@ -115,20 +102,7 @@ function AdminDashboardContent() {
   // Handler for toggling email notifications
   const handleToggleEmailNotifications = async (email: string, enabled: boolean) => {
     try {
-      const url = buildApiUrl(API_ENDPOINTS.ADMIN.TOGGLE_EMAIL_NOTIFICATIONS);
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, enabled }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.msg || 'Bildirim tercihi güncellenemedi');
-      }
+      await api.patch(API_ENDPOINTS.ADMIN.TOGGLE_EMAIL_NOTIFICATIONS, { email, enabled });
 
       // Update local state to reflect the change
       setUsers(prevUsers =>
@@ -138,11 +112,9 @@ function AdminDashboardContent() {
             : user
         )
       );
-
-      console.log(`Email notifications ${enabled ? 'enabled' : 'disabled'} for ${email}`);
     } catch (error) {
-      console.error('Error toggling email notifications:', error);
-      throw error; // Re-throw to let the toggle component handle it
+      // Re-throw with a readable message so the toggle component can show it
+      throw new Error(errorMessage(error, 'Bildirim tercihi güncellenemedi'));
     }
   };
 

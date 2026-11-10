@@ -14,7 +14,7 @@ import DeleteReturnCaseModal from '../components/returns/DeleteReturnCaseModal';
 import { RequirePermission } from '../components/RequirePermission';
 import { PermissionGate } from '../components/PermissionGate';
 import { useAuth } from '../contexts/AuthContext';
-import { API_ENDPOINTS, buildApiUrl } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
 import { CasesCards } from '../components/returns/CasesCards';
 
 const initialFilters: Filters = {
@@ -76,18 +76,14 @@ function ReturnsDashboardContent() {
     });
 
     try {
-      const res = await fetch(buildApiUrl(API_ENDPOINTS.RETURNS.BASE) + '?' + params.toString(), {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch return cases');
-      const data = await res.json();
+      const data = await api.get<{ cases: FullReturnCase[]; totalPages: number }>(
+        `${API_ENDPOINTS.RETURNS.BASE}?${params.toString()}`);
       setCases(data.cases);
       setTotalPages(data.totalPages || 1);
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching return cases:', err);
+    } catch {
       setCases([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, filters]);
 

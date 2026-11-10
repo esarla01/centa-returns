@@ -38,7 +38,6 @@ export function middleware(req: NextRequest) {
     // If limit is greater than 5, cap it at 5
     if (limitNum > 5) {
       url.searchParams.set("limit", "5");
-      console.log("MIDDLEWARE: Limit capped at 5 for security");
       return NextResponse.redirect(url);
     }
     // If limit is valid (≤ 5), allow the request to proceed
