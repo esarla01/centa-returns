@@ -1,9 +1,17 @@
+Centa Returns backend (Flask)
 
-# Creates the migrations folder
-flask db init
+Setup
+  cp .env.example .env        # then fill in the values
+  pip install -r requirements.txt
+  flask db upgrade
+  python app.py
 
-# Execute the migration
-flask db migrate -m "Create users table"
-flask db upgrade
+The first admin user is created on first start only if SEED_ADMIN_PASSWORD
+(and optionally SEED_ADMIN_EMAIL) is set in the environment.
 
+Tests
+  The tests need an empty, disposable PostgreSQL database. Every table in it
+  is dropped and recreated on each run.
 
+  pip install -r requirements-dev.txt
+  TEST_DATABASE_URI=postgresql+psycopg2://USER:PASSWORD@localhost:5432/centa_test python -m pytest
