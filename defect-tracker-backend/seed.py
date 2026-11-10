@@ -1,4 +1,5 @@
 from models import ProductTypeEnum, ServiceDefinition, User, db, UserRole, AppPermissions, Role, Permission, RolePermission
+import os
 from datetime import datetime
 
 
@@ -72,31 +73,29 @@ def seed_roles_permissions():
 
 
 def seed_users():
-    """Seed initial users"""
-    user_data = {
-        'email': "erinsarlak003@gmail.com",
-        'password': "ErinSarlak123!",
-        'first_name': "Erin",
-        'last_name': "Sarlak",
-        'role_enum': UserRole.ADMIN,
-        'accepted_at': datetime(2024, 6, 1, 10, 0, 0),
-        'invited_at': datetime(2024, 5, 25, 15, 30, 0)
-    }
+    """Seed the initial admin user.
 
-    user = User.query.filter_by(email=user_data['email']).first()
-    role_obj = Role.query.filter_by(name=user_data['role_enum']).first()
+    The password is read from the SEED_ADMIN_PASSWORD environment variable so it
+    never lives in source control. If it is not set, no user is created.
+    """
+    email = os.getenv('SEED_ADMIN_EMAIL', "erinsarlak003@gmail.com")
+    password = os.getenv('SEED_ADMIN_PASSWORD')
+    if not password:
+        print("⚠️  SEED_ADMIN_PASSWORD is not set, skipping admin user seed")
+        return
+
+    user = User.query.filter_by(email=email).first()
+    role_obj = Role.query.filter_by(name=UserRole.ADMIN).first()
     if not user and role_obj:
         user = User(
-            email=user_data['email'],
-            first_name=user_data['first_name'],
-            last_name=user_data['last_name'],
-            role=role_obj
+            email=email,
+            first_name=os.getenv('SEED_ADMIN_FIRST_NAME', "Erin"),
+            last_name=os.getenv('SEED_ADMIN_LAST_NAME', "Sarlak"),
+            role=role_obj,
+            accepted_at=datetime(2024, 6, 1, 10, 0, 0),
+            invited_at=datetime(2024, 5, 25, 15, 30, 0),
         )
-        user.set_password(user_data['password'])
-        if hasattr(user, 'accepted_at'):
-            user.accepted_at = user_data['accepted_at']
-        if hasattr(user, 'invited_at'):
-            user.invited_at = user_data['invited_at']
+        user.set_password(password)
         db.session.add(user)
     db.session.commit()
 
