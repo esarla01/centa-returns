@@ -1,0 +1,18 @@
+{% extends "email/_layout.html" %}
+{% block content %}
+    <h2 style="color: #2c3e50;">Vaka Tamamlandı</h2>
+
+    <p>Arıza vakası #{{ case_id }} başarıyla tamamlandı.</p>
+
+    <div style="background-color: #d4edda; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+        <h3 style="margin-top: 0; color: #155724;">Vaka Bilgileri</h3>
+        <p><strong>Vaka Numarası:</strong> {{ case_id }}</p>
+        <p><strong>Müşteri:</strong> {{ customer_name }}</p>
+        <p><strong>Tamamlayan:</strong> {{ completed_by }}</p>
+        <p><strong>Tamamlanma Tarihi:</strong> {{ current_time }}</p>
+    </div>
+
+    <p>Vaka tüm aşamaları başarıyla tamamlanmıştır.</p>
+
+    <p>Detaylı bilgi için sistemimize giriş yapabilirsiniz.</p>
+{% endblock %}

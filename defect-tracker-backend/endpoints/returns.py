@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import get_jwt, jwt_required
 from sqlalchemy.orm import joinedload
 
@@ -13,21 +13,12 @@ from models import (
 from permissions import permission_required
 from serializers import serialize_case
 from services.email_service import CentaEmailService
-from services.log_service import LogService
+from services import audit
 from workflow import STAGES, has_reached
 
 logger = logging.getLogger(__name__)
 
 return_case_bp = Blueprint('returns', __name__, url_prefix='/returns')
-
-
-def log_case_action(case_id, action_type):
-    """Write an audit log entry; a failure here never fails the request."""
-    try:
-        LogService.log_return_case_action(
-            user_email=g.user.email, return_case_id=case_id, action_type=action_type)
-    except Exception as e:
-        logger.error("Error logging action for case %s: %s", case_id, e)
 
 
 # --- Listing -----------------------------------------------------------------
@@ -135,17 +126,14 @@ def create_simple_return_case():
             # workflow_status defaults to DELIVERED
         )
         db.session.add(case)
+        db.session.flush()  # assigns the id
+        audit.record(ActionType.CASE_CREATED, return_case_id=case.id)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-    log_case_action(case.id, ActionType.CASE_CREATED)
-    try:
-        CentaEmailService.new_return_case_notification(case.id)
-    except Exception as e:
-        logger.error("Error sending notification for case %s: %s", case.id, e)
-
+    CentaEmailService.new_return_case_notification(case.id)
     return jsonify({'message': 'Arıza vakası oluşturuldu', 'caseId': case.id}), 201
 
 
@@ -189,6 +177,18 @@ def update_stage(stage, return_case_id):
         return jsonify({"error": f"Bir hata oluştu: {str(e)}"}), 500
 
 
+def notify_stage_completed(stage, case_id):
+    """Emails that follow a completed stage. Sent after the change is saved;
+    the email service never raises, so a mail problem cannot undo it."""
+    completed_by = get_jwt().get('name', 'Sistem')
+    if stage.next_status is None:
+        # The last stage: tell managers and admins the case is finished.
+        CentaEmailService.send_case_completion_notification(case_id, completed_by=completed_by)
+    elif current_app.config['STAGE_EMAILS_ENABLED']:
+        CentaEmailService.send_stage_completion_notification(
+            case_id, stage.status, stage.next_status, updated_by=completed_by)
+
+
 def complete_stage(stage, return_case_id):
     """Check that `stage` is the case's current stage and that its required
     fields are filled in, then move the case to the next stage."""
@@ -208,16 +208,10 @@ def complete_stage(stage, return_case_id):
         if stage.next_status:
             return_case.workflow_status = stage.next_status
         if stage.completed_action:
-            log_case_action(return_case.id, stage.completed_action)
-        if stage.next_status is None:
-            # The last stage: tell managers and admins the case is finished.
-            try:
-                CentaEmailService.send_case_completion_notification(
-                    case_id=return_case.id, completed_by=get_jwt().get('name', 'Sistem'))
-            except Exception as e:
-                logger.error("Email notification error for case %s: %s", return_case.id, e)
-
+            audit.record(stage.completed_action, return_case_id=return_case.id)
         db.session.commit()
+
+        notify_stage_completed(stage, return_case.id)
         return jsonify({"message": stage.completed_message}), 200
     except Exception as e:
         db.session.rollback()

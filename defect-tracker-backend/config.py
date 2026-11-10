@@ -45,4 +45,7 @@ class Config:
         'EMAIL_LINK_BASE_URL', 'https://centa-returns-frontend-production.up.railway.app'
     ).rstrip('/')
 
+    # Email the team that owns the next stage each time a stage is completed.
+    STAGE_EMAILS_ENABLED = _flag('STAGE_EMAILS_ENABLED', 'False')
+
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()

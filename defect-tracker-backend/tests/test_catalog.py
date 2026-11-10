@@ -139,3 +139,27 @@ def test_audit_log_listing(client_for, customer):
 
     assert support.get("/user-action-logs?search=support").get_json()["totalCount"] == 2
     assert support.get("/user-action-logs?search=nobody").get_json()["totalCount"] == 0
+
+
+def test_service_changes_are_logged(client_for):
+    manager = client_for("MANAGER")
+    manager.post("/services", json={"service_name": "Yeni arıza", "product_type": "overload"})
+    created = ServiceDefinition.query.filter_by(service_name="Yeni arıza").one()
+    manager.delete(f"/services/{created.id}")
+    logs = UserActionLog.query.order_by(UserActionLog.id).all()
+    assert [(log.action_type, log.additional_info) for log in logs] == [
+        (ActionType.SERVICE_CREATED, "Arıza Tipi: Yeni arıza"),
+        (ActionType.SERVICE_DELETED, "Arıza Tipi: Yeni arıza"),
+    ]
+
+
+def test_a_failed_change_leaves_no_audit_entry(client_for, customer, monkeypatch):
+    def fail(*args, **kwargs):
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(db.session, "delete", fail)
+    res = client_for("SUPPORT").delete(f"/customers/{customer}")
+    assert res.status_code == 500
+    monkeypatch.undo()
+    assert db.session.get(Customers, customer) is not None
+    assert actions() == []  # the deletion did not happen, so it is not logged

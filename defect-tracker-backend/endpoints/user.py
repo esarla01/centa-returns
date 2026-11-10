@@ -195,11 +195,7 @@ def reset_password():
     user.reset_token_expiry = None
     db.session.commit()
 
-    try:
-        CentaEmailService.send_password_reset_confirmation(user.email, user.first_name)
-    except Exception as e:
-        # Log the error and return a generic message
-        logger.error("Error sending email: %s", e)
+    if not CentaEmailService.send_password_reset_confirmation(user.email, user.first_name):
         return jsonify(msg="Şifre başarıyla sıfırlandı, ancak onay e-postası gönderilemedi."), 200
 
     return jsonify(msg="Şifre başarıyla sıfırlandı"), 200

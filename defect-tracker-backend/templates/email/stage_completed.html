@@ -1,0 +1,26 @@
+{% extends "email/_layout.html" %}
+{% block content %}
+    <h2 style="color: #2c3e50;">Aşama Tamamlandı Bildirimi</h2>
+
+    <p>Arıza vakası #{{ case_id }} için aşama tamamlandı.</p>
+
+    <div style="background-color: #d1ecf1; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #17a2b8;">
+        <h3 style="margin-top: 0; color: #0c5460;">Vaka Bilgileri</h3>
+        <p><strong>Vaka Numarası:</strong> {{ case_id }}</p>
+        <p><strong>Müşteri:</strong> {{ customer_name }}</p>
+        <p><strong>Tamamlanan Aşama:</strong> {{ completed_stage }}</p>
+        <p><strong>Sonraki Aşama:</strong> {{ next_stage }}</p>
+        <p><strong>Güncelleyen:</strong> {{ updated_by }}</p>
+        <p><strong>Güncelleme Tarihi:</strong> {{ current_time }}</p>
+    </div>
+
+    <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+        <h3 style="margin-top: 0; color: #856404;">Sonraki Aşama</h3>
+        <p><strong>Sorumlu:</strong> {{ next_responsible }}</p>
+        <p><strong>Yapılacak İşlem:</strong> {{ next_action }}</p>
+    </div>
+
+    <p>Lütfen sonraki aşamayı en kısa sürede tamamlayınız.</p>
+
+    <p>Detaylı bilgi için sistemimize giriş yapabilirsiniz.</p>
+{% endblock %}

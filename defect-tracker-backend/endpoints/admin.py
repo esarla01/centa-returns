@@ -103,8 +103,7 @@ def invite_user():
                 "user": user.to_dict()
             }), 200
         else:
-            # Rollback if email fails
-            db.session.rollback()
+            # The invitation itself is saved; inviting again issues a new link.
             return jsonify({"msg": "Davet e-postası gönderilemedi. Lütfen tekrar deneyin."}), 500
 
     except Exception as e:

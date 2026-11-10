@@ -1,0 +1,18 @@
+{% extends "email/_layout.html" %}
+{% block content %}
+    <h2 style="color: #2c3e50;">Yeni Arıza Vakası Bildirimi</h2>
+
+    <p>Centa Arıza Takip Sistemi'nde yeni bir arıza vakası oluşturuldu.</p>
+
+    <div style="background-color: #fff3cd; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
+        <h3 style="margin-top: 0; color: #856404;">Vaka Detayları</h3>
+        <p><strong>Vaka Numarası:</strong> {{ case_id }}</p>
+        <p><strong>Tarih:</strong> {{ arrival_date }}</p>
+        <p><strong>Müşteri:</strong> {{ customer_name }}</p>
+        <p><strong>Müşteri İletişim Bilgileri:</strong> {{ customer_contact_info }}</p>
+    </div>
+
+    <p>En yakın zamanda arıza vakasının durumunu güncelleyiniz.</p>
+
+    <p>Detaylı bilgi için sistemimize giriş yapabilirsiniz.</p>
+{% endblock %}

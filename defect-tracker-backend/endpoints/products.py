@@ -1,8 +1,7 @@
-import logging
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from permissions import permission_required
-from services.log_service import LogService
+from services import audit
 from models import ActionType
 
 # Import your db instance and models
@@ -78,16 +77,9 @@ def create_product():
         product_type=ProductTypeEnum[product_type_key]
     )
     db.session.add(new_product)
+    db.session.flush()  # assigns the id
+    audit.record(ActionType.PRODUCT_CREATED, additional_info=f"Ürün Modeli Adı: {new_product.name}")
     db.session.commit()
-
-    try:
-        email = g.user.email
-        LogService.log_product_model_creation(
-            user_email=email,
-            product_model_id=new_product.id,
-        )
-    except Exception as e:
-        logging.error(f"Error logging action for product {new_product.id}: {e}")
 
     return jsonify({ "msg": "Ürün modeli başarıyla oluşturuldu" }), 201
 
@@ -136,14 +128,7 @@ def delete_product(product_id):
         }), 400
 
     try:
-        # Log the deletion before actually deleting
-        email = g.user.email
-        LogService.log_product_deletion(
-            user_email=email,
-            product_id=product.id,
-            product_name=product.name
-        )
-        
+        audit.record(ActionType.PRODUCT_DELETED, additional_info=f"Ürün Modeli Adı: {product.name}")
         db.session.delete(product)
         db.session.commit()
         return jsonify({"msg": "Ürün modeli başarıyla silindi."}), 200

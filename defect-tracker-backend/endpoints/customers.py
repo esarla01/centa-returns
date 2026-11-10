@@ -1,12 +1,11 @@
 
-import logging
 import re
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required 
 from sqlalchemy import or_
 from models import db, Customers, AppPermissions, ActionType
 from permissions import permission_required
-from services.log_service import LogService
+from services import audit
 from utils import format_tr_datetime
 
 
@@ -66,19 +65,9 @@ def create_customer():
 
     try:
         db.session.add(new_customer)
+        db.session.flush()  # assigns the id
+        audit.record(ActionType.CUSTOMER_CREATED, additional_info=f"Müşteri Adı: {new_customer.name}")
         db.session.commit()
-
-        try:
-            email = g.user.email
-            LogService.log_customer_creation(
-                user_email=email,
-                customer_id=new_customer.id
-            )
-            
-        except Exception as e:
-            logging.error(f"Error logging action for customer {new_customer.id}: {e}")
-
-        # Return the newly created customer's data
         return jsonify({
             "msg": "Müşteri başarıyla oluşturuldu",
         }), 201
@@ -110,14 +99,7 @@ def delete_customer(customer_id):
         }), 400
 
     try:
-        # Log the deletion before actually deleting
-        email = g.user.email
-        LogService.log_customer_deletion(
-            user_email=email,
-            customer_id=customer.id,
-            customer_name=customer.name
-        )
-        
+        audit.record(ActionType.CUSTOMER_DELETED, additional_info=f"Müşteri Adı: {customer.name}")
         db.session.delete(customer)
         db.session.commit()
         return jsonify({"msg": "Müşteri başarıyla silindi."}), 200

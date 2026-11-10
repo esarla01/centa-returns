@@ -1,8 +1,7 @@
-import logging
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from permissions import permission_required
-from services.log_service import LogService
+from services import audit
 from models import ActionType
 
 # Import your db instance and models
@@ -77,16 +76,9 @@ def create_service():
         product_type=ProductTypeEnum[product_type_key]
     )
     db.session.add(new_service)
+    db.session.flush()  # assigns the id
+    audit.record(ActionType.SERVICE_CREATED, additional_info=f"Arıza Tipi: {new_service.service_name}")
     db.session.commit()
-
-    try:
-        email = g.user.email
-        LogService.log_service_creation(
-            user_email=email,
-            service_id=new_service.id,
-        )
-    except Exception as e:
-        logging.error(f"Error logging action for service {new_service.id}: {e}")
 
     return jsonify({ "msg": "Servis başarıyla oluşturuldu" }), 201
 
@@ -102,6 +94,7 @@ def delete_service(service_id):
         if service_usage:
             return jsonify({"msg": "Bu servis kullanımda olduğu için silinemez."}), 400
         
+        audit.record(ActionType.SERVICE_DELETED, additional_info=f"Arıza Tipi: {service.service_name}")
         db.session.delete(service)
         db.session.commit()
         

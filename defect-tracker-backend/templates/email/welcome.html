@@ -1,0 +1,14 @@
+{% extends "email/_layout.html" %}
+{% block content %}
+    <h2 style="color: #2c3e50;">Merhaba {{ user_name }},</h2>
+
+    <p>Centa Arıza Takip Sistemi'ne hoş geldiniz!</p>
+
+    <div style="background-color: #e8f5e8; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #27ae60;">
+        <p style="margin: 0; color: #27ae60;">
+            <strong>✓</strong> Hesabınız başarıyla oluşturuldu ve sisteme giriş yapabilirsiniz.
+        </p>
+    </div>
+
+    <p>Herhangi bir sorunuz için bizimle iletişime geçebilirsiniz.</p>
+{% endblock %}

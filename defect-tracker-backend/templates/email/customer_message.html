@@ -1,0 +1,11 @@
+{% extends "email/_layout.html" %}
+{% block content %}
+    <h2 style="color: #2c3e50;">Arıza Vakası #{{ case_id }}</h2>
+
+    {# The message is plain text typed by staff: escape it and keep its line breaks. #}
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; white-space: pre-wrap;">{{ email_content }}</div>
+{% endblock %}
+{% block footer %}
+        Bu e-posta Centa Arıza Takip Sistemi tarafından otomatik olarak gönderilmiştir.<br>
+        ariza.takip@centa.com.tr
+{% endblock %}
