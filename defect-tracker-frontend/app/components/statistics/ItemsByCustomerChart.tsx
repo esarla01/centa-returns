@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { API_ENDPOINTS } from '@/lib/api';
 import {
-  type DateRangeProps, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
+  type DateRangeProps, CHART_COLORS, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
 } from './shared';
 
 interface CustomerData {
@@ -19,7 +19,7 @@ interface CustomerResponse {
   data: CustomerData[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+const COLORS = CHART_COLORS;
 
 /** The five customers who returned the most units, as bars and as a table. */
 export default function ItemsByCustomerChart({ startDate, endDate, refreshKey }: DateRangeProps) {
@@ -91,7 +91,7 @@ export default function ItemsByCustomerChart({ startDate, endDate, refreshKey }:
             wrapperStyle={{ paddingTop: '20px' }}
             formatter={() => 'Arıza Adedi'}
           />
-          <Bar dataKey="item_count" fill="#8884d8">
+          <Bar dataKey="item_count" fill="#0f1e33">
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}

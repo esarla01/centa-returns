@@ -225,7 +225,7 @@ test('statistics: every chart shows the finished case, and the filters work', as
   const before = problems.length;
   await page.goto('/view-statistics');
   const card = (title: string) =>
-    page.locator('div.bg-white.rounded.shadow.p-4', { has: page.getByRole('heading', { name: title, exact: true }) });
+    page.locator('div.bg-white.rounded-2xl.p-6', { has: page.getByRole('heading', { name: title, exact: true }) });
 
   const topDefects = card('En Sık Görülen Arıza Tipleri (Top 5)');
   await expect(topDefects).toContainText('Toplam İade Ürün Adedi: 2');
@@ -292,7 +292,7 @@ test('statistics: every chart shows the finished case, and the filters work', as
 
 test('tablet layout shows every stage and offers the right buttons', async ({ browser }) => {
   const page = await loginAs(browser, 'manager', { width: 900, height: 1000 });
-  const card = page.locator('div.rounded-lg.shadow.border', { hasText: CUSTOMER }).filter({ visible: true }).first();
+  const card = page.locator('div.rounded-2xl.shadow.border', { hasText: CUSTOMER }).filter({ visible: true }).first();
   await expect(card).toContainText('Kargoya Verildi:');
   await expect(card).toContainText('Tamamlandı:');
 
@@ -320,7 +320,7 @@ test('phone layout: create a case, complete its stage, delete it', async ({ brow
   await page.locator('form#add-case-form select').selectOption('in_person');
   await page.getByRole('button', { name: 'Vaka Oluştur', exact: true }).click();
 
-  const card = page.locator('div.rounded-lg', { hasText: 'Elden Teslim' }).filter({ visible: true }).first();
+  const card = page.locator('div.rounded-2xl.border', { hasText: 'Elden Teslim' }).filter({ visible: true }).first();
   await expect(card).toContainText('Teslim Alındı');
 
   await card.locator('button[title="Aşamayı Tamamla"]').click();
@@ -333,7 +333,7 @@ test('phone layout: create a case, complete its stage, delete it', async ({ brow
   // ...but may still delete the case, as on the desktop table.
   await card.locator('button[title="Vakayı Sil"]').click();
   await page.getByRole('button', { name: 'Evet, Sil' }).click();
-  await expect(page.locator('div.rounded-lg', { hasText: 'Elden Teslim' }).filter({ visible: true })).toHaveCount(0);
+  await expect(page.locator('div.rounded-2xl.border', { hasText: 'Elden Teslim' }).filter({ visible: true })).toHaveCount(0);
 
   await page.context().close();
   expect(problems.slice(before)).toEqual([]);

@@ -47,7 +47,7 @@ export default function StageCompletionModal({ isOpen, onClose, stage, caseId, o
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <span className="text-2xl">{stageConfig.icon}</span>
-            <h2 className="text-lg font-semibold">{stageConfig.title} Aşaması</h2>
+            <h2 className="font-display text-lg">{stageConfig.title} Aşaması</h2>
           </div>
           <button
             onClick={onClose}

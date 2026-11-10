@@ -78,10 +78,10 @@ export default function DefectsByProductionMonthChart() {
   return (
     <div className="flex flex-col gap-3">
       {/* Time Filter Section */}
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg shadow-sm border border-amber-100 p-4 mb-4">
+      <div className="bg-sand rounded-lg shadow-sm border border-line p-4 mb-4">
         <div className="mb-3">
           <div className="flex items-center gap-2 mb-1">
-            <Calendar className="w-4 h-4 text-amber-600" />
+            <Calendar className="w-4 h-4 text-ink" />
             <h4 className="text-sm font-semibold text-gray-800">Bu Grafik İçin Özel Tarih Aralığı</h4>
           </div>
           <p className="text-xs text-gray-600 leading-relaxed">
@@ -97,7 +97,7 @@ export default function DefectsByProductionMonthChart() {
               <select
                 value={quickSelect}
                 onChange={(e) => handleQuickSelect(e.target.value)}
-                className="w-full h-10 appearance-none border-2 border-gray-300 rounded-lg px-3 pr-8 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 text-sm"
+                className="w-full h-10 appearance-none border border-line-2 rounded-lg px-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 text-sm"
               >
                 <option value="1">Son 1 Yıl</option>
                 <option value="2">Son 2 Yıl</option>
@@ -120,7 +120,7 @@ export default function DefectsByProductionMonthChart() {
                 setQuickSelect('custom');
               }}
               disabled={quickSelect !== 'custom'}
-              className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+              className="w-full h-10 border border-line-2 rounded-lg px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
             />
           </div>
           <div className="flex-1 min-w-[180px]">
@@ -135,12 +135,12 @@ export default function DefectsByProductionMonthChart() {
                 setQuickSelect('custom');
               }}
               disabled={quickSelect !== 'custom'}
-              className="w-full h-10 border-2 border-gray-300 rounded-lg px-3 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+              className="w-full h-10 border border-line-2 rounded-lg px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
             />
           </div>
           <button
             onClick={() => setRefreshKey((x) => x + 1)}
-            className="h-10 px-5 rounded-lg bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap text-sm"
+            className="h-10 px-5 rounded-lg bg-ink hover:bg-steel text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap text-sm"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Uygula
@@ -200,7 +200,7 @@ export default function DefectsByProductionMonthChart() {
               formatter={(value: any, name: any) => [`${value} hata`, 'Hata Sayısı']}
               labelFormatter={(label: string) => `Üretim Tarihi: ${formatMonthLabel(label)}`}
             />
-            <Bar dataKey="defect_count" fill="#f59e0b" name="Hata Sayısı">
+            <Bar dataKey="defect_count" fill="#0f1e33" name="Hata Sayısı">
               <LabelList 
                 dataKey="defect_count" 
                 position="top" 
@@ -222,7 +222,7 @@ export default function DefectsByProductionMonthChart() {
             </label>
             <button
               onClick={() => setShowAll(!showAll)}
-              className="text-xs text-amber-600 hover:text-amber-700 font-medium"
+              className="text-xs text-ink hover:text-steel font-medium"
             >
               {showAll ? `${WINDOW} Ay Göster` : 'Tümünü Göster'}
             </button>
@@ -239,7 +239,7 @@ export default function DefectsByProductionMonthChart() {
                     max={lastStart}
                     value={start}
                     onChange={(e) => setWindowStart(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-ink"
                   />
                 </div>
                 <span className="text-xs text-gray-600 whitespace-nowrap">

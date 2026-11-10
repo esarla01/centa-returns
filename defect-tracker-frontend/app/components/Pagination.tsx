@@ -82,7 +82,7 @@ const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
           className={navButtonClass}
         >
           <ArrowLeft className="w-4 h-4" />
-          Previous
+          Önceki
         </button>
 
         <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ const Pagination = ({ currentPage, totalPages }: PaginationProps) => {
           disabled={currentPage === totalPages}
           className={navButtonClass}
         >
-          Next
+          Sonraki
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

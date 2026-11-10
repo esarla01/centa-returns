@@ -14,9 +14,9 @@ export default function ViewReturnCaseModal({ returnCase, onClose }: ViewReturnC
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
       <div className="relative w-full max-w-5xl max-h-[98vh] sm:max-h-[95vh] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-cream">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">Vaka #{returnCase.id} Detayları</h2>
+            <h2 className="font-display text-xl text-gray-800">Vaka #{returnCase.id} Detayları</h2>
             <p className="text-sm text-gray-600 mt-0.5">Durum: {returnCase.status}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100">

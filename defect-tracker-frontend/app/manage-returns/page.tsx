@@ -109,7 +109,7 @@ function ReturnsDashboardContent() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_CASE_TRACKING" >
-    <div className="bg-gradient-to-b from-blue-50 to-white pb-20 md:pb-0">
+    <div className="bg-cream pb-20 md:pb-0">
       <Header onLogout={() => {}} />
 
       {isAddModalOpen && (
@@ -131,7 +131,7 @@ function ReturnsDashboardContent() {
         {/* Simplified Header Section */}
         <div className="flex items-center justify-between mt-6 mb-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <h1 className="font-display text-2xl md:text-3xl text-gray-900">
               Arıza Vakaları Yönetimi
             </h1>
             <p className="text-sm text-gray-500 mt-1 hidden md:block">
@@ -143,7 +143,7 @@ function ReturnsDashboardContent() {
           <PermissionGate permission="CASE_CREATE">
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 rounded-md border bg-blue-500 text-white hover:bg-blue-600 px-3 py-2 text-sm md:px-4 md:text-base"
+              className="flex items-center gap-2 rounded-lg bg-brand text-white font-medium transition-colors hover:bg-brand-hover px-4 py-2.5 text-sm md:px-5 md:text-[15px]"
             >
               <Plus className="h-4 w-4 md:h-5 md:w-5" />
               <span className="hidden sm:inline">Yeni Vaka Oluştur</span>
@@ -156,7 +156,7 @@ function ReturnsDashboardContent() {
         <div className="md:hidden mb-4">
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
+            className="w-full flex items-center justify-between p-3 bg-white rounded-2xl border border-gray-200 shadow-sm"
           >
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-gray-500" />
@@ -177,7 +177,7 @@ function ReturnsDashboardContent() {
 
         {/* Mobile Collapsible Filters */}
         {isFilterOpen && (
-          <div className="md:hidden mb-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="md:hidden mb-4 bg-white rounded-2xl border border-gray-200 shadow-sm">
             <FilterSidebar filters={filters} setFilters={setFilters} />
             {hasActiveFilters && (
               <div className="p-4 border-t border-gray-200">
@@ -196,20 +196,20 @@ function ReturnsDashboardContent() {
         <div className="hidden md:flex flex-col lg:flex-row gap-6">
           {/* Left Sidebar Filters */}
           <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm h-full">
+            <div className="bg-white rounded-2xl shadow-sm h-full border border-line">
               <FilterSidebar filters={filters} setFilters={setFilters} />
             </div>
           </div>
 
           {/* Main content */}
           <main className="flex-1 min-w-0">
-            <div className="bg-white rounded-lg shadow-sm h-full flex flex-col">
+            <div className="bg-white rounded-2xl shadow-sm h-full flex flex-col border border-line">
               {/* Header Section */}
               <div className="p-6 border-b border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div className="flex-1">
                     <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                      <h2 className="text-xl lg:text-2xl font-bold text-gray-800">
+                      <h2 className="font-display text-xl lg:text-2xl text-gray-800">
                         {hasActiveFilters ? 'Arama Sonuçları' : 'Gelen Ürün Vakaları'}
                       </h2>
                       {!hasActiveFilters && (
@@ -290,7 +290,7 @@ function ReturnsDashboardContent() {
 export default function ReturnsDashboardPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Yükleniyor...</p>

@@ -339,7 +339,7 @@ export default function CasesTable({ cases, isLoading, onDelete, onRefresh }: Ca
             const isViewButtonActive = isSelected;
 
             return (
-              <div key={c.id} className={`bg-white rounded-lg shadow border p-4 space-y-3 ${statusTone(c.status).row}`}>
+              <div key={c.id} className={`bg-white rounded-2xl shadow border p-4 space-y-3 ${statusTone(c.status).row}`}>
                 {/* Header with Checkbox */}
                 <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-3">

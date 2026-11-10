@@ -132,11 +132,11 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
               <div className="relative w-full max-w-4xl max-h-[98vh] sm:max-h-[90vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
                   {/* Header */}
-          <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="p-3 sm:p-4 border-b border-gray-200 flex items-center justify-between bg-cream">
           <div className="flex items-center space-x-2">
             <Mail className="h-6 w-6 text-blue-600" />
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-blue-800">Müşteriye E-posta Gönder</h2>
+              <h2 className="font-display text-lg sm:text-xl text-blue-800">Müşteriye E-posta Gönder</h2>
               <p className="text-xs text-blue-600 mt-1">
                 Vaka #{returnCase.id} - {returnCase.customer.name}
               </p>
@@ -155,7 +155,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
           <div className="p-4 space-y-4">
             
             {/* SECTION 1: Customer Information (Top Section) */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+            <div className="bg-cream rounded-lg p-4 border border-blue-200">
               <h3 className="text-lg font-bold text-blue-800 mb-3 flex items-center">
                 <User className="h-5 w-5 text-blue-600 mr-2" />
                 Müşteri Bilgileri
@@ -189,7 +189,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
             </div>
 
             {/* SECTION 2: Return Case Summary (Middle Section) */}
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
               <h3 className="text-lg font-bold text-green-800 mb-3 flex items-center">
                 <Package className="h-5 w-5 text-green-600 mr-2" />
                 Arıza Vakası Özeti
@@ -299,7 +299,7 @@ export default function EmailCustomerModal({ returnCase, onClose, onSuccess }: E
             </div>
 
             {/* SECTION 3: Email Composition (Bottom Section) */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
               <h3 className="text-lg font-bold text-purple-800 mb-3 flex items-center">
                 <Mail className="h-5 w-5 text-purple-600 mr-2" />
                 E-posta Oluşturma

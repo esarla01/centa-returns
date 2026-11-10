@@ -46,7 +46,7 @@ export default function EditCustomerModal({ customer, onClose, onSuccess }: Edit
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
       <div className="relative w-full max-w-md p-8 bg-white rounded-lg shadow-xl">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Müşteri Bilgilerini Düzenle</h2>
+        <h2 className="font-display text-2xl text-gray-800 mb-6">Müşteri Bilgilerini Düzenle</h2>
 
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
           <X size={24} />

@@ -31,15 +31,10 @@ export default function Header({ onLogout }: HeaderProps) {
 
   if (loading) {
     return (
-      <header className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-300 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
-            </div>
-            <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-          </div>
+      <header className="w-full px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="flex items-center justify-between h-14">
+          <div className="h-12 w-72 rounded-xl bg-white border border-line animate-pulse"></div>
+          <div className="h-10 w-40 rounded-xl bg-white border border-line animate-pulse"></div>
         </div>
       </header>
     );
@@ -97,122 +92,90 @@ export default function Header({ onLogout }: HeaderProps) {
   const isActiveLink = (href: string) => pathname === href;
 
   return (
-    <header className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-md">
-      <div className="max-w-10xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-4">
-          
-          {/* Left Side: Logo and Title */}
-          <div className="flex-shrink-0 flex items-center gap-4">
-            <img src="/logo.png" alt="Centa Logo" className="h-10 w-auto" />
-            <h1 className="hidden lg:block text-xl font-semibold text-gray-800">
-              Arıza Takip Sistemi
-            </h1>
-          </div>
+    <header className="w-full px-4 sm:px-6 lg:px-8 pt-4">
+      <div className="flex items-center justify-between gap-4">
 
-          {/* Center: Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-6">
-            {filteredNavLinks.map((link, idx) => (
-              <a 
-                key={idx} 
-                href={link.href} 
-                className={`
-                  text-sm font-medium transition-colors
-                  ${isActiveLink(link.href) 
-                    ? 'text-blue-600' 
-                    : 'text-gray-600 hover:text-gray-900'
-                  }
-                `}
+        {/* Left: logo and navigation, together in one pill */}
+        <div className="flex min-w-0 items-center gap-1 rounded-xl border border-line bg-white px-2 py-1.5">
+          <a href="/manage-returns" className="flex shrink-0 items-center gap-3 rounded-lg px-2 py-1">
+            <img src="/logo.png" alt="Centa" className="h-8 w-auto" />
+            <span className="hidden xl:block font-display text-lg text-ink">Arıza Takip</span>
+          </a>
+          <nav className="hidden lg:flex items-center gap-0.5 border-l border-line pl-2">
+            {filteredNavLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                aria-current={isActiveLink(link.href) ? 'page' : undefined}
+                className={`inline-flex min-h-10 items-center rounded-lg px-3 text-[15px] transition-colors duration-150 ${
+                  isActiveLink(link.href)
+                    ? 'bg-ink text-cream'
+                    : 'text-ink hover:bg-cream'
+                }`}
               >
                 {link.text}
               </a>
             ))}
           </nav>
+        </div>
 
-          {/* Right Side: User Info and Actions */}
-          <div className="flex items-center gap-6">
-            {/* Date */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded bg-gray-50 border border-gray-200">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm text-gray-500 font-medium">{currentDate}</span>
+        {/* Right: date, who is signed in, sign out */}
+        <div className="flex items-center gap-2">
+          <span className="eyebrow hidden md:block px-2">{currentDate}</span>
+
+          {user && (
+            <div className="hidden sm:flex h-12 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm">
+              <span className="font-medium text-ink">{user.firstName} {user.lastName}</span>
+              <span className="text-gray-500">{getRoleNameInTurkish[user.role]}</span>
             </div>
+          )}
 
-            {/* User Info */}
-            {user && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded bg-blue-50 border border-blue-100">
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A9 9 0 1112 21a8.963 8.963 0 01-6.879-3.196z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-sm text-blue-900 font-semibold">
-                  {user.firstName} {user.lastName}
-                  <span className="text-blue-700 font-normal ml-1">
-                    ({getRoleNameInTurkish[user.role]})
-                  </span>
-                </span>
-              </div>
+          <button
+            onClick={handleLogout}
+            className="hidden sm:inline-flex h-12 items-center gap-2 rounded-xl border border-line bg-white px-4 text-sm text-ink transition-colors hover:border-ink"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+            </svg>
+            Çıkış
+          </button>
+
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="lg:hidden inline-flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-white text-ink"
+          >
+            <span className="sr-only">Ana menüyü aç</span>
+            {isMenuOpen ? (
+              <X className="block h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="block h-5 w-5" aria-hidden="true" />
             )}
-
-            {/* Logout Button */}
-            <button
-              onClick={handleLogout}
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded bg-red-50 border border-red-100 text-sm text-red-600 hover:bg-red-100 hover:text-red-700 font-medium transition"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
-              </svg>
-              Çıkış
-            </button>
-            
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 text-gray-600 hover:text-gray-800"
-            >
-              <span className="sr-only">Ana menüyü aç</span>
-              {isMenuOpen ? (
-                <X className="block h-5 w-5" aria-hidden="true" />
-              ) : (
-                <Menu className="block h-5 w-5" aria-hidden="true" />
-              )}
-            </button>
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Menu on small screens */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-200">
-          <nav className="px-4 py-2 space-y-1">
-            {filteredNavLinks.map((link, idx) => (
-              <a 
-                key={idx} 
-                href={link.href} 
-                className={`
-                  block px-3 py-2 text-base font-medium rounded-md transition-colors
-                  ${isActiveLink(link.href) 
-                    ? 'text-blue-600 bg-blue-50' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }
-                `}
+        <div className="lg:hidden mt-2 rounded-xl border border-line bg-white">
+          <nav className="p-2 space-y-1">
+            {filteredNavLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`block rounded-lg px-3 py-2 text-base transition-colors ${
+                  isActiveLink(link.href) ? 'bg-ink text-cream' : 'text-ink hover:bg-cream'
+                }`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 {link.text}
               </a>
             ))}
           </nav>
-          
-          <div className="px-4 py-3 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500">{currentDate}</span>
-              <button 
-                onClick={handleLogout}
-                className="text-sm text-red-600 hover:text-red-700 font-medium"
-              >
-                Çıkış Yap
-              </button>
-            </div>
+          <div className="flex items-center justify-between border-t border-line px-4 py-3">
+            <span className="eyebrow">{currentDate}</span>
+            <button onClick={handleLogout} className="text-sm font-medium text-brand hover:text-brand-hover">
+              Çıkış Yap
+            </button>
           </div>
         </div>
       )}

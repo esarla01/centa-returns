@@ -67,7 +67,7 @@ export default function DistributionPieChart({
             label={({ item_count }) => `${item_count} adet`}
             outerRadius={70}
             innerRadius={20}
-            fill="#8884d8"
+            fill="#0f1e33"
           >
             {slices.map((slice, index) => (
               <Cell key={slice.name} fill={colors[index % colors.length]} />

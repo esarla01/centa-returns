@@ -122,14 +122,14 @@ function UserActionLogsContent() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_CASE_TRACKING">
-      <div className="bg-gradient-to-b from-blue-50 to-white pb-20 md:pb-0">
+      <div className="bg-cream pb-20 md:pb-0">
         <Header onLogout={() => {}} />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Simplified Header Section */}
           <div className="flex items-center justify-between mt-6 mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+              <h1 className="font-display text-2xl md:text-3xl text-gray-900">
                 Kullanıcı İşlem Geçmişi
               </h1>
               <p className="text-sm text-gray-500 mt-1 hidden md:block">
@@ -142,7 +142,7 @@ function UserActionLogsContent() {
           <div className="md:hidden mb-4">
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="w-full flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 shadow-sm"
+              className="w-full flex items-center justify-between p-3 bg-white rounded-2xl border border-gray-200 shadow-sm"
             >
               <div className="flex items-center gap-2">
                 <Filter className="h-5 w-5 text-gray-500" />
@@ -163,7 +163,7 @@ function UserActionLogsContent() {
 
           {/* Mobile Collapsible Filters */}
           {isFilterOpen && (
-            <div className="md:hidden mb-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm space-y-3">
+            <div className="md:hidden mb-4 p-4 bg-white rounded-2xl border border-gray-200 shadow-sm space-y-3">
               {/* Search Input */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -189,10 +189,10 @@ function UserActionLogsContent() {
           )}
 
           {/* Desktop Filters */}
-          <div className="hidden md:block mb-6 bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div className="hidden md:block mb-6 bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">
+                <h2 className="font-display text-xl text-gray-800 mb-2">
                   {search ? 'Arama Sonuçları' : 'Tüm İşlem Geçmişi'}
                 </h2>
                 {search && (
@@ -246,7 +246,7 @@ function UserActionLogsContent() {
               </div>
             ) : (
               logs.map((log, idx) => (
-                <div key={log.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div key={log.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
                   <div className="space-y-3">
                     {/* User Info */}
                     <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ function UserActionLogsContent() {
           </div>
 
           {/* Desktop Table Layout */}
-          <div className="hidden md:block bg-white rounded-lg shadow-sm">
+          <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-line">
             <div className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -370,7 +370,7 @@ function UserActionLogsContent() {
 export default function UserActionLogsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Yükleniyor...</p>

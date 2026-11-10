@@ -42,10 +42,10 @@ export function RequirePermission({ permission, children }: RequirePermissionPro
   // Show loading state while user data is being fetched
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 to-blue-100">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-cream">
         <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center max-w-md">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Yükleniyor...</h2>
+          <h2 className="font-display text-xl text-gray-800 mb-2">Yükleniyor...</h2>
           <p className="text-gray-600 text-center">
             Kullanıcı bilgileri yükleniyor...
           </p>
@@ -57,7 +57,7 @@ export function RequirePermission({ permission, children }: RequirePermissionPro
   // Check permissions only after loading is complete
   if (!user || !user.permissions.includes(permission)) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 to-blue-100">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-cream">
         <div className="bg-white p-8 rounded-lg shadow-lg flex flex-col items-center max-w-md">
           <svg
             className="w-16 h-16 text-red-400 mb-4"
@@ -74,7 +74,7 @@ export function RequirePermission({ permission, children }: RequirePermissionPro
               d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5"
             />
           </svg>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Erişim Reddedildi</h2>
+          <h2 className="font-display text-2xl text-gray-800 mb-2">Erişim Reddedildi</h2>
           <p className="text-gray-600 mb-4 text-center">
             Üzgünüz, bu sayfaya erişim izniniz yok.<br />
             Giriş sayfasına yönlendiriliyorsunuz...

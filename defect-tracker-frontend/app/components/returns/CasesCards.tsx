@@ -2,7 +2,7 @@
 
 import { Package, Calendar, User, Building2, Eye, Pencil, CheckCircle, Trash2, Mail } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatTurkishDate } from '@/lib/utils';
 import {
   type Actor, canCompleteStage, canDeleteCase, canEditStage, canEmailCustomer, stageOfStatus, statusTone,
 } from '@/lib/workflow';
@@ -61,7 +61,7 @@ export function CasesCards({
         // Phones show one set of buttons, for the stage the case is at now.
         const currentStage = stageOfStatus(returnCase.status);
         return (
-        <div key={returnCase.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div key={returnCase.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               {/* Case Header */}
@@ -88,7 +88,7 @@ export function CasesCards({
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 <p className="text-sm text-gray-600">
-                  Geliş: {returnCase.arrival_date}
+                  Geliş: {formatTurkishDate(returnCase.arrival_date)}
                 </p>
               </div>
               

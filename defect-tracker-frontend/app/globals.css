@@ -1,60 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Centa look and feel, taken from the company website:
+ * deep navy "ink" on warm cream, white cards with hairline borders, one red
+ * accent, a light serif for headings and small mono labels.
+ *
+ * The app's components are written with Tailwind's gray / blue / red names.
+ * Rather than rename thousands of classes, those three scales are redefined
+ * here: "gray" is the warm neutral scale (cream to ink), "blue" is the navy
+ * scale, and "red" is Centa red. New code can also use the named tokens
+ * (ink, cream, sand, line, brand).
+ */
+@theme {
+  /* Named tokens */
+  --color-ink: #0f1e33;
+  --color-ink-2: #14233a;
+  --color-steel: #2b4766;
+  --color-cream: #f6f2eb;
+  --color-cream-2: #fbf9f5;
+  --color-sand: #ece3d6;
+  --color-line: #e6ded2;
+  --color-line-2: #dcd3c6;
+  --color-brand: #d92b2f;
+  --color-brand-hover: #b92126;
+
+  /* Warm neutrals: backgrounds and borders lean cream, text leans navy */
+  --color-gray-50: #fbf9f5;
+  --color-gray-100: #f3eee6;
+  --color-gray-200: #e6ded2;
+  --color-gray-300: #dcd3c6;
+  --color-gray-400: #8f97a5;
+  --color-gray-500: #5e6878;
+  --color-gray-600: #4a5567;
+  --color-gray-700: #3a4658;
+  --color-gray-800: #1c2b42;
+  --color-gray-900: #0f1e33;
+  --color-slate-50: #fbf9f5;
+  --color-slate-100: #f3eee6;
+
+  /* Navy */
+  --color-blue-50: #eef2f7;
+  --color-blue-100: #dce3ec;
+  --color-blue-200: #c3cfdd;
+  --color-blue-300: #9fb0c6;
+  --color-blue-400: #6f86a3;
+  --color-blue-500: #2b4766;
+  --color-blue-600: #1c3352;
+  --color-blue-700: #14233a;
+  --color-blue-800: #0f1e33;
+  --color-blue-900: #0b1626;
+  --color-indigo-50: #eef2f7;
+  --color-indigo-100: #dce3ec;
+  --color-indigo-500: #2b4766;
+  --color-indigo-600: #1c3352;
+
+  /* Centa red */
+  --color-red-50: #fdf2f2;
+  --color-red-100: #fbe3e3;
+  --color-red-200: #f5c4c5;
+  --color-red-300: #ee9a9c;
+  --color-red-400: #e56365;
+  --color-red-500: #d92b2f;
+  --color-red-600: #d92b2f;
+  --color-red-700: #b92126;
+  --color-red-800: #96191d;
+
+  /* Type */
+  --font-sans: var(--font-geist-sans), "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Newsreader Variable", "Newsreader", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Corners: controls 12px, cards 24px, as on the website */
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Flat surfaces: small shadows are switched off (panels have a hairline
+     border instead). Dialogs keep a soft shadow so they lift off the page. */
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 8px 24px -12px rgb(15 30 51 / 0.14);
+  --shadow-xl: 0 24px 48px -16px rgb(15 30 51 / 0.22);
+  --shadow-2xl: 0 32px 64px -20px rgb(15 30 51 / 0.28);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Borders are warm hairlines unless a class says otherwise. */
+@layer base {
+  *, ::before, ::after {
+    border-color: var(--color-line);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-weight: 450;
+  letter-spacing: -0.01em;
 }
 
-/* Blob animation for login page */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
+/* Headings in the display serif, light and tight, like the website. */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
+/* Small uppercase label that sits above a heading. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-gray-500);
 }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* Mobile Input Contrast Fixes */
-/* Ensure proper contrast on mobile devices, especially iOS */
+/* Form controls: one look everywhere, readable on phones (iOS included). */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -69,91 +132,68 @@ input[type="time"],
 input[type="week"],
 textarea,
 select {
-  /* Force dark text color for better contrast */
-  color: #1f2937 !important; /* gray-800 */
-  background-color: #ffffff !important;
-  -webkit-text-fill-color: #1f2937 !important; /* iOS specific */
-  -webkit-appearance: none; /* Remove iOS default styling */
+  color: var(--color-ink) !important;
+  background-color: var(--color-cream-2) !important;
+  border-color: var(--color-line-2);
+  -webkit-text-fill-color: var(--color-ink) !important; /* iOS */
+  -webkit-appearance: none;
   appearance: none;
 }
 
-/* iOS specific fixes */
-@supports (-webkit-touch-callout: none) {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="search"],
-  input[type="month"],
-  input[type="date"],
-  input[type="datetime-local"],
-  input[type="time"],
-  input[type="week"],
-  textarea,
-  select {
-    /* iOS Safari specific overrides */
-    -webkit-text-fill-color: #1f2937 !important;
-    color: #1f2937 !important;
-    background-color: #ffffff !important;
-  }
-}
-
-/* Focus states for better visibility */
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-input[type="tel"]:focus,
-input[type="url"]:focus,
-input[type="search"]:focus,
-input[type="month"]:focus,
-input[type="date"]:focus,
-input[type="datetime-local"]:focus,
-input[type="time"]:focus,
-input[type="week"]:focus,
-textarea:focus,
-select:focus {
-  color: #1f2937 !important;
-  -webkit-text-fill-color: #1f2937 !important;
-  background-color: #ffffff !important;
-}
-
-/* Placeholder text contrast */
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280 !important; /* gray-500 */
+  color: var(--color-gray-400) !important;
   opacity: 1 !important; /* Firefox */
-  -webkit-text-fill-color: #6b7280 !important; /* iOS */
+  -webkit-text-fill-color: var(--color-gray-400) !important; /* iOS */
 }
 
-/* Disabled state styling */
 input:disabled,
 textarea:disabled,
 select:disabled {
-  color: #9ca3af !important; /* gray-400 */
-  -webkit-text-fill-color: #9ca3af !important;
-  background-color: #f3f4f6 !important; /* gray-100 */
+  color: var(--color-gray-400) !important;
+  -webkit-text-fill-color: var(--color-gray-400) !important;
+  background-color: var(--color-gray-100) !important;
 }
 
-/* Autofill styling */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-text-fill-color: #1f2937 !important;
-  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  -webkit-text-fill-color: var(--color-ink) !important;
+  -webkit-box-shadow: 0 0 0 30px var(--color-cream-2) inset !important;
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Select dropdown styling */
+/* Dropdown arrow */
 select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%235e6878' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
   padding-right: 2.5rem;
+}
+
+/* The date picker, in the same palette */
+.react-datepicker {
+  font-family: var(--font-sans) !important;
+  border-color: var(--color-line-2) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+}
+.react-datepicker__header {
+  background-color: var(--color-cream) !important;
+  border-bottom-color: var(--color-line) !important;
+}
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected,
+.react-datepicker__month-text--selected,
+.react-datepicker__month-text--keyboard-selected {
+  background-color: var(--color-ink) !important;
+  color: var(--color-cream) !important;
+}
+.react-datepicker__day--today,
+.react-datepicker__month-text--today {
+  font-weight: 600;
 }
 
 /* Mobile-specific input sizing */

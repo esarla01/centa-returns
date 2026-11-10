@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { API_ENDPOINTS } from '@/lib/api';
 import {
-  type DateRangeProps, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
+  type DateRangeProps, CHART_COLORS, PRODUCT_TYPE_OPTIONS, SelectFilter, chartNotice, dateRangeQuery, useOptions, useReport,
 } from './shared';
 
 interface ProductionDateResponse {
@@ -13,7 +13,7 @@ interface ProductionDateResponse {
   data: { production_month: string; item_count: number }[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#A4DE6C', '#D0ED57', '#FFC658'];
+const COLORS = CHART_COLORS;
 
 /** Of the units returned in the period, how many were produced in each month. */
 export default function ProductionDateDistributionChart({ startDate, endDate, refreshKey }: DateRangeProps) {
@@ -111,7 +111,7 @@ export default function ProductionDateDistributionChart({ startDate, endDate, re
                 wrapperStyle={{ paddingTop: '20px' }}
                 formatter={() => 'İade Adedi'}
               />
-              <Bar dataKey="item_count" fill="#8884d8" barSize={60}>
+              <Bar dataKey="item_count" fill="#0f1e33" barSize={60}>
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}

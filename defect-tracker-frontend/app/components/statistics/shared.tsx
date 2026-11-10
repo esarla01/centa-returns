@@ -14,6 +14,12 @@ export const PRODUCT_TYPE_OPTIONS = [
   { value: 'control_unit', label: 'Kontrol Ünitesi' },
 ];
 
+/** Chart colours, in the order series are drawn: ink, Centa red, then steels and sands. */
+export const CHART_COLORS = ['#0f1e33', '#d92b2f', '#2b4766', '#b3a590', '#6f86a3', '#8a5a00', '#9fb0c6', '#ece3d6', '#1f7a4d'];
+
+/** For the slice that means "not recorded yet". */
+export const CHART_MUTED = '#c9c2b6';
+
 // --- Dates -------------------------------------------------------------------
 // A chosen day is held as a Date at midnight UTC, so that turning it into
 // "YYYY-MM-DD" gives the same day in every time zone.

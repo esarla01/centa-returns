@@ -44,9 +44,9 @@ export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: 
       <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} />
               <div className="relative w-full max-w-2xl max-h-[98vh] sm:max-h-[95vh] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-3 sm:p-6 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50">
+        <div className="p-3 sm:p-6 border-b border-gray-200 flex items-center justify-between bg-purple-50">
           <div>
-            <h2 className="text-lg sm:text-2xl font-bold text-purple-800">Kargo Bilgileri Düzenle</h2>
+            <h2 className="font-display text-lg sm:text-2xl text-purple-800">Kargo Bilgileri Düzenle</h2>
             <p className="text-xs sm:text-sm text-purple-600 mt-1">Vaka #{returnCase.id} - {returnCase.customer.name}</p>
           </div>
           <button 

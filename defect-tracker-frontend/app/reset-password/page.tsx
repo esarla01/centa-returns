@@ -43,13 +43,7 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
 
       <div className="relative w-full max-w-md">
         {/* Logo Section */}
@@ -63,12 +57,12 @@ function ResetPasswordContent() {
               className="object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Şifre Sıfırlama</h1>
+          <h1 className="font-display text-3xl text-gray-900 mb-2">Şifre Sıfırlama</h1>
           <p className="text-gray-600">Yeni şifrenizi belirleyin</p>
         </div>
 
         {/* Reset Password Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8">
+        <div className="bg-white rounded-2xl border border-line p-8">
           {message && (
             <div className={`mb-6 p-4 rounded-xl border ${
               isSuccess 
@@ -192,10 +186,10 @@ function ResetPasswordContent() {
               type="submit"
               disabled={isSubmitting || !new_password || !confirm_password || new_password !== confirm_password}
               className={`
-                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2
+                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isSubmitting || !new_password || !confirm_password || new_password !== confirm_password
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:ring-green-500 shadow-lg hover:shadow-xl'
+                  : 'bg-brand hover:bg-brand-hover focus:ring-red-500'
                 }
               `}
             >
@@ -238,7 +232,7 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Yükleniyor...</p>

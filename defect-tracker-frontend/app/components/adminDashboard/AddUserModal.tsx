@@ -45,7 +45,7 @@ export default function AddUserModal({ onClose, onUserInvited }: AddUserModalPro
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div> 
       <div className="relative w-full max-w-md p-6 bg-white rounded-lg shadow-xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Kullanıcı Davet Et</h2>
+          <h2 className="font-display text-2xl text-gray-900">Kullanıcı Davet Et</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -142,7 +142,7 @@ export default function AddUserModal({ onClose, onUserInvited }: AddUserModalPro
               className={`flex-1 py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 ${
                 isSubmitting 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                  : 'bg-ink hover:bg-steel'
               }`}
             >
               {isSubmitting ? 'Davet Gönderiliyor...' : 'Davet Gönder'}

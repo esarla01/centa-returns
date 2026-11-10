@@ -78,7 +78,7 @@ function AcceptInvitationContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Davet bağlantısı doğrulanıyor...</p>
@@ -89,15 +89,15 @@ function AcceptInvitationContent() {
 
   if (!userInfo) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8 max-w-md w-full">
+      <div className="min-h-screen bg-cream flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl border border-line p-8 max-w-md w-full">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
               <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Geçersiz Davet</h1>
+            <h1 className="font-display text-2xl text-gray-900 mb-2">Geçersiz Davet</h1>
             <p className="text-gray-600 mb-6">{message}</p>
             <button
               onClick={() => router.push('/login')}
@@ -112,13 +112,7 @@ function AcceptInvitationContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
 
       <div className="relative w-full max-w-md">
         {/* Logo Section */}
@@ -132,12 +126,12 @@ function AcceptInvitationContent() {
               className="object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Hesabınızı Aktifleştirin</h1>
+          <h1 className="font-display text-3xl text-gray-900 mb-2">Hesabınızı Aktifleştirin</h1>
           <p className="text-gray-600">Hoş geldiniz, {userInfo.first_name} {userInfo.last_name}</p>
         </div>
 
         {/* Accept Invitation Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8">
+        <div className="bg-white rounded-2xl border border-line p-8">
           {message && (
             <div className={`mb-6 p-4 rounded-xl border ${
               isSuccess 
@@ -320,10 +314,10 @@ function AcceptInvitationContent() {
               type="submit"
               disabled={isSubmitting || !firstName.trim() || !lastName.trim() || !password || !confirmPassword || password !== confirmPassword}
               className={`
-                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2
+                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isSubmitting || !firstName.trim() || !lastName.trim() || !password || !confirmPassword || password !== confirmPassword
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:ring-green-500 shadow-lg hover:shadow-xl'
+                  : 'bg-brand hover:bg-brand-hover focus:ring-red-500'
                 }
               `}
             >
@@ -356,7 +350,7 @@ function AcceptInvitationContent() {
 export default function AcceptInvitationPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Yükleniyor...</p>

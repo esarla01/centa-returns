@@ -95,7 +95,7 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
       <div className="absolute inset-0 bg-gray-900 opacity-50" onClick={onClose}></div>
       <div className="relative w-full max-w-lg h-auto bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden">
         <div className="p-5 border-b flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800">Yeni Gelen Ürün Vakası Oluştur</h2>
+            <h2 className="font-display text-xl text-gray-800">Yeni Gelen Ürün Vakası Oluştur</h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={24} /></button>
         </div>
 

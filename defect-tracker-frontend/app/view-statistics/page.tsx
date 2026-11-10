@@ -3,7 +3,7 @@
 import Header from '@/app/components/Header';
 import ItemsByCustomerChart from '@/app/components/statistics/ItemsByCustomerChart';
 import DistributionPieChart from '@/app/components/statistics/DistributionPieChart';
-import { fromDateInput, monthsBefore, toDateParam, today } from '@/app/components/statistics/shared';
+import { CHART_COLORS, CHART_MUTED, fromDateInput, monthsBefore, toDateParam, today } from '@/app/components/statistics/shared';
 import { API_ENDPOINTS } from '@/lib/api';
 import { useState } from 'react';
 import DefectsByProductionMonthChart from '../components/statistics/DefectsByProductionMonthChart';
@@ -11,10 +11,6 @@ import TopDefectsChart from '../components/statistics/TopDefectsChart';
 import ProductionDateDistributionChart from '../components/statistics/ProductionDateDistributionChart';
 import { RequirePermission } from '../components/RequirePermission';
 import { Calendar, Filter, RefreshCw, ChevronDown } from 'lucide-react';
-
-// The last colour is for "Belirtilmemiş" (not recorded yet).
-const PIE_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#9CA3AF'];
-const MODEL_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export default function StatisticsPage() {
   const [startDate, setStartDate] = useState<Date | null>(() => monthsBefore(today(), 1));
@@ -37,11 +33,11 @@ export default function StatisticsPage() {
 
   return (
     <RequirePermission permission="PAGE_VIEW_STATISTICS">
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <div className="min-h-screen bg-cream">
         <Header onLogout={() => {}} />
         <div className="max-w-7xl mx-auto p-6 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-3">Raporlar</h1>
+            <h1 className="font-display text-2xl text-gray-800 mb-3">Raporlar</h1>
             <p className="text-gray-600 leading-relaxed">
               Bu sayfada, iade ve arıza verilerinizi görselleştiren detaylı raporlara erişebilirsiniz. 
               Grafikler, arıza dağılımlarını, çözüm yöntemlerini, ürün bazlı analizleri ve müşteri istatistiklerini 
@@ -51,7 +47,7 @@ export default function StatisticsPage() {
           </div>
 
         {/* Filters */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-md border border-blue-100 p-6">
+        <div className="bg-cream rounded-lg shadow-md border border-blue-100 p-6">
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-2">
               <Filter className="w-5 h-5 text-blue-600" />
@@ -75,7 +71,7 @@ export default function StatisticsPage() {
                 <select
                   value={quickSelect}
                   onChange={(e) => handleQuickSelect(e.target.value)}
-                  className="w-full h-11 appearance-none border-2 border-gray-300 rounded-lg px-4 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400"
+                  className="w-full h-11 appearance-none border border-line-2 rounded-lg px-4 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400"
                 >
                   <option value="1">Son 1 Ay</option>
                   <option value="3">Son 3 Ay</option>
@@ -102,7 +98,7 @@ export default function StatisticsPage() {
                   setQuickSelect('custom'); // Switch to custom when manually changing dates
                 }}
                 disabled={quickSelect !== 'custom'}
-                className="w-full h-11 border-2 border-gray-300 rounded-lg px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full h-11 border border-line-2 rounded-lg px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
             <div className="flex-1 min-w-[200px]">
@@ -120,12 +116,12 @@ export default function StatisticsPage() {
                   setQuickSelect('custom'); // Switch to custom when manually changing dates
                 }}
                 disabled={quickSelect !== 'custom'}
-                className="w-full h-11 border-2 border-gray-300 rounded-lg px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full h-11 border border-line-2 rounded-lg px-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white shadow-sm hover:border-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
             <button
               onClick={() => setRefreshKey((x) => x + 1)}
-              className="h-11 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
+              className="h-11 px-6 rounded-lg bg-ink hover:bg-steel text-white font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2 whitespace-nowrap"
             >
               <RefreshCw className="w-4 h-4" />
               Uygula
@@ -135,8 +131,8 @@ export default function StatisticsPage() {
         {/* Charts */}
         <div className="space-y-6">
            {/* Top 5 Defects/Services Chart */}
-           <div className="bg-white rounded shadow p-4">
-            <h2 className="font-semibold mb-3">En Sık Görülen Arıza Tipleri (Top 5)</h2>
+           <div className="bg-white rounded-2xl border border-line p-6">
+            <h2 className="font-display mb-3">En Sık Görülen Arıza Tipleri (Top 5)</h2>
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               Bu grafik, seçilen tarih aralığında en sık karşılaşılan 5 arıza tipini gösterir. 
               Hangi arızaların tekrar ettiğini görerek, üretim süreçlerinde iyileştirmeler yapabilir 
@@ -150,8 +146,8 @@ export default function StatisticsPage() {
           </div>
 
           {/* Production Date Distribution Chart */}
-          <div className="bg-white rounded shadow p-4">
-            <h2 className="font-semibold mb-3">Üretim Dönemi Dağılım Analizi</h2>
+          <div className="bg-white rounded-2xl border border-line p-6">
+            <h2 className="font-display mb-3">Üretim Dönemi Dağılım Analizi</h2>
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               Seçilen tarih aralığında iade edilen ürünlerin hangi üretim dönemlerinden geldiğini 
               <span className="font-medium text-gray-800"> yüzdelik dağılım</span> olarak gösterir. 
@@ -167,8 +163,8 @@ export default function StatisticsPage() {
           
           {/* Fault Responsibility and Resolution Method Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Hata Sorumluluğuna Göre Arıza Dağılımı</h2>
+            <div className="bg-white rounded-2xl border border-line p-6">
+              <h2 className="font-display mb-3">Hata Sorumluluğuna Göre Arıza Dağılımı</h2>
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                 Arızaların kullanıcı hatası mı yoksa teknik sorun mu olduğunu gösterir. 
                 Müşteri eğitimi gerekliliği veya ürün tasarımında iyileştirme ihtiyacı konusunda 
@@ -178,14 +174,14 @@ export default function StatisticsPage() {
                 path={API_ENDPOINTS.REPORTS.FAULT_RESPONSIBILITY_STATS}
                 nameField="fault_responsibility"
                 tooltipLabel="Hata Sorumluluğu"
-                colors={PIE_COLORS}
+                colors={[...CHART_COLORS.slice(0, 4), CHART_MUTED]}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
               />
             </div>
-            <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Çözüm Yöntemine Göre Arıza Dağılımı</h2>
+            <div className="bg-white rounded-2xl border border-line p-6">
+              <h2 className="font-display mb-3">Çözüm Yöntemine Göre Arıza Dağılımı</h2>
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                 İadelerin nasıl çözüldüğünü (tamir, değişim, vb.) gösterir. Servis maliyetlerini 
                 analiz etmenize ve garanti politikalarınızı optimize etmenize yardımcı olur.
@@ -194,7 +190,7 @@ export default function StatisticsPage() {
                 path={API_ENDPOINTS.REPORTS.RESOLUTION_METHOD_STATS}
                 nameField="resolution_method"
                 tooltipLabel="Çözüm Yöntemi"
-                colors={PIE_COLORS}
+                colors={[...CHART_COLORS.slice(0, 4), CHART_MUTED]}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
@@ -203,8 +199,8 @@ export default function StatisticsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Ürün Türüne Göre Arıza Dağılımı</h2>
+            <div className="bg-white rounded-2xl border border-line p-6">
+              <h2 className="font-display mb-3">Ürün Türüne Göre Arıza Dağılımı</h2>
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                 Hangi ürün kategorilerinin (fotosel, kontrol ünitesi, vb.) daha fazla arıza verdiğini gösterir. 
                 Ürün portföyünüzde hangi kategorilere daha fazla odaklanmanız gerektiğini belirlemenize yardımcı olur.
@@ -213,14 +209,14 @@ export default function StatisticsPage() {
                 path={API_ENDPOINTS.REPORTS.PRODUCT_TYPE_STATS}
                 nameField="product_type"
                 tooltipLabel="Ürün Türü"
-                colors={PIE_COLORS}
+                colors={[...CHART_COLORS.slice(0, 4), CHART_MUTED]}
                 startDate={startDate}
                 endDate={endDate}
                 refreshKey={refreshKey}
               />
             </div>
-            <div className="bg-white rounded shadow p-4">
-              <h2 className="font-semibold mb-3">Ürün Modeline Arıza Adedi</h2>
+            <div className="bg-white rounded-2xl border border-line p-6">
+              <h2 className="font-display mb-3">Ürün Modeline Arıza Adedi</h2>
               <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                 Her ürün modelinin iade sayısını gösterir. Hangi modellerin daha sorunlu olduğunu tespit ederek, 
                 tasarım iyileştirmeleri ve kalite kontrol önlemlerine öncelik verebilirsiniz.
@@ -229,7 +225,7 @@ export default function StatisticsPage() {
                 path={API_ENDPOINTS.REPORTS.ITEMS_BY_PRODUCT_MODEL}
                 nameField="product_model_name"
                 tooltipLabel="Ürün Modeli"
-                colors={MODEL_COLORS}
+                colors={CHART_COLORS}
                 groupBelowPercent={3}
                 startDate={startDate}
                 endDate={endDate}
@@ -238,8 +234,8 @@ export default function StatisticsPage() {
             </div>
           </div>
            {/* Top 5 Customers by Defects Chart */}
-           <div className="bg-white rounded shadow p-4">
-            <h2 className="font-semibold mb-3">Müşterilere Göre Arıza Adedi (Top 5)</h2>
+           <div className="bg-white rounded-2xl border border-line p-6">
+            <h2 className="font-display mb-3">Müşterilere Göre Arıza Adedi (Top 5)</h2>
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               En çok iade yapan 5 müşteriyi gösterir. Belirli müşterilerde tekrarlayan sorunları tespit ederek, 
               kurulum desteği, eğitim veya özel çözümler sunabilir ve müşteri memnuniyetini artırabilirsiniz.
@@ -252,8 +248,8 @@ export default function StatisticsPage() {
           </div>
 
           {/* Full-width production month chart with independent time filter - AT THE BOTTOM */}
-          <div className="bg-white rounded shadow p-4">
-            <h2 className="font-semibold mb-3">Üretim Dönemi Arıza Trend Analizi</h2>
+          <div className="bg-white rounded-2xl border border-line p-6">
+            <h2 className="font-display mb-3">Üretim Dönemi Arıza Trend Analizi</h2>
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               Üretim aylarına göre arıza sayılarının 
               <span className="font-medium text-gray-800"> zaman içindeki değişimini</span> (trend) gösterir. 
@@ -261,7 +257,7 @@ export default function StatisticsPage() {
               Arıza sayılarının artış veya azalış trendlerini görerek, kalite iyileştirme çalışmalarınızın 
               etkisini ölçebilir ve hangi dönemlerde üretim kalitesinin düştüğünü tespit edebilirsiniz.
               <br />
-              <span className="font-semibold text-amber-700 mt-2 inline-block">
+              <span className="font-semibold text-brand mt-2 inline-block">
                 ⚠️ Bu grafik yukarıdaki genel tarih filtresinden bağımsızdır ve kendi özel tarih aralığına sahiptir.
               </span>
             </p>

@@ -35,13 +35,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    <div className="min-h-screen bg-cream flex items-center justify-center p-4">
 
       <div className="relative w-full max-w-md">
         {/* Logo Section */}
@@ -55,12 +49,12 @@ export default function LoginPage() {
               className="object-contain"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Hoş Geldiniz</h1>
+          <h1 className="font-display text-3xl text-gray-900 mb-2">Hoş Geldiniz</h1>
           <p className="text-gray-600">Hesabınıza giriş yapın</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 p-8">
+        <div className="bg-white rounded-2xl border border-line p-8">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
               <div className="flex items-center">
@@ -129,10 +123,10 @@ export default function LoginPage() {
               type="submit"
               disabled={isSubmitting}
               className={`
-                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2
+                w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
                 ${isSubmitting 
                   ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:ring-blue-500 shadow-lg hover:shadow-xl'
+                  : 'bg-brand hover:bg-brand-hover focus:ring-red-500'
                 }
               `}
             >
