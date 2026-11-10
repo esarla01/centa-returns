@@ -12,6 +12,17 @@ const PASSWORD = process.env.E2E_PASSWORD ?? '';
 const CUSTOMER = 'Acme Asansör';
 
 const problems: string[] = [];
+
+/** A day in Turkey, `daysFromToday` away, in the given style. */
+function istanbulDay(daysFromToday: number, style: 'long' | 'dotted'): string {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' })
+    .format(new Date(Date.now() + daysFromToday * 86_400_000)).split('-');
+  const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  return style === 'long'
+    ? `${Number(parts[2])} ${months[Number(parts[1]) - 1]} ${parts[0]}`
+    : `${parts[2]}.${parts[1]}.${parts[0]}`;
+}
 // Refusals the test provokes on purpose, to check that their message is shown.
 const expectedRefusals = ['complete-teknik-inceleme -> 400'];
 
@@ -25,7 +36,7 @@ test('a wrong password shows the reason', async ({ page }) => {
 });
 
 async function loginAs(browser: Browser, role: string, viewport?: { width: number; height: number }): Promise<Page> {
-  const context = await browser.newContext(viewport ? { viewport } : {});
+  const context = await browser.newContext({ timezoneId: 'Europe/Istanbul', ...(viewport ? { viewport } : {}) });
   const page = await context.newPage();
   page.on('pageerror', (error) => problems.push(`[${role}] page error: ${error.message}`));
   await page.goto('/login');
@@ -72,6 +83,8 @@ test('a case moves through all five stages', async ({ browser }) => {
     await page.getByRole('button', { name: 'Vaka Oluştur', exact: true }).click();
 
     await expect(caseRow(page)).toContainText('Teslim Alındı');
+    // The arrival date defaults to today as the user's calendar has it.
+    await expect(caseRow(page)).toContainText(istanbulDay(0, 'long'));
     await selectCase(page);
     await completeStage(page, 'Teslim Alındı', 'Teknik İnceleme');
     await page.context().close();
@@ -111,6 +124,8 @@ test('a case moves through all five stages', async ({ browser }) => {
     await selectCase(page);
     await expect(caseRow(page)).toContainText('DT-25');
     await caseRow(page).locator('button[title="Teknik İnceleme aşamasını düzenle"]').click();
+    // The production month saved through the API shows in the month picker.
+    await expect(page.getByPlaceholder('Ay seçin')).toHaveValue('2024-03');
     const save = page.getByRole('button', { name: 'Güncelle', exact: true });
     await save.click();
     await expect(save).toBeHidden();
@@ -149,6 +164,8 @@ test('a case moves through all five stages', async ({ browser }) => {
     await selectCase(page);
     await completeStage(page, 'Kargoya Verildi', 'Tamamlandı');
     await expect(caseRow(page)).toContainText('TR123456');
+    // The shipping date is the day that was typed, not the day before.
+    await expect(caseRow(page)).toContainText('20 Mayıs 2024');
     await page.context().close();
   });
 
@@ -163,6 +180,18 @@ test('a case moves through all five stages', async ({ browser }) => {
 
   await test.step('Admin opens the remaining pages', async () => {
     const page = await loginAs(browser, 'admin');
+
+    // Date filter on the case list: the case arrived today.
+    await expect(caseRow(page)).toBeVisible();
+    await page.getByPlaceholder('Bitiş').filter({ visible: true }).fill(istanbulDay(-1, 'dotted'));
+    await page.keyboard.press('Escape');
+    await expect(page.locator('tr:visible', { hasText: CUSTOMER })).toHaveCount(0);
+    await page.getByPlaceholder('Bitiş').filter({ visible: true }).fill(istanbulDay(0, 'dotted'));
+    await page.keyboard.press('Escape');
+    await expect(caseRow(page)).toBeVisible();
+    await page.getByPlaceholder('Başlangıç').filter({ visible: true }).fill(istanbulDay(0, 'dotted'));
+    await page.keyboard.press('Escape');
+    await expect(caseRow(page)).toBeVisible();
 
     await page.goto('/admin-dashboard');
     await expect(page.getByRole('heading', { name: 'Yönetici Paneli' })).toBeVisible();

@@ -3,6 +3,7 @@
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { tr } from 'date-fns/locale';
+import { fromDay, toDay, todayAsDay } from '@/lib/dates';
 
 import { useState, useEffect, FormEvent, use } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
     // Form state for case details
     const [caseDetails, setCaseDetails] = useState<CaseDetails>({
         customerId: 0,
-        arrivalDate: new Date().toISOString().split('T')[0],
+        arrivalDate: todayAsDay(),
         receiptMethod: '',
         notes: '',
     });
@@ -114,8 +115,8 @@ export default function AddReturnCaseModal({ onClose, onSuccess }: AddReturnCase
                     <label className="block text-sm font-medium text-gray-700">Geliş Tarihi</label>
                     <div className="mt-1 w-full border border-gray-300 rounded-md p-1.5 focus-within:ring-2 focus-within:ring-blue-200">
                         <DatePicker
-                            selected={new Date(caseDetails.arrivalDate)}
-                            onChange={date => date ? handleCaseDetailChange('arrivalDate', date.toISOString().split('T')[0]) : handleCaseDetailChange('arrivalDate', '')}
+                            selected={fromDay(caseDetails.arrivalDate)}
+                            onChange={date => handleCaseDetailChange('arrivalDate', date ? toDay(date) : todayAsDay())}
                             locale={tr}
                             dateFormat="dd.MM.yyyy"
                             wrapperClassName="w-full" 

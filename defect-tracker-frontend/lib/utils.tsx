@@ -13,8 +13,8 @@ const TURKISH_MONTHS = [
 
 /** "2024-05-20" -> "20 Mayıs 2024" */
 export const formatTurkishDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return `${date.getDate()} ${TURKISH_MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return `${day} ${TURKISH_MONTHS[month - 1]} ${year}`;
 };
 
 export const truncateTextWithEllipsis = (text: string | null, maxCharacters: number): string => {

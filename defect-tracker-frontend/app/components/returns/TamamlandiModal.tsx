@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { useStageSave } from './useStageSave';
 
 interface TamamlandiModalProps {
   returnCase: FullReturnCase;
@@ -12,9 +12,8 @@ interface TamamlandiModalProps {
 }
 
 export default function TamamlandiModal({ returnCase, onClose, onSuccess }: TamamlandiModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoading, error, success, save } = useStageSave(
+    returnCase.id, 'tamamlandi', 'Tamamlandı bilgileri başarıyla güncellendi!', onSuccess, onClose);
 
   // Helper function to convert Turkish values to enum keys
   const convertToEnumKey = (turkishValue: string, enumMap: Record<string, string>): string => {
@@ -36,28 +35,9 @@ export default function TamamlandiModal({ returnCase, onClose, onSuccess }: Tama
     paymentStatus: convertToEnumKey(returnCase.payment_status || '', paymentStatusMap),
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'tamamlandi'), {
-        paymentStatus: formData.paymentStatus,
-      });
-
-      setSuccess('Tamamlandı bilgileri başarıyla güncellendi!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
-
-    } catch (err) {
-      setError(errorMessage(err, 'Sunucu hatası'));
-    } finally {
-      setIsLoading(false);
-    }
+    save({ paymentStatus: formData.paymentStatus });
   };
 
   return (

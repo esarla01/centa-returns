@@ -5,8 +5,9 @@ import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
 import DatePicker from 'react-datepicker';
 import { tr } from 'date-fns/locale';
+import { fromDay, toDay } from '@/lib/dates';
 import 'react-datepicker/dist/react-datepicker.css';
-import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { useStageSave } from './useStageSave';
 
 interface KargoyaVerildiModalProps {
   returnCase: FullReturnCase;
@@ -15,52 +16,27 @@ interface KargoyaVerildiModalProps {
 }
 
 export default function KargoyaVerildiModal({ returnCase, onClose, onSuccess }: KargoyaVerildiModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoading, error, success, save } = useStageSave(
+    returnCase.id, 'kargoya-verildi', 'Kargo bilgileri başarıyla güncellendi!', onSuccess, onClose);
 
   const [formData, setFormData] = useState({
     shippingInfo: returnCase.shipping_info || '',
     trackingNumber: returnCase.tracking_number || '',
-    shippingDate: returnCase.shipping_date ? new Date(returnCase.shipping_date) : null,
+    shippingDate: returnCase.shipping_date ? fromDay(returnCase.shipping_date) : null,
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
 
-    // Validate that shipping date is not in the future
-    if (formData.shippingDate) {
-      const today = new Date();
-      today.setHours(23, 59, 59, 999); // End of today
-      
-      if (formData.shippingDate > today) {
-        setError('Kargoya verilme tarihi gelecekte olamaz. Lütfen bugün veya geçmiş bir tarih seçin.');
-        setIsLoading(false);
-        return;
-      }
-    }
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    const inFuture = !!formData.shippingDate && formData.shippingDate > endOfToday;
 
-    try {
-      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'kargoya-verildi'), {
-        shippingInfo: formData.shippingInfo,
-        trackingNumber: formData.trackingNumber,
-        shippingDate: formData.shippingDate ? formData.shippingDate.toISOString().split('T')[0] : null,
-      });
-
-      setSuccess('Kargo bilgileri başarıyla güncellendi!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
-
-    } catch (err) {
-      setError(errorMessage(err, 'Sunucu hatası'));
-    } finally {
-      setIsLoading(false);
-    }
+    save({
+      shippingInfo: formData.shippingInfo,
+      trackingNumber: formData.trackingNumber,
+      shippingDate: formData.shippingDate ? toDay(formData.shippingDate) : null,
+    }, inFuture ? 'Kargoya verilme tarihi gelecekte olamaz. Lütfen bugün veya geçmiş bir tarih seçin.' : null);
   };
 
   return (

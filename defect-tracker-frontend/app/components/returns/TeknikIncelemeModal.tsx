@@ -1,11 +1,13 @@
 'use client';
-import { DatePicker } from 'antd';
-import dayjs from 'dayjs';
-import trTR from 'antd/locale/tr_TR';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { tr } from 'date-fns/locale';
+import { fromMonth, toMonth } from '@/lib/dates';
 import { useState, useEffect, FormEvent } from 'react';
 import { X, PlusCircle, Trash2 } from 'lucide-react';
 import { EditableProduct, FullReturnCase, FullReturnCaseItem, ProductModel, ProductType, ServiceDefinition, ServiceSelection } from '@/lib/types';
-import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
+import { useStageSave } from './useStageSave';
 import SimpleSelect from '../SimpleSelect';
 
 interface TeknikIncelemeModalProps {
@@ -15,9 +17,8 @@ interface TeknikIncelemeModalProps {
 }
 
 export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: TeknikIncelemeModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoading, error, success, save, setError } = useStageSave(
+    returnCase.id, 'teknik-inceleme', 'Teknik İnceleme bilgileri başarıyla güncellendi!', onSuccess, onClose);
   const [productModels, setProductModels] = useState<ProductModel[]>([]);
   const [serviceDefinitions, setServiceDefinitions] = useState<Record<string, ServiceDefinition[]>>({});
 
@@ -211,73 +212,39 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
     handleProductChange(productId, 'services', initialServices);
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  /** What stops the form from being saved, if anything. */
+  const problemWithForm = (): string | null => {
+    const incomplete = products.some(p => !p.product_model.name.trim() || p.product_count <= 0 || !p.production_date.trim());
+    if (incomplete) {
+      return 'Lütfen tüm ürünler için ürün modeli, adet ve üretim tarihi bilgilerini doldurun.';
+    }
+    if (products.some(p => !p.services.some(s => s.is_performed))) {
+      return 'Lütfen tüm ürünler için en az bir hizmet seçin.';
+    }
+    return null;
+  };
+
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    // Validate that all products have the required fields: product model, count, production date
-    const productsWithMissingRequiredFields = products.filter(p => 
-      !p.product_model.name.trim() || 
-      p.product_count <= 0 || 
-      !p.production_date.trim()
-    );
-    
-    if (productsWithMissingRequiredFields.length > 0) {
-      setError('Lütfen tüm ürünler için ürün modeli, adet ve üretim tarihi bilgilerini doldurun.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate that each product has at least one service selected
-    const productsWithoutServices = products.filter(p => 
-      !p.services.some(s => s.is_performed)
-    );
-    
-    if (productsWithoutServices.length > 0) {
-      setError('Lütfen tüm ürünler için en az bir hizmet seçin.');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const requestBody = {
-        yedek_parca: caseCosts.yedek_parca || 0,
-        bakim: caseCosts.bakim || 0,
-        iscilik: caseCosts.iscilik || 0,
-        performed_services: performedServices,
-        items: products.filter(p => p.product_model.name && p.product_count > 0).map(p => ({
-          id: p.isNew ? undefined : p.id,
-          product_model_id: p.product_model.id,
-          product_count: p.product_count,
-          production_date: p.production_date,
-          warranty_status: p.warranty_status,
-          fault_responsibility: p.fault_responsibility,
-          resolution_method: p.resolution_method,
-          has_control_unit: p.has_control_unit,
-          cable_check: p.cable_check,
-          profile_check: p.profile_check,
-          packaging: p.packaging,
-          // Send services instead of yapilan_islemler
-          services: p.services.filter(s => s.is_performed)
-        }))
-      };
-      
-      
-      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'teknik-inceleme'), requestBody);
-
-      setSuccess('Teknik İnceleme bilgileri başarıyla güncellendi!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 2000);
-
-    } catch (err) {
-      setError(errorMessage(err, 'Sunucu hatası'));
-    } finally {
-      setIsLoading(false);
-    }
+    save({
+      yedek_parca: caseCosts.yedek_parca || 0,
+      bakim: caseCosts.bakim || 0,
+      iscilik: caseCosts.iscilik || 0,
+      performed_services: performedServices,
+      items: products.filter(p => p.product_model.name && p.product_count > 0).map(p => ({
+        product_model_id: p.product_model.id,
+        product_count: p.product_count,
+        production_date: p.production_date,
+        warranty_status: p.warranty_status,
+        fault_responsibility: p.fault_responsibility,
+        resolution_method: p.resolution_method,
+        has_control_unit: p.has_control_unit,
+        cable_check: p.cable_check,
+        profile_check: p.profile_check,
+        packaging: p.packaging,
+        services: p.services.filter(s => s.is_performed),
+      })),
+    }, problemWithForm());
   };
 
   return (
@@ -414,12 +381,15 @@ export default function TeknikIncelemeModal({ returnCase, onClose, onSuccess }: 
                           required
                         /> */}
                                                 <DatePicker
-                          picker="month"
-                          value={product.production_date ? dayjs(product.production_date) : null}
-                          onChange={(date) => handleProductChange(product.id, 'production_date', date?.format('YYYY-MM') || '')}
-                          placeholder="Ay seçin"
+                          selected={product.production_date ? fromMonth(product.production_date) : null}
+                          onChange={(date) => handleProductChange(product.id, 'production_date', date ? toMonth(date) : '')}
+                          showMonthYearPicker
+                          dateFormat="yyyy-MM"
+                          locale={tr}
+                          maxDate={new Date()}
+                          placeholderText="Ay seçin"
+                          wrapperClassName="w-full"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          locale={trTR.DatePicker}
                         />
                       </div>
                     </div>

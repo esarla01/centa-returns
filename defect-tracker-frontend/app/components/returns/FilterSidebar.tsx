@@ -5,9 +5,10 @@ import { User } from '@/lib/types';
 import { Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { DatePicker } from 'antd';
-import dayjs from 'dayjs';
-import trTR from 'antd/locale/tr_TR';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { tr } from 'date-fns/locale';
+import { fromDay, toDay } from '@/lib/dates';
 
 // Define the shape of the filters state object
 export interface Filters {
@@ -215,23 +216,29 @@ export default function FilterSidebar({ filters, setFilters }: FilterSidebarProp
             <div className={`flex gap-2 ${(isFilterActive(filters.startDate) || isFilterActive(filters.endDate)) ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50 rounded-md p-2' : ''}`}>
                 <div className="w-1/2">
                     <DatePicker
-                        value={filters.startDate ? dayjs(filters.startDate) : null}
-                        onChange={(date) => handleDateChange('startDate', date?.format('YYYY-MM-DD') || '')}
-                        placeholder="Başlangıç"
-                        className="w-full"
-                        locale={trTR.DatePicker}
-                        maxDate={filters.endDate ? dayjs(filters.endDate) : dayjs()}
+                        selected={filters.startDate ? fromDay(filters.startDate) : null}
+                        onChange={(date) => handleDateChange('startDate', date ? toDay(date) : '')}
+                        placeholderText="Başlangıç"
+                        dateFormat="dd.MM.yyyy"
+                        locale={tr}
+                        maxDate={filters.endDate ? fromDay(filters.endDate) : new Date()}
+                        isClearable
+                        wrapperClassName="w-full"
+                        className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 <div className="w-1/2">
                     <DatePicker
-                        value={filters.endDate ? dayjs(filters.endDate) : null}
-                        onChange={(date) => handleDateChange('endDate', date?.format('YYYY-MM-DD') || '')}
-                        placeholder="Bitiş"
-                        className="w-full"
-                        locale={trTR.DatePicker}
-                        minDate={filters.startDate ? dayjs(filters.startDate) : undefined}
-                        maxDate={dayjs()}
+                        selected={filters.endDate ? fromDay(filters.endDate) : null}
+                        onChange={(date) => handleDateChange('endDate', date ? toDay(date) : '')}
+                        placeholderText="Bitiş"
+                        dateFormat="dd.MM.yyyy"
+                        locale={tr}
+                        minDate={filters.startDate ? fromDay(filters.startDate) : undefined}
+                        maxDate={new Date()}
+                        isClearable
+                        wrapperClassName="w-full"
+                        className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
             </div>

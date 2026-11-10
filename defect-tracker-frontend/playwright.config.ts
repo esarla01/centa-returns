@@ -11,6 +11,8 @@ export default defineConfig({
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     viewport: { width: 1680, height: 1000 },
+    // The people who use this are in Turkey; date handling must be right there.
+    timezoneId: 'Europe/Istanbul',
     screenshot: 'only-on-failure',
   },
 });

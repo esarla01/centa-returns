@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { FullReturnCase } from '@/lib/types';
-import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { useStageSave } from './useStageSave';
 
 interface OdemeTahsilatiModalProps {
   returnCase: FullReturnCase;
@@ -12,36 +12,16 @@ interface OdemeTahsilatiModalProps {
 }
 
 export default function OdemeTahsilatiModal({ returnCase, onClose, onSuccess }: OdemeTahsilatiModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoading, error, success, save } = useStageSave(
+    returnCase.id, 'odeme-tahsilati', 'Ödeme tahsilatı bilgileri başarıyla güncellendi!', onSuccess, onClose);
 
   const [formData, setFormData] = useState({
     payment_status: returnCase.payment_status || '',
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'odeme-tahsilati'), {
-        payment_status: formData.payment_status,
-      });
-
-      setSuccess('Ödeme tahsilatı bilgileri başarıyla güncellendi!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
-
-    } catch (err) {
-      setError(errorMessage(err, 'Sunucu hatası'));
-    } finally {
-      setIsLoading(false);
-    }
+    save({ payment_status: formData.payment_status });
   };
 
   return (

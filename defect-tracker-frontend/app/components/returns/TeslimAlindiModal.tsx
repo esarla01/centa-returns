@@ -6,8 +6,10 @@ import { FullReturnCase, Customer } from '@/lib/types';
 import DatePicker from 'react-datepicker';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { fromDay, toDay } from '@/lib/dates';
 import 'react-datepicker/dist/react-datepicker.css';
-import { API_ENDPOINTS, api, errorMessage } from '@/lib/api';
+import { API_ENDPOINTS, api } from '@/lib/api';
+import { useStageSave } from './useStageSave';
 import SimpleSelect from '../SimpleSelect';
 
 interface TeslimAlindiModalProps {
@@ -17,14 +19,13 @@ interface TeslimAlindiModalProps {
 }
 
 export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: TeslimAlindiModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { isLoading, error, success, save } = useStageSave(
+    returnCase.id, 'teslim-alindi', 'Teslim Alındı bilgileri başarıyla güncellendi!', onSuccess, onClose);
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   const [formData, setFormData] = useState({
     customerId: returnCase.customer.id,
-    arrivalDate: new Date(returnCase.arrival_date),
+    arrivalDate: fromDay(returnCase.arrival_date),
     receiptMethod: returnCase.receipt_method === 'Kargo' ? 'shipment' : 'in_person',
     notes: returnCase.notes || '',
   });
@@ -42,31 +43,14 @@ export default function TeslimAlindiModal({ returnCase, onClose, onSuccess }: Te
     fetchCustomers();
   }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      await api.put(API_ENDPOINTS.RETURNS.STAGE(returnCase.id, 'teslim-alindi'), {
-        customerId: formData.customerId,
-        arrivalDate: formData.arrivalDate.toISOString().split('T')[0],
-        receiptMethod: formData.receiptMethod,
-        notes: formData.notes,
-      });
-
-      setSuccess('Teslim Alındı bilgileri başarıyla güncellendi!');
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 1500);
-
-    } catch (err) {
-      setError(errorMessage(err, 'Sunucu hatası'));
-    } finally {
-      setIsLoading(false);
-    }
+    save({
+      customerId: formData.customerId,
+      arrivalDate: toDay(formData.arrivalDate),
+      receiptMethod: formData.receiptMethod,
+      notes: formData.notes,
+    });
   };
 
   return (
