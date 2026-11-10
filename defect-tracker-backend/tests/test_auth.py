@@ -89,8 +89,7 @@ def test_reinviting_a_pending_user_issues_a_new_token(app, client_for, sent_emai
 def test_invited_user_cannot_log_in_before_accepting(app, client_for):
     client_for("ADMIN").post("/admin/invite-user", json={"email": "new@example.com", "role": "SALES"})
     res = make_client(app).post("/auth/login", json={"email": "new@example.com", "password": PASSWORD})
-    # KNOWN GAP: this crashes with a 500 instead of a clean "wrong email or password".
-    assert res.status_code == 500
+    assert res.status_code == 400
 
 
 def test_password_reset_flow(app, sent_emails):

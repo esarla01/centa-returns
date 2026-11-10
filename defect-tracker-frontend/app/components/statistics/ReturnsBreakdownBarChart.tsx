@@ -37,7 +37,7 @@ const ReturnsBreakdownBarChart: React.FC<ReturnsBreakdownBarChartProps> = ({
           start_date: startDate ?  startDate.toISOString().split("T")[0] : "",
           end_date: endDate? endDate.toISOString().split("T")[0] : "",
         });
-        const res = await fetch(buildApiUrl(API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN) + `?${params.toString()}`);
+        const res = await fetch(buildApiUrl(API_ENDPOINTS.REPORTS.RETURNS_BREAKDOWN) + `?${params.toString()}`, { credentials: 'include' });
         const json = await res.json();
 
         setData(json.data);

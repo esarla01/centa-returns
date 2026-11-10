@@ -7,8 +7,23 @@ from models import (
 )
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from models import AppPermissions
+from permissions import permission_required
 
 reports_bp = Blueprint("reports", __name__)
+
+
+@permission_required(AppPermissions.PAGE_VIEW_STATISTICS)
+def _check_statistics_permission():
+    return None
+
+
+@reports_bp.before_request
+def require_statistics_permission():
+    # CORS preflight requests carry no cookie and must pass through.
+    if request.method == "OPTIONS":
+        return None
+    return _check_statistics_permission()
 
 
 def parse_date_range():

@@ -34,8 +34,19 @@ def convert_turkish_to_enum(turkish_value, enum_class):
 
 return_case_bp = Blueprint('returns', __name__, url_prefix='/returns')
 
+STAGE_ORDER = list(CaseStatusEnum)
+
+def stage_not_reached(return_case, stage):
+    """True if the case has not yet arrived at `stage`, so that stage's
+    fields must not be edited. Stages already passed stay editable."""
+    return STAGE_ORDER.index(return_case.workflow_status) < STAGE_ORDER.index(stage)
+
+def stage_not_reached_response(return_case):
+    return jsonify({"error": f"Bu aşama henüz düzenlenemez. Mevcut durum: {return_case.workflow_status.value}"}), 400
+
 @return_case_bp.route('', methods=['GET'])
 @return_case_bp.route('/', methods=['GET'])
+@permission_required(AppPermissions.PAGE_VIEW_CASE_TRACKING)
 def get_return_cases():
     try:
         # Get pagination parameters
@@ -367,6 +378,9 @@ def update_teknik_inceleme(return_case_id):
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
+        if stage_not_reached(return_case, CaseStatusEnum.TECHNICAL_REVIEW):
+            return stage_not_reached_response(return_case)
+
         
         # Update cost fields if provided
         if 'yedek_parca' in data:
@@ -554,6 +568,9 @@ def update_odeme_tahsilati(return_case_id):
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
 
+        if stage_not_reached(return_case, CaseStatusEnum.PAYMENT_COLLECTION):
+            return stage_not_reached_response(return_case)
+
         data = request.get_json()
         
         # Update payment status if provided
@@ -632,6 +649,9 @@ def update_kargoya_verildi(return_case_id):
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
+
+        if stage_not_reached(return_case, CaseStatusEnum.SHIPPING):
+            return stage_not_reached_response(return_case)
 
         data = request.get_json()
         
@@ -716,10 +736,16 @@ def complete_kargoya_verildi(return_case_id):
 @jwt_required()
 def update_tamamlandi(return_case_id):
     """Update Tamamlandı stage information"""
+    # Same rule the interface applies: only the manager edits this stage.
+    if get_jwt().get("role") != 'MANAGER':
+        return jsonify({"error": "Bu aşamayı düzenleme yetkiniz yok."}), 403
     try:
         return_case = db.session.get(ReturnCase, return_case_id)
         if not return_case:
             return jsonify({"error": "Vaka bulunamadı"}), 404
+
+        if stage_not_reached(return_case, CaseStatusEnum.COMPLETED):
+            return stage_not_reached_response(return_case)
 
         data = request.get_json()
         

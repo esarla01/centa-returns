@@ -204,3 +204,10 @@ def test_bad_or_missing_dates_are_rejected(client_for, path):
     client = client_for("MANAGER")
     assert client.get(f"/reports/{path}").status_code == 400
     assert client.get(f"/reports/{path}?start_date=01.03.2024&end_date=2024-04-30").status_code == 400
+
+
+def test_reports_require_the_statistics_permission(client_for):
+    assert client_for(None).get("/reports/product-type-stats" + QS).status_code == 401
+    assert client_for("TECHNICIAN").get("/reports/product-type-stats" + QS).status_code == 403
+    # A CORS preflight carries no cookie and must still get through.
+    assert client_for(None).options("/reports/product-type-stats" + QS).status_code == 200

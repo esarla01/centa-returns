@@ -14,7 +14,9 @@ def permission_required(permission):
             role = claims.get("role")
             if not role:
                 return jsonify({"msg": "Role missing"}), 403
-            user = g.user
+            user = getattr(g, 'user', None)
+            if user is None:
+                return jsonify({"msg": "Kullanıcı bulunamadı"}), 401
             # Get the role id from the user
             # print(f"User: {user}")
             role_id = user.role_id

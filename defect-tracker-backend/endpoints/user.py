@@ -114,7 +114,7 @@ def login():
     
     # Query user by email and check if the password is correct
     user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
+    if not user or not user.password_hash or not user.check_password(password):
         return jsonify({"msg": "E-posta veya şifre yanlış! Lütfen tekrar deneyin."}), 400
 
     try:

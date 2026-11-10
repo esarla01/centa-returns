@@ -283,3 +283,45 @@ def test_service_definitions_for_product_type(client_for):
     assert len(body["services"]) == 6
     assert all(s["product_type"] == "Aşırı Yük Sensörü" for s in body["services"])
     assert tech.get("/returns/service-definitions/bogus").status_code == 400
+
+
+@pytest.mark.parametrize("role, endpoint, payload", [
+    ("TECHNICIAN", "teknik-inceleme", {"performed_services": "erken"}),
+    ("SALES", "odeme-tahsilati", {"payment_status": "Ödendi"}),
+    ("LOGISTICS", "kargoya-verildi", {"trackingNumber": "TR999"}),
+    ("MANAGER", "tamamlandi", {"paymentStatus": "Ödendi"}),
+])
+def test_a_stage_cannot_be_edited_before_the_case_reaches_it(client_for, customer, role, endpoint, payload):
+    case_id = create_case(client_for("SUPPORT"), customer)  # still DELIVERED
+    res = client_for(role).put(f"/returns/{case_id}/{endpoint}", json=payload)
+    assert res.status_code == 400
+    assert "henüz düzenlenemez" in res.get_json()["error"]
+    case = db.session.get(ReturnCase, case_id)
+    assert (case.performed_services, case.payment_status, case.tracking_number) == (None, None, None)
+
+
+def test_earlier_stages_stay_editable_after_the_case_moves_on(client_for, customer, product, service):
+    case_id = create_case(client_for("SUPPORT"), customer)
+    advance_to(client_for, case_id, "SHIPPING", product, service)
+
+    res = client_for("SUPPORT").put(f"/returns/{case_id}/teslim-alindi", json={"notes": "sonradan"})
+    assert res.status_code == 200
+    res = client_for("TECHNICIAN").put(f"/returns/{case_id}/teknik-inceleme", json={"performed_services": "düzeltme"})
+    assert res.status_code == 200
+    case = db.session.get(ReturnCase, case_id)
+    assert (case.notes, case.performed_services) == ("sonradan", "düzeltme")
+    assert case_status(case_id) == "SHIPPING"
+
+
+def test_manager_can_change_payment_status_on_a_completed_case(client_for, customer, product, service):
+    case_id = create_case(client_for("SUPPORT"), customer)
+    advance_to(client_for, case_id, "COMPLETED", product, service)
+
+    res = client_for("MANAGER").put(f"/returns/{case_id}/tamamlandi", json={"paymentStatus": "Ücretsiz"})
+    assert res.status_code == 200
+    assert db.session.get(ReturnCase, case_id).payment_status.name == "waived"
+    assert client_for("SALES").put(f"/returns/{case_id}/tamamlandi", json={"paymentStatus": "Ödendi"}).status_code == 403
+
+
+def test_list_requires_login(client_for):
+    assert client_for(None).get("/returns").status_code == 401

@@ -182,7 +182,7 @@ def toggle_email_notifications():
         }), 500
 
 @admin_bp.route('', methods=['GET'])
-@jwt_required()
+@permission_required(AppPermissions.PAGE_VIEW_ADMIN)
 def retrieve_users():
     """
     Retrieve a paginated, searchable, and filterable list of users
