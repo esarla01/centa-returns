@@ -53,3 +53,61 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  e2e:
+    name: Browser smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: centa
+          POSTGRES_PASSWORD: centa
+          POSTGRES_DB: centa_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U centa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URI: postgresql+psycopg2://centa:centa@localhost:5432/centa_e2e
+      JWT_SECRET_KEY: ci-only-secret-key-that-is-long-enough-for-hs256
+      JWT_COOKIE_SECURE: "False"
+      JWT_COOKIE_SAMESITE: Lax
+      FRONTEND_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+      E2E_PASSWORD: Ci-only-Passw0rd!
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: defect-tracker-backend/requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: defect-tracker-frontend/package-lock.json
+      - name: Start backend
+        working-directory: defect-tracker-backend
+        run: |
+          pip install -r requirements.txt
+          python scripts/seed_e2e.py
+          nohup python app.py > backend.log 2>&1 &
+      - name: Build and start frontend
+        working-directory: defect-tracker-frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          nohup npm run start > frontend.log 2>&1 &
+          npx --yes wait-on@8 http://localhost:3000/login http://localhost:5000/health --timeout 60000
+      - name: Run browser tests
+        working-directory: defect-tracker-frontend
+        run: npm run e2e
+      - name: Show server logs on failure
+        if: failure()
+        run: tail -n 100 defect-tracker-backend/backend.log defect-tracker-frontend/frontend.log
