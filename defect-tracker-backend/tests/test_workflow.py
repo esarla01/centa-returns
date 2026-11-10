@@ -325,3 +325,102 @@ def test_manager_can_change_payment_status_on_a_completed_case(client_for, custo
 
 def test_list_requires_login(client_for):
     assert client_for(None).get("/returns").status_code == 401
+
+
+# --- Exact wording of responses (the interface shows these to users) ---------
+
+def test_stage_response_messages(client_for, customer, product, service):
+    support, tech = client_for("SUPPORT"), client_for("TECHNICIAN")
+    sales, logistics = client_for("SALES"), client_for("LOGISTICS")
+    case_id = create_case(support, customer)
+    url = f"/returns/{case_id}"
+
+    def message(res):
+        assert res.status_code == 200, res.get_data(as_text=True)
+        return res.get_json()["message"]
+
+    assert message(support.put(f"{url}/teslim-alindi", json={"notes": "n"})) == \
+        "Teslim Alındı bilgileri güncellendi"
+    assert message(support.post(f"{url}/complete-teslim-alindi")) == \
+        "Teslim Alındı aşaması tamamlandı, durum Teknik İnceleme olarak güncellendi"
+    assert message(tech.put(f"{url}/teknik-inceleme", json=technical_review_payload(product, service))) == \
+        "Teknik İnceleme bilgileri güncellendi"
+    assert message(tech.post(f"{url}/complete-teknik-inceleme")) == \
+        "Teknik İnceleme aşaması tamamlandı, durum Ödeme Tahsilatı olarak güncellendi"
+    assert message(sales.put(f"{url}/odeme-tahsilati", json={"payment_status": "Ödendi"})) == \
+        "Ödeme tahsilatı bilgileri güncellendi"
+    assert message(sales.post(f"{url}/complete-odeme-tahsilati")) == \
+        "Ödeme tahsilatı aşaması tamamlandı, durum Kargoya Veriliyor olarak güncellendi"
+    assert message(logistics.put(f"{url}/kargoya-verildi", json={
+        "shippingInfo": "Aras", "trackingNumber": "T1", "shippingDate": "2024-05-20"})) == \
+        "Kargo bilgileri güncellendi"
+    assert message(logistics.post(f"{url}/complete-kargoya-verildi")) == \
+        "Kargoya Verildi aşaması tamamlandı, durum Tamamlandı olarak güncellendi"
+    assert message(client_for("MANAGER").put(f"{url}/tamamlandi", json={"paymentStatus": "Ödendi"})) == \
+        "Tamamlandı bilgileri güncellendi"
+
+
+def test_enum_fields_accept_the_turkish_label_or_the_key(client_for, customer, product, service):
+    case_id = create_case(client_for("SUPPORT"), customer)
+    advance_to(client_for, case_id, "TECHNICAL_REVIEW")
+    tech = client_for("TECHNICIAN")
+
+    payload = technical_review_payload(
+        product, service, warranty_status="out_of_warranty", fault_responsibility="Karışık", resolution_method="")
+    assert tech.put(f"/returns/{case_id}/teknik-inceleme", json=payload).status_code == 200
+    item = ReturnCaseItem.query.filter_by(return_case_id=case_id).one()
+    assert (item.warranty_status.name, item.fault_responsibility.name, item.resolution_method) == \
+        ("out_of_warranty", "mixed", None)
+
+    # A value that is neither a label nor a key fails the whole save and changes nothing.
+    bad = technical_review_payload(product, service, warranty_status="bogus")
+    res = tech.put(f"/returns/{case_id}/teknik-inceleme", json=bad)
+    assert res.status_code == 500 and res.get_json()["error"].startswith("Bir hata oluştu")
+    assert ReturnCaseItem.query.filter_by(return_case_id=case_id).one().warranty_status.name == "out_of_warranty"
+
+    support = client_for("SUPPORT")
+    assert support.put(f"/returns/{case_id}/teslim-alindi", json={"receiptMethod": "in_person"}).status_code == 200
+    assert support.put(f"/returns/{case_id}/teslim-alindi", json={"receiptMethod": ""}).status_code == 500
+    assert db.session.get(ReturnCase, case_id).receipt_method.name == "in_person"
+
+
+def test_technical_review_partial_update_keeps_items_and_recomputes_cost(client_for, customer, product, service):
+    case_id = create_case(client_for("SUPPORT"), customer)
+    advance_to(client_for, case_id, "TECHNICAL_REVIEW")
+    tech = client_for("TECHNICIAN")
+    tech.put(f"/returns/{case_id}/teknik-inceleme", json=technical_review_payload(product, service))
+
+    assert tech.put(f"/returns/{case_id}/teknik-inceleme", json={"bakim": None, "iscilik": 10}).status_code == 200
+    case = db.session.get(ReturnCase, case_id)
+    assert (float(case.yedek_parca), float(case.bakim), float(case.iscilik), float(case.cost)) == (100, 0, 10, 110)
+    assert len(case.items) == 1
+
+
+def test_final_completion_when_a_role_holds_the_permission(client_for, customer, product, service, sent_emails):
+    """No seeded role holds CASE_COMPLETE_COMPLETED. This grants it to
+    LOGISTICS inside the test only, to cover what the endpoint does."""
+    from models import AppPermissions, Permission, Role, RolePermission, UserRole
+    role = Role.query.filter_by(name=UserRole.LOGISTICS).one()
+    perm = Permission.query.filter_by(name=AppPermissions.CASE_COMPLETE_COMPLETED).one()
+    db.session.add(RolePermission(role_id=role.id, permission_id=perm.id))
+    db.session.commit()
+
+    logistics = client_for("LOGISTICS")
+    case_id = create_case(client_for("SUPPORT"), customer)
+    res = logistics.post(f"/returns/{case_id}/complete-tamamlandi")
+    assert res.status_code == 400 and "Mevcut durum: Teslim Alındı" in res.get_json()["error"]
+
+    advance_to(client_for, case_id, "COMPLETED", product, service)
+    db.session.get(ReturnCase, case_id).payment_status = None
+    db.session.commit()
+    res = logistics.post(f"/returns/{case_id}/complete-tamamlandi")
+    assert res.status_code == 400 and "Ödeme durumu eksik" in res.get_json()["error"]
+
+    client_for("MANAGER").put(f"/returns/{case_id}/tamamlandi", json={"paymentStatus": "Ödendi"})
+    sent_emails.clear()
+    res = logistics.post(f"/returns/{case_id}/complete-tamamlandi")
+    assert res.status_code == 200
+    assert res.get_json()["message"] == "Tamamlandı aşaması tamamlandı"
+    # Managers and admins are told the case is finished.
+    assert sorted(sent_emails[0]["to"]) == ["admin@example.com", "manager@example.com"]
+    assert case_status(case_id) == "COMPLETED"
