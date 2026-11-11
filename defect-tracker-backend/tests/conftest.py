@@ -16,6 +16,11 @@ sys.path.insert(0, BACKEND_DIR)
 os.environ["DATABASE_URI"] = os.environ.get(
     "TEST_DATABASE_URI", "postgresql+psycopg2://centa:centa@localhost:5432/centa_test"
 )
+from safety import require_disposable_database  # noqa: E402
+
+# The tests drop and recreate every table. Never let them near real data.
+require_disposable_database(os.environ["DATABASE_URI"], "run the tests (they wipe the database)")
+
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256"
 os.environ.pop("RAILWAY_ENVIRONMENT", None)
 os.environ.pop("RESEND_API_KEY", None)

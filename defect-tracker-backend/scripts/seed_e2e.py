@@ -15,9 +15,10 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-database = os.environ.get("DATABASE_URI", "").rsplit("/", 1)[-1].split("?")[0]
-if not database.endswith(("_e2e", "_test")):
-    sys.exit(f'Refusing to reset "{database}": the database name must end in _e2e or _test.')
+from safety import require_disposable_database  # noqa: E402
+
+require_disposable_database(os.environ.get("DATABASE_URI"), "reset the database for browser tests")
+database = os.environ["DATABASE_URI"].rsplit("/", 1)[-1]
 password = os.environ.get("E2E_PASSWORD")
 if not password:
     sys.exit("Set E2E_PASSWORD to the password the test users should get.")
